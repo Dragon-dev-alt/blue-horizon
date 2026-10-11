@@ -77,7 +77,7 @@ function baseRenderUI(){
  $('repStat').textContent='★ '+game.rep;
  $('dateLabel').textContent='Jahr '+(Math.floor((game.day-1)/360)+1)+' · Tag '+game.day;
  $('logLines').innerHTML=game.log.slice(0,6).map(x=>'<div>'+escapeHtml(x)+'</div>').join('');
- $('fleetList').innerHTML=game.ships.map(s=>'<div class="ship-row '+(s.id===selectedShipId?'selected':'')+'" onclick="selectShip(\\''+s.id+'\\')"><span class="ship-dot" style="background:'+shipType(s.type).color+'"></span><div><b>'+escapeHtml(s.name)+'</b><small>'+shipType(s.type).className+' · '+(s.trip?'Unterwegs nach '+port(s.trip.to).name:'Im Hafen: '+port(s.port).name)+'</small></div></div>').join('');
+ $('fleetList').innerHTML=game.ships.map(s=>'<div class="ship-row '+(s.id===selectedShipId?'selected':'')+'" onclick="selectShip(\''+s.id+'\')"><span class="ship-dot" style="background:'+shipType(s.type).color+'"></span><div><b>'+escapeHtml(s.name)+'</b><small>'+shipType(s.type).className+' · '+(s.trip?'Unterwegs nach '+port(s.trip.to).name:'Im Hafen: '+port(s.port).name)+'</small></div></div>').join('');
  const s=selectedShip();
  $('selectedShipLabel').textContent=s?s.name:'';
  const orders=eligibleContracts(s);
@@ -98,7 +98,7 @@ function baseRenderUI(){
  }else if(waitingForRoutes){
   $('ordersList').innerHTML='<div class="order"><h3>Wasserwege werden geprüft</h3><p class="notice">Aufträge werden erst angezeigt, wenn eine Route gefunden wurde, die weder Inseln noch Festland kreuzt.</p></div>';
  }else if(orders.length){
-  $('ordersList').innerHTML=orders.map(c=>'<div class="order"><h3>'+escapeHtml(c.company)+'</h3><p>'+port(c.from).name+' → '+port(c.to).name+'<br>'+cargo(c.cargo).icon+' '+cargo(c.cargo).name+'<br>Frist: '+c.deadline+' Spieltage</p><p>'+escapeHtml(c.desc)+'</p><div class="bonus">Bonus '+money(c.bonus*DIFFICULTIES[game.difficulty].revenue)+'</div><div class="contract-actions"><button type="button" class="route-preview-button" onclick="previewContractRoute(\\''+c.id+'\\')">Route ansehen</button><button class="primary" style="width:100%" onclick="acceptOrder(\\''+c.id+'\\')">Auftrag übernehmen</button></div></div>').join('');
+  $('ordersList').innerHTML=orders.map(c=>'<div class="order"><h3>'+escapeHtml(c.company)+'</h3><p>'+port(c.from).name+' → '+port(c.to).name+'<br>'+cargo(c.cargo).icon+' '+cargo(c.cargo).name+'<br>Frist: '+c.deadline+' Spieltage</p><p>'+escapeHtml(c.desc)+'</p><div class="bonus">Bonus '+money(c.bonus*DIFFICULTIES[game.difficulty].revenue)+'</div><div class="contract-actions"><button type="button" class="route-preview-button" onclick="previewContractRoute(\''+c.id+'\')">Route ansehen</button><button class="primary" style="width:100%" onclick="acceptOrder(\''+c.id+'\')">Auftrag übernehmen</button></div></div>').join('');
  }else{
   $('ordersList').innerHTML='<div class="order"><h3>Kein sicherer Auftrag gefunden</h3><p>Es wird kein Auftrag angeboten, dessen Wasserroute vollständig geprüft wurde und innerhalb der Schiffsreichweite liegt. Nach dem Laden weiterer Wasserwege wird automatisch erneut gesucht.</p></div>';
  }
