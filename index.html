@@ -129,7 +129,7 @@ function renderMapShips(){
  Object.values(shipMarkers).forEach(m=>map.removeLayer(m));shipMarkers={};routeLayers.forEach(l=>map.removeLayer(l));routeLayers=[];
  state.ships.forEach(s=>{
   let pos=port(s.port);
-  if(s.trip){const a=port(s.trip.from),b=port(s.trip.to);const t=Math.min(1,(state.day-s.trip.startDay)/s.trip.days);let dlon=b.lon-a.lon;if(dlon>180)dlon-=360;if(dlon< -180)dlon+=360;pos={lat:a.lat+(b.lat-a.lat)*t,lon:a.lon+dlon*t};const line=L.polyline([[a.lat,a.lon],[b.lat,b.lon]],{color:'#43e3d6',weight:2,opacity:.65,dashArray:'6 8'}).addTo(map);routeLayers.push(line);}
+  if(s.trip){const a=port(s.trip.from),b=port(s.trip.to);const t=Math.min(1,((state.day-s.trip.startDay)+simulationProgress)/s.trip.days);let dlon=b.lon-a.lon;if(dlon>180)dlon-=360;if(dlon< -180)dlon+=360;pos={lat:a.lat+(b.lat-a.lat)*t,lon:a.lon+dlon*t};const line=L.polyline([[a.lat,a.lon],[b.lat,b.lon]],{color:'#43e3d6',weight:2,opacity:.65,dashArray:'6 8'}).addTo(map);routeLayers.push(line);}
   const colors={feeder:'#53d6c7',panamax:'#6cb6ff',tanker:'#ffb45e',bulk:'#d7c4a1','ro-ro':'#f18bc8',ultra:'#b69cff'};const mk=L.marker([pos.lat,pos.lon],{icon:L.divIcon({className:'ship-icon',html:'<div class="ship-marker" style="background:'+colors[s.type]+';outline:1px solid #ffffffaa"><span>➤</span></div>',iconSize:[42,22],iconAnchor:[21,11]})}).addTo(map);
   mk.bindPopup('<b>'+s.name+'</b><br>'+type(s.type).name+'<br>'+(s.trip?'Unterwegs nach '+port(s.trip.to).name:'Liegt in '+port(s.port).name));mk.on('click',()=>{selectShip(s.id);});shipMarkers[s.id]=mk;
  });
