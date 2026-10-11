@@ -23,8 +23,11 @@ function setLoadingScreen(message,progress){
  const fill=$('loadingProgress');
  const percent=$('loadingPercent');
  if(label)label.textContent=message;
- if(fill)fill.style.width=Math.max(0,Math.min(100,progress))+'%';
- if(percent)percent.textContent=Math.round(Math.max(0,Math.min(100,progress)))+' %';
+ const value=Math.round(Math.max(0,Math.min(100,progress)));
+ if(fill)fill.style.width=value+'%';
+ const progressBar=overlay?.querySelector('[role="progressbar"]');
+ if(progressBar)progressBar.setAttribute('aria-valuenow',String(value));
+ if(percent)percent.textContent=value+' %';
 }
 function waitForWaterRouting(timeoutMs=36000){
  if(window.waterRouteDataReady===true&&typeof window.isWaterRouteSafe==='function')return Promise.resolve(true);
