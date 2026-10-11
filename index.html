@@ -255,3 +255,40 @@ function acceptOrder(contractId){
  addLog(s.name+' übernimmt Auftrag von '+c.company+': '+a.name+' → '+b.name+'.');
  saveGame();renderUI();renderShips();toast('Auftrag angenommen · '+days+' Spieltage geschätzt');
 }
+
+
+/* Startvorgang absichern: eine neue Firma darf nicht an einer noch nicht
+   verfügbaren Karte oder an einem fehlenden Hafen-Select scheitern. */
+function showNewGame(){
+ hideSetups();
+ $('menuActions').classList.add('hidden');
+ $('newGameSetup').classList.add('visible');
+ $('menuHeading').textContent='Neue Runde';
+ $('menuDescription').textContent='Benenne deine Firma, wähle den Hauptsitzhafen und den Schwierigkeitsgrad.';
+ $('companyInput').value='';
+ const hq=$('hqPort');
+ if(hq){
+  hq.innerHTML=PORTS.map(p=>'<option value="'+p.id+'">'+p.name+' — '+p.country+(p.river?' · Binnenhafen':'')+'</option>').join('');
+  hq.value='ham';
+ }
+ chooseDifficulty('easy');
+}
+function startNewGame(){
+ const name=($('companyInput')?.value||'').trim()||'Blue Horizon Shipping';
+ const hq=$('hqPort')?.value||'ham';
+ if(!port(hq)){toast('Der gewählte Hauptsitzhafen ist nicht verfügbar.');return;}
+ if(!confirm('Neue Runde für „'+name+'“ starten? Du beginnst ohne Schiffe.'))return;
+ try{
+  game=makeGame(name,selectedDifficulty,hq);
+  activeSlot=firstFreeSlot();if(activeSlot<0)activeSlot=0;
+  selectedShipId=null;
+  saveGame();
+  $('mainMenu').classList.add('hidden');
+  renderUI();
+  if(map){map.setView([port(hq).lat,port(hq).lon],5);map.invalidateSize();renderShips();}
+  toast('Firma gegründet – du startest ohne Schiffe.');
+ }catch(e){
+  console.error('Fehler beim Gründen der Firma:',e);
+  toast('Die Firma konnte nicht gestartet werden. Bitte Seite neu laden und erneut versuchen.');
+ }
+}
