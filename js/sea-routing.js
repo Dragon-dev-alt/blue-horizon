@@ -1,6 +1,3 @@
-import { seaRoute, seaRouteAlternatives } from 'https://esm.sh/searoute-ts@2.3.0';
-import { DEFAULT_MARNET } from 'https://esm.sh/searoute-ts@2.3.0/marnet-20km';
-import { feature } from 'https://esm.sh/topojson-client@3.1.0';
 
 /*
  * Maritime routing uses Eurostat's finer 20 km network.
@@ -9,17 +6,27 @@ import { feature } from 'https://esm.sh/topojson-client@3.1.0';
  * unchecked straight-line substitute.
  */
 window.waterRouteDataReady = false;
+window.waterRouteDataLoading = true;
 window.waterRouteDataError = null;
+let seaRouteImpl = null;
+let seaRouteAlternativesImpl = null;
+let DEFAULT_MARNET = null;
+let feature = null;
 const SEA_ROUTE_OPTIONS = {
   units: 'kilometers',
   network: DEFAULT_MARNET,
   antimeridian: 'unwrap',
   maxSnapDistanceKm: 100
 };
-window.searoute = (origin, destination) => seaRoute(origin, destination, SEA_ROUTE_OPTIONS);
-// Bei einer Landkollision weitere Netzwerkpfade versuchen, statt sofort aufzugeben.
-window.searouteAlternatives = (origin, destination, options = {}) =>
-  seaRouteAlternatives(origin, destination, { ...SEA_ROUTE_OPTIONS, ...options, k: 8 });
+window.searoute = (origin, destination) => {
+  if (typeof seaRouteImpl !== 'function') throw new Error('Das Routennetz ist noch nicht geladen.');
+  return seaRouteImpl(origin, destination, { ...SEA_ROUTE_OPTIONS, network: DEFAULT_MARNET });
+};
+// Alternative Pfade erst anfordern, wenn die normale Route die Landprüfung nicht besteht.
+window.searouteAlternatives = (origin, destination, options = {}) => {
+  if (typeof seaRouteAlternativesImpl !== 'function') throw new Error('Alternative Routen sind noch nicht geladen.');
+  return seaRouteAlternativesImpl(origin, destination, { ...SEA_ROUTE_OPTIONS, ...options, network: DEFAULT_MARNET, k: 3 });
+};
 
 let landPolygons = [];
 let landGrid = new Map();
@@ -27,8 +34,9 @@ const routeSafetyCache = new WeakMap();
 const CELL_DEGREES = 5;
 const GRID_X = 360 / CELL_DEGREES;
 const GRID_Y = 180 / CELL_DEGREES;
-// Häufige Stützpunkte verhindern, dass schmale Landzungen oder kleine Inseln übersprungen werden.
-const MAX_SAMPLE_KM = 0.25;
+// Die maritime Route enthält bereits viele Stützpunkte. 1,5 km prüfen Küsten engmaschig,
+// vermeiden aber die extrem teure 250-m-Abtastung bei jeder Alternative.
+const MAX_SAMPLE_KM = 1.5;
 
 function normalizeLongitude(lon) {
   while (lon > 180) lon -= 360;
@@ -136,15 +144,46 @@ window.isWaterRouteSafe = function (coords) {
 
 (async function loadLandMask() {
   try {
-    const response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/land-10m.json', { cache: 'force-cache' });
+    // Dynamische Imports machen Ladefehler sichtbar statt das Spiel dauerhaft im Ladezustand zu lassen.
+    const imports = Promise.all([
+      import('https://esm.sh/searoute-ts@2.3.0'),
+      import('https://esm.sh/searoute-ts@2.3.0/marnet-20km'),
+      import('https://esm.sh/topojson-client@3.1.0')
+    ]);
+    const [router, networkModule, topojson] = await Promise.race([
+      imports,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Die Routing-Bibliotheken antworten nicht rechtzeitig.')), 20000))
+    ]);
+    seaRouteImpl = router.seaRoute;
+    seaRouteAlternativesImpl = router.seaRouteAlternatives;
+    DEFAULT_MARNET = networkModule.DEFAULT_MARNET;
+    feature = topojson.feature;
+    if (typeof seaRouteImpl !== 'function' || typeof seaRouteAlternativesImpl !== 'function' ||
+        !DEFAULT_MARNET || typeof feature !== 'function') {
+      throw new Error('Die Routing-Bibliotheken wurden unvollständig geladen.');
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    let response;
+    try {
+      response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/land-10m.json', {
+        cache: 'force-cache',
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
     if (!response.ok) throw new Error('Landkarten-Daten konnten nicht geladen werden (HTTP ' + response.status + ').');
     addLandMask(await response.json());
+    window.waterRouteDataLoading = false;
     window.waterRouteDataReady = true;
     window.dispatchEvent(new Event('water-route-data-ready'));
     console.info('Wasser-Routing bereit: 20-km-Seenetz und 10m-Landprüfung.');
   } catch (error) {
+    window.waterRouteDataLoading = false;
     window.waterRouteDataError = error;
-    console.error('Wasser-Routing bleibt gesperrt, weil die Landprüfung nicht verfügbar ist:', error);
+    console.error('Wasser-Routing konnte nicht gestartet werden:', error);
     window.dispatchEvent(new Event('water-route-data-error'));
   }
 })();
