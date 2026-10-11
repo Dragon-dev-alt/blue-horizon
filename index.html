@@ -828,5 +828,121 @@ nextDay=function(){
 /* Completed dynamically generated contracts are handled the same as fixed contracts. */
 </script>
 
+
+<style>
+/* V1.6: robust ship selection and realistic market */
+#fleetWindowList .ship-row,#fleetList .ship-row{pointer-events:auto!important;cursor:pointer!important;position:relative;z-index:20}
+.leaflet-marker-icon.ship-icon{pointer-events:auto!important;cursor:pointer!important}
+#fleetWindow{z-index:9999!important}
+</style>
+<script>
+/* Capture clicks before legacy handlers/overlays can swallow them. */
+document.addEventListener('click',function(ev){
+ const row=ev.target&&ev.target.closest&&ev.target.closest('#fleetWindowList .ship-row,#fleetList .ship-row');
+ if(row){
+  const onclick=row.getAttribute('onclick')||'';
+  const match=onclick.match(/selectShip\(['"]([^'"]+)['"]\)/);
+  const id=row.dataset.shipId||(match&&match[1]);
+  if(id){ev.preventDefault();ev.stopImmediatePropagation();selectShip(id);const w=$('fleetWindow');if(w)w.classList.remove('hidden');}
+ }
+},true);
+/* Fleet rows receive a stable ID, independent of legacy inline HTML. */
+const _renderFleetV16=renderFleetWindow;
+renderFleetWindow=function(){
+ _renderFleetV16();
+ const list=$('fleetWindowList');
+ if(!list||!game)return;
+ [...list.querySelectorAll('.ship-row')].forEach((el,i)=>{
+  const s=game.ships[i];if(!s)return;
+  el.dataset.shipId=String(s.id);el.type='button';el.style.pointerEvents='auto';
+  el.onclick=null;
+  el.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();selectShip(s.id);const w=$('fleetWindow');if(w)w.classList.remove('hidden')});
+ });
+};
+const _renderUIV16=renderUI;
+renderUI=function(){
+ _renderUIV16();
+ const list=$('fleetList');
+ if(list&&game){
+  [...list.querySelectorAll('.ship-row')].forEach((el,i)=>{
+   const s=game.ships[i];if(!s)return;
+   el.dataset.shipId=String(s.id);el.style.pointerEvents='auto';
+   el.onclick=null;
+   el.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();selectShip(s.id)});
+  });
+ }
+ renderSelectedShipDetails();
+};
+/* Generated contracts must be navigable by at least one appropriate ship class. */
+function createHarborContracts(){
+ const rows=[];
+ const companyNames=['Oceanic Trade','Nordstern Logistics','BlueWave Cargo','Global Freight','HarborLink','RheinCargo','Danube Freight'];
+ PORTS.forEach(p=>{
+  const count=Math.floor(Math.random()*4);
+  const candidates=[];
+  for(const dest of PORTS){
+   if(dest.id===p.id)continue;
+   for(const st of SHIP_TYPES){
+    if(st.id==='river'){
+     if(!p.river||!dest.river)continue;
+    }else{
+     if(p.river||dest.river)continue;
+     if(!portCanServeShip(p,{type:st.id})||!portCanServeShip(dest,{type:st.id}))continue;
+    }
+    const cargos=CARGO.filter(c=>st.allowed.includes(c.id));
+    for(const cg of cargos){
+     const fakeShip={type:st.id,port:p.id,trip:null,inYard:false,range:st.range,condition:100};
+     const route=routeForContract({from:p.id,to:dest.id,cargo:cg.id},fakeShip);
+     if(!route||route.length<2)continue;
+     const km=route.reduce((sum,pt,i)=>i?sum+haversine({lat:route[i-1][1],lon:route[i-1][0]},{lat:pt[1],lon:pt[0]}):0,0);
+     if(km>st.range)continue;
+     candidates.push({dest,cg,st,km});
+    }
+   }
+  }
+  const chosen=[];
+  for(let i=0;i<count&&candidates.length;i++){
+   const ix=Math.floor(Math.random()*candidates.length),opt=candidates.splice(ix,1)[0];
+   if(chosen.some(x=>x.dest.id===opt.dest.id))continue;
+   chosen.push(opt);
+   const river=opt.st.id==='river';
+   rows.push({id:'market-'+game.day+'-'+p.id+'-'+i,company:river?'Rhein- und Binnenlogistik':companyNames[Math.floor(Math.random()*companyNames.length)],from:p.id,to:opt.dest.id,cargo:opt.cg.id,bonus:Math.round((river?4000:12000)+Math.random()*(river?14000:80000)),deadline:Math.max(3,Math.ceil(opt.km/(opt.st.speed*24))+4+Math.floor(Math.random()*12)),desc:(river?'Binnenwasserstraßen-Transport':'Seefrachtauftrag')+' von '+p.name+' nach '+opt.dest.name+'.'});
+  }
+ });
+ return rows;
+}
+function allContracts(){
+ if(!game)return CONTRACTS;
+ if(!Array.isArray(game.harborContracts))game.harborContracts=createHarborContracts();
+ return CONTRACTS.concat(game.harborContracts);
+}
+const _eligibleV16=eligibleContracts;
+eligibleContracts=function(s){
+ if(!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>o.shipId===s.id))return[];
+ ensureShipStats(s);
+ const st=shipType(s.type);
+ return allContracts().filter(c=>{
+  if(c.from!==s.port||c.to===c.from||!st.allowed.includes(c.cargo))return false;
+  const route=routeForContract(c,s);if(!route||route.length<2)return false;
+  const km=route.reduce((sum,pt,i)=>i?sum+haversine({lat:route[i-1][1],lon:route[i-1][0]},{lat:pt[1],lon:pt[0]}):0,0);
+  return km<=s.range;
+ });
+};
+const _acceptV16=acceptOrder;
+acceptOrder=function(contractId){
+ const c=allContracts().find(x=>String(x.id)===String(contractId));
+ const s=selectedShip();
+ if(!c){toast('Dieser Auftrag ist nicht mehr verfügbar.');return}
+ if(!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>o.shipId===s.id)||!shipType(s.type).allowed.includes(c.cargo)){toast('Dieser Auftrag passt nicht zum ausgewählten Schiff.');return}
+ if(c.from!==s.port){toast('Das Schiff muss sich im Start-Hafen des Auftrags befinden.');return}
+ const route=routeForContract(c,s);
+ if(!route||route.length<2){toast('Diese Route ist für diesen Schiffstyp nicht schiffbar.');return}
+ const km=route.reduce((sum,pt,i)=>i?sum+haversine({lat:route[i-1][1],lon:route[i-1][0]},{lat:pt[1],lon:pt[1]}):0,0);
+ if(km>s.range){toast('Die Route überschreitet die Reichweite dieses Schiffs.');return}
+ if(!CONTRACTS.some(x=>x.id===c.id))CONTRACTS.push(c);
+ _acceptV16(contractId);
+};
+</script>
+
 </body>
 </html>
