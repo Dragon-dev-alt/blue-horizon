@@ -182,16 +182,18 @@ function nextDay(){
 }
 function renderLog(){$('log').innerHTML=state.logs.map(x=>'<div class="log-entry">'+x+'</div>').join('')||'<span class="muted">Noch keine Ereignisse. Plane deine erste Route.</span>'}
 function renderAll(){$('cash').textContent=fmt(state.cash);$('dayCount').textContent='Tag '+state.day;$('dateLabel').textContent='Jahr '+(Math.floor((state.day-1)/365)+1)+' · Tag '+(((state.day-1)%365)+1);$('rep').textContent='⭐ '+state.rep;renderFleet();renderLog();updateEstimate();save()}
-let selectedYardType='panamax';
-function openMarket(){renderYard()}
-function renderYard(){
- const categories=[['coastal','Coastal'],['medium','Mitteldistanz'],['long','Langstrecke'],['river','Binnenschiff']];
- const extras=[
+const specialistTypes=
  {id:'coastal',name:'Coastal Feeder',icon:'🚢',price:420000,speed:13,capacity:180,upkeep:4200,allowed:['containers','electronics','food','urgent'],desc:'Küstenschiff für kurze Strecken.'},
  {id:'medium',name:'Regionaler Frachter',icon:'🛳️',price:950000,speed:17,capacity:550,upkeep:9000,allowed:['containers','electronics','food','urgent'],desc:'Für mittlere Routen zwischen Nachbarregionen.'},
  {id:'long',name:'Interkontinental-Frachter',icon:'🚢',price:2350000,speed:21,capacity:1450,upkeep:22000,allowed:['containers','electronics','food','urgent'],desc:'Großes Schiff für Langstrecken.'},
  {id:'river',name:'Binnenschiff',icon:'⛴️',price:280000,speed:8,capacity:260,upkeep:2500,allowed:['bulk','containers'],desc:'Für Flüsse und Binnenwasserstraßen; Binnenrouten sind noch in Entwicklung.'}];
- window.yardTypes=[...shipTypes,...extras];const chosen=window.yardTypes.find(t=>t.id===selectedYardType)||shipTypes[0];
+shipTypes.push(...specialistTypes);
+let selectedYardType='panamax';
+function openMarket(){renderYard()}
+function renderYard(){
+ const categories=[['coastal','Coastal'],['medium','Mitteldistanz'],['long','Langstrecke'],['river','Binnenschiff']];
+ const extras=specialistTypes;
+ window.yardTypes=shipTypes;const chosen=window.yardTypes.find(t=>t.id===selectedYardType)||shipTypes[0];
  $('modalTitle').textContent='⚓ Werft — Schiffsklassen';
  $('modalBody').innerHTML='<p class="muted" style="margin:0;font-size:12px">Wähle eine Klasse aus, um die verfügbaren Schiffe dieser Kategorie anzuzeigen.</p><div class="ship-type-tabs">'+categories.map(x=>'<button class="'+(selectedYardType===x[0]?'active':'')+'" onclick="selectedYardType=\''+x[0]+'\';renderYard()">'+x[1]+'</button>').join('')+shipTypes.map(t=>'<button class="'+(selectedYardType===t.id?'active':'')+'" onclick="selectedYardType=\''+t.id+'\';renderYard()">'+t.name+'</button>').join('')+'</div><div class="market-grid">'+window.yardTypes.filter(t=>t.id===selectedYardType).map(t=>'<div class="market-card"><h3>'+t.icon+' '+t.name+'</h3><p>'+t.desc+'<br>Geschwindigkeit: '+t.speed+' kn · Kapazität: '+t.capacity.toLocaleString('de-DE')+' Einheiten<br>Unterhalt: '+fmt(t.upkeep)+'/Woche</p><div class="price">'+fmt(t.price)+'</div><button class="primary full" onclick="buyShip(\''+t.id+'\')">Schiff kaufen</button></div>').join('')+'</div><div class="coming-soon"><b>🧍 Passagierbeförderung — Coming soon</b><div style="font-size:11px;margin-top:5px">Personenbeförderung ist geplant, aber noch nicht spielbar.</div></div>';
  $('modalBg').classList.add('open');
