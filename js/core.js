@@ -158,14 +158,21 @@ function renderSaveList(){$('saveList').innerHTML=Array.from({length:5},(_,i)=>{
 function removeLegacyStarterShip(savedGame){
  if(!savedGame||!Array.isArray(savedGame.ships))return false;
  const initialIndex=savedGame.ships.findIndex(ship=>{
-  if(!ship||String(ship.id)!=='s1'||ship.trip||ship.inYard||ship.acquisitionPrice!=null)return false;
+  if(!ship||String(ship.id)!=='s1'||ship.acquisitionPrice!=null)return false;
   const type=shipType(ship.type);
-  if(!type||ship.name!==type.name+' s1')return false;
-  // Alte Spielstände enthielten das kostenlose s1 exakt am gewählten Hauptsitz.
-  return !savedGame.hq||String(ship.port)===String(savedGame.hq);
+  // Nur das eindeutig benannte kostenlose Alt-Startschiff entfernen.
+  // Ein gekaufter s1-Slot hat einen Angebotsnamen und einen Kaufpreis.
+  return !!type&&ship.name===type.name+' s1';
  });
  if(initialIndex<0)return false;
+ const starter=savedGame.ships[initialIndex];
  savedGame.ships.splice(initialIndex,1);
+ if(Array.isArray(savedGame.generatedContracts)){
+  savedGame.generatedContracts=savedGame.generatedContracts.filter(c=>String(c.assignedShipId)!==String(starter.id));
+ }
+ if(Array.isArray(savedGame.repairOrders)){
+  savedGame.repairOrders=savedGame.repairOrders.filter(o=>String(o.shipId)!==String(starter.id));
+ }
  return true;
 }
 function loadGameSlot(slot){
