@@ -53,7 +53,17 @@ const PORTS=[
 {id:'pad',name:'Paducah',country:'USA',lat:37.08,lon:-88.6,demand:.9,river:true},
 {id:'dyb',name:'Dyersburg',country:'USA',lat:36.03,lon:-89.38,demand:.9,river:true},
 {id:'yue',name:'Yueyang',country:'China',lat:29.37,lon:113.09,demand:.9,river:true},
-{id:'ful',name:'Fuling',country:'China',lat:29.7,lon:107.4,demand:.9,river:true}
+{id:'ful',name:'Fuling',country:'China',lat:29.7,lon:107.4,demand:.9,river:true},
+{id:'nas',name:'Nassau',country:'Bahamas',lat:25.08,lon:-77.35,demand:1.0},
+{id:'klg',name:'Port Klang',country:'Malaysia',lat:3.0,lon:101.4,demand:1.12},
+{id:'qdo',name:'Qingdao',country:'China',lat:36.07,lon:120.38,demand:1.15},
+{id:'izm',name:'Izmir',country:'Türkei',lat:38.42,lon:27.14,demand:1.0},
+{id:'sby',name:'Surabaya',country:'Indonesien',lat:-7.2,lon:112.73,demand:1.04},
+{id:'ceb',name:'Cebu',country:'Philippinen',lat:10.31,lon:123.9,demand:.98},
+{id:'lax',name:'Los Angeles',country:'USA',lat:33.74,lon:-118.27,demand:1.23},
+{id:'hkg',name:'Hongkong',country:'China',lat:22.3,lon:114.17,demand:1.33},
+{id:'nou',name:'Nouakchott',country:'Mauretanien',lat:18.07,lon:-15.97,demand:.9},
+{id:'lud',name:'Lüderitz',country:'Namibia',lat:-26.65,lon:15.15,demand:.88}
 ];
 const CARGO=[
 {id:'containers',name:'Standardcontainer',icon:'📦',fee:170,capacity:1,speed:1,handling:1,types:['coastal','medium','long','ultra']},
