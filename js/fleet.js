@@ -51,7 +51,7 @@ function allContracts(){
  return CONTRACTS.concat(game.generatedContracts);
 }
 function routeDistanceNauticalMiles(coords){
- return coords.reduce((sum,p,i)=>i?sum+haversine({lat:coords[i-1][1],lon:coords[i-1][0]},{lat:p[1],lon:p[0]}):0,0);
+ return Array.isArray(coords)&&coords.length>1?getRouteMetrics(coords).total:0;
 }
 function contractBelongsToShip(c,s){
  return !!c&&!!s&&(!c.assignedShipId||String(c.assignedShipId)===String(s.id))&&
@@ -97,6 +97,7 @@ function generateGuaranteedContract(s){
   contract.deadline=Math.max(5,Math.ceil(distanceNm/(st.speed*24*freight.speed)+freight.handling+3));
   game.nextContractId=(game.nextContractId||1)+1;
   game.generatedContracts.push(contract);
+  saveGame();
   return contract;
  }
  return null;
