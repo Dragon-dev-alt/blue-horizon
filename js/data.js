@@ -35,7 +35,18 @@ const PORTS=[
 {id:'naw',name:'New Orleans',country:'USA',lat:29.95,lon:-90.07,demand:1.03},
 {id:'sea',name:'Seattle',country:'USA',lat:47.61,lon:-122.33,demand:1.05},
 {id:'sfo',name:'San Francisco',country:'USA',lat:37.77,lon:-122.42,demand:1.12},
-{id:'bos',name:'Boston',country:'USA',lat:42.36,lon:-71.06,demand:1.06}
+{id:'bos',name:'Boston',country:'USA',lat:42.36,lon:-71.06,demand:1.06},
+{id:'mus',name:'Maskat',country:'Oman',lat:23.59,lon:58.54,demand:1.0},
+{id:'gwa',name:'Gwadar',country:'Pakistan',lat:25.12,lon:62.32,demand:.92},
+{id:'che',name:'Chennai',country:'Indien',lat:13.08,lon:80.27,demand:1.07},
+{id:'dar',name:'Daressalam',country:'Tansania',lat:-6.82,lon:39.28,demand:.97},
+{id:'wel',name:'Wellington',country:'Neuseeland',lat:-41.28,lon:174.78,demand:.95},
+{id:'nag',name:'Nagoya',country:'Japan',lat:35.09,lon:136.88,demand:1.04},
+{id:'kao',name:'Kaohsiung',country:'Taiwan',lat:22.63,lon:120.3,demand:1.07},
+{id:'dkr',name:'Dakar',country:'Senegal',lat:14.69,lon:-17.45,demand:1.02},
+{id:'wvb',name:'Walvis Bay',country:'Namibia',lat:-22.96,lon:14.51,demand:.96},
+{id:'ger',name:'Geraldton',country:'Australien',lat:-28.78,lon:114.61,demand:.92},
+{id:'bun',name:'Bunbury',country:'Australien',lat:-33.33,lon:115.64,demand:.92}
 ];
 const CARGO=[
 {id:'containers',name:'Standardcontainer',icon:'📦',fee:170,capacity:1,speed:1,handling:1,types:['coastal','medium','long','ultra']},
