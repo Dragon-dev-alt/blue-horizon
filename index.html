@@ -944,5 +944,108 @@ acceptOrder=function(contractId){
 };
 </script>
 
+
+<style>
+/* V1.7 interaction fix: make the actual Leaflet icon and its inner shape hit-testable */
+.leaflet-marker-icon.ship-icon,.leaflet-marker-icon.ship-icon *,.ship-icon,.ship-icon *,.ship-shape{pointer-events:auto!important;cursor:pointer!important}
+#fleetWindow,#fleetWindow .menu-card,#fleetWindowList,#fleetWindowList .ship-row{pointer-events:auto!important}
+#fleetWindow{z-index:99999!important}
+</style>
+<script>
+/* Robust delegation: bind directly to the live Leaflet marker DOM after every redraw. */
+function wireShipClickTargets(){
+ if(!game)return;
+ Object.keys(shipMarkers).forEach(id=>{
+  const marker=shipMarkers[id],el=marker&&marker.getElement&&marker.getElement();
+  if(!el||el.dataset.shipClickWired==='yes')return;
+  el.dataset.shipClickWired='yes';
+  el.style.pointerEvents='auto';el.style.cursor='pointer';
+  el.addEventListener('click',function(e){
+   e.preventDefault();e.stopPropagation();
+   selectShip(id);
+  },true);
+ });
+ const mapEl=map&&map.getContainer();
+ if(mapEl&&mapEl.dataset.shipClickWired!=='yes'){
+  mapEl.dataset.shipClickWired='yes';
+  mapEl.addEventListener('click',function(e){
+   const el=e.target&&e.target.closest&&e.target.closest('.ship-icon,.ship-shape');
+   if(!el)return;
+   const id=Object.keys(shipMarkers).find(k=>{const marker=shipMarkers[k],node=marker&&marker.getElement&&marker.getElement();return node&&(node===el||node.contains(el))});
+   if(id){e.preventDefault();e.stopPropagation();selectShip(id)}
+  },true);
+ }
+}
+const _renderShipsV17=renderShips;
+renderShips=function(){_renderShipsV17();wireShipClickTargets()};
+const _initMapV17=initMap;
+initMap=function(){_initMapV17();wireShipClickTargets()};
+const _renderFleetV17=renderFleetWindow;
+renderFleetWindow=function(){
+ _renderFleetV17();
+ const list=$('fleetWindowList');
+ if(!list||!game)return;
+ [...list.querySelectorAll('.ship-row')].forEach((el,i)=>{
+  const ship=game.ships[i];if(!ship)return;
+  el.dataset.shipId=String(ship.id);
+  el.style.cssText+=';pointer-events:auto!important;cursor:pointer!important;position:relative;z-index:99999';
+  el.onclick=null;
+  el.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();selectShip(ship.id);const w=$('fleetWindow');if(w)w.classList.remove('hidden')});
+ });
+};
+const _renderUIV17=renderUI;
+renderUI=function(){
+ _renderUIV17();
+ const list=$('fleetList');
+ if(list&&game)[...list.querySelectorAll('.ship-row')].forEach((el,i)=>{
+  const ship=game.ships[i];if(!ship)return;
+  el.dataset.shipId=String(ship.id);
+  el.style.pointerEvents='auto';el.style.cursor='pointer';
+  el.onclick=null;
+  el.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();selectShip(ship.id)});
+ });
+ wireShipClickTargets();
+ renderSelectedShipDetails();
+};
+/* One shared validation gate for harbor listings, ship-specific listings, and acceptance.
+   Old invalid contracts in local saves are filtered out instead of lingering for weeks. */
+function contractHasNavigableShip(c){
+ const a=port(c.from),b=port(c.to);
+ if(!a||!b||a.id===b.id||!cargo(c.cargo))return false;
+ return SHIP_TYPES.some(st=>{
+  if(!st.allowed.includes(c.cargo))return false;
+  if(st.id==='river'){if(!a.river||!b.river)return false}
+  else if(a.river||b.river)return false;
+  const route=routeForContract(c,{type:st.id,port:a.id,range:st.range});
+  if(!route||route.length<2)return false;
+  const km=route.reduce((sum,pt,i)=>i?sum+haversine({lat:route[i-1][1],lon:route[i-1][0]},{lat:pt[1],lon:pt[0]}):0,0);
+  return km<=st.range;
+ });
+}
+const _allContractsV17=allContracts;
+allContracts=function(){
+ const rows=_allContractsV17();
+ const valid=rows.filter(contractHasNavigableShip);
+ if(game&&Array.isArray(game.harborContracts)){
+  const validIds=new Set(valid.map(c=>c.id));
+  game.harborContracts=game.harborContracts.filter(c=>validIds.has(c.id));
+ }
+ return valid;
+};
+const _openHarborV17=openHarborWindow;
+openHarborWindow=function(portId){allContracts();_openHarborV17(portId)};
+const _eligibleV17=eligibleContracts;
+eligibleContracts=function(s){
+ if(!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>o.shipId===s.id))return[];
+ ensureShipStats(s);
+ return allContracts().filter(c=>{
+  if(c.from!==s.port||!shipType(s.type).allowed.includes(c.cargo))return false;
+  const route=routeForContract(c,s);if(!route||route.length<2)return false;
+  const km=route.reduce((sum,pt,i)=>i?sum+haversine({lat:route[i-1][1],lon:route[i-1][0]},{lat:pt[1],lon:pt[0]}):0,0);
+  return km<=s.range;
+ });
+};
+</script>
+
 </body>
 </html>
