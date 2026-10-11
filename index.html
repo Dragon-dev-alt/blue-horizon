@@ -152,12 +152,41 @@ function generateStock(){const stock={};SHIP_TYPES.forEach(t=>stock[t.id]=Math.f
 function makeGame(name,difficulty,hq){const g=_oldMakeGame(name,difficulty,hq);g.ships=[];g.nextShipId=1;g.usedStock=generateStock();g.buildOrders=[];g.repairOrders=[];g.hq=hq||'ham';return g}
 function showNewGame(){hideSetups();$('menuActions').classList.add('hidden');$('newGameSetup').classList.add('visible');$('menuHeading').textContent='Neue Runde';$('menuDescription').textContent='Benenne deine Firma, wähle den Hauptsitzhafen und den Schwierigkeitsgrad.';$('companyInput').value='';$('hqPort').innerHTML=PORTS.map(p=>'<option value="'+p.id+'">'+p.name+' — '+p.country+(p.river?' · Binnenhafen':'')+'</option>').join('');$('hqPort').value='ham';chooseDifficulty('easy')}
 function startNewGame(){const name=$('companyInput').value.trim()||'Blue Horizon Shipping',hq=$('hqPort').value;if(!hq){toast('Bitte Hauptsitzhafen wählen.');return}if(!confirm('Neue Runde für „'+name+'“ starten? Du beginnst ohne Schiffe.'))return;game=makeGame(name,selectedDifficulty,hq);activeSlot=firstFreeSlot();if(activeSlot<0)activeSlot=0;selectedShipId=null;saveGame();$('mainMenu').classList.add('hidden');renderUI();renderShips();map.setView([port(hq).lat,port(hq).lon],5);map.invalidateSize();toast('Firma gegründet – du startest ohne Schiffe.')}
+/* Werft-Oberfläche: erst Kaufweg wählen, dann Details anzeigen. */
+var yardMode='home';
 function renderShipyard(){
- const d=DIFFICULTIES[game.difficulty];if(!game.usedStock)game.usedStock=generateStock();if(!game.buildOrders)game.buildOrders=[];if(!game.repairOrders)game.repairOrders=[];
- const opts=SHIP_TYPES.map(t=>'<option value="'+t.id+'">'+t.className+' — '+t.name+' ('+(game.usedStock[t.id]||0)+' gebraucht verfügbar)</option>').join('');
- const typeId=$('yardType')?.value||SHIP_TYPES[0].id, t=shipType(typeId),stock=game.usedStock[typeId]||0;
- $('yardContent').innerHTML='<p class="notice">Gebrauchte Schiffe haben 10–90 % Zustand. Neubauten starten mit 100 %. Kosten und Unterhalt hängen von der Schwierigkeit ab.</p><div class="field"><label>Schiffstyp auswählen</label><select id="yardType" onchange="renderShipyard()">'+opts+'</select></div><div class="order"><h3>'+t.name+'</h3><p>'+t.desc+'<br>Klasse: '+t.className+' · '+t.speed+' kn · Kapazität '+t.capacity+' Einheiten<br>Unterhalt: '+money(t.upkeep*d.upkeep)+'/Tag</p><div class="bonus">'+stock+' gebrauchte Schiffe verfügbar</div>'+(stock?'<button class="primary" onclick="buyUsedShip(\''+typeId+'\')">Gebraucht kaufen · '+money(t.price*.48*d.cost)+'–'+money(t.price*.88*d.cost)+'</button>':'<button disabled>Derzeit ausverkauft</button>')+'<p>Neubauzeit: '+t.buildDays+' Tage · Neubaupreis: '+money(t.price*1.35*d.cost)+'</p><button onclick="orderNewShip(\''+typeId+'\')">Individuellen Neubau beauftragen</button></div><div class="order"><h3>🏗️ Zustand verbessern</h3><p>Wähle ein Schiff aus deiner Flotte und stelle es zur Überholung in die Werft.</p><select id="repairShip">'+game.ships.map(s=>'<option value="'+s.id+'">'+s.name+' · '+shipType(s.type).name+' · '+s.condition+' %</option>').join('')+'</select><p>Reparaturen kosten Geld und setzen das Schiff für die Dauer außer Betrieb.</p><button onclick="repairSelectedShip()">Schiff überholen</button></div><div class="order"><h3>⏳ Bestellungen in Arbeit</h3>'+(game.buildOrders.length?game.buildOrders.map(o=>'<p>'+escapeHtml(o.name)+' — '+shipType(o.type).name+' · noch '+o.remaining+' Tage</p>').join(''):'<p class="notice">Keine Neubauten.</p>')+(game.repairOrders.length?game.repairOrders.map(o=>'<p>Überholung '+escapeHtml(o.name)+' · noch '+o.remaining+' Tage</p>').join(''):'')+'</div>';
- $('yardType').value=typeId;
+ if(!game)return;
+ const d=DIFFICULTIES[game.difficulty];
+ if(!game.usedStock)game.usedStock=generateStock();
+ if(!game.buildOrders)game.buildOrders=[];
+ if(!game.repairOrders)game.repairOrders=[];
+ const intro='<p class="notice">Schwierigkeitsgrad: '+d.label+' · Preise angepasst an die Schwierigkeit.</p>';
+ const back='<button style="width:100%;margin-top:10px" onclick="yardMode=\'home\';renderShipyard()">← Zur Werft-Auswahl</button>';
+ if(yardMode==='home'){
+  $('yardContent').innerHTML=intro+
+   '<div class="order"><h3>🚢 Gebrauchte Schiffe</h3><p>Kaufe ein sofort verfügbares Schiff. Preis und Zustand unterscheiden sich je nach Angebot.</p><button class="primary" style="width:100%" onclick="yardMode=\'used\';renderShipyard()">Gebrauchte Schiffe auswählen</button></div>'+
+   '<div class="order"><h3>🏗️ Individueller Schiffsbau</h3><p>Stelle später dein eigenes Schiff nach deinen Wünschen zusammen.</p><button style="width:100%" disabled>Coming soon</button><p class="notice">Individueller Schiffstyp, Ausstattung und technische Werte werden später ergänzt.</p></div>'+
+   '<div class="order"><h3>🛠️ Reparaturen</h3><p>Schiffe mit Gebrauchsspuren kannst du in die Werft zur Überholung geben.</p><button style="width:100%" onclick="yardMode=\'used\';renderShipyard()">Flotte und Reparaturen öffnen</button></div>'+
+   '<div class="order"><h3>⏳ Bestellungen in Arbeit</h3>'+
+   ((game.buildOrders.length?game.buildOrders.map(o=>'<p>'+escapeHtml(o.name)+' — '+shipType(o.type).name+' · noch '+o.remaining+' Tage</p>').join(''):'<p class="notice">Keine Neubauten in Arbeit.</p>')+
+   (game.repairOrders.length?game.repairOrders.map(o=>'<p>Überholung '+escapeHtml(o.name)+' · noch '+o.remaining+' Tage</p>').join(''):'') )+'</div>';
+  return;
+ }
+ const typeId=$('yardType')?.value||SHIP_TYPES[0].id;
+ const selected=shipType(typeId);
+ const opts=SHIP_TYPES.map(t=>'<option value="'+t.id+'" '+(t.id===typeId?'selected':'')+'>'+t.name+' · '+(game.usedStock[t.id]||0)+' verfügbar</option>').join('');
+ const stock=game.usedStock[typeId]||0;
+ const conditionText=stock?'Gebrauchte Schiffe haben zufällige Zustände zwischen 10 % und 90 %.':'Für diesen Typ ist aktuell kein gebrauchtes Schiff verfügbar.';
+ const purchase=stock?'<button class="primary" style="width:100%" onclick="buyUsedShip(\''+typeId+'\')">Gebraucht kaufen · '+money(Math.round(selected.price*.48*d.cost))+'–'+money(Math.round(selected.price*.88*d.cost))+'</button>':'<button style="width:100%" disabled>Derzeit ausverkauft</button>';
+ const repairOptions=game.ships.map(sh=>'<option value="'+sh.id+'">'+escapeHtml(sh.name)+' · '+sh.condition+' %</option>').join('');
+ $('yardContent').innerHTML=intro+back+
+  '<div class="field" style="margin-top:14px"><label for="yardType">Schiffstyp auswählen</label><select id="yardType" onchange="renderShipyard()">'+opts+'</select></div>'+
+  '<div class="order"><h3>'+selected.name+'</h3><p>'+selected.desc+'<br>Geschwindigkeit: '+selected.speed+' kn · Kapazität: '+selected.capacity+' Einheiten<br>Unterhalt: '+money(Math.round(selected.upkeep*d.upkeep))+'/Tag</p><div class="bonus">'+stock+' verfügbar</div><p class="notice">'+conditionText+'</p>'+purchase+'</div>'+
+  '<div class="order"><h3>🛠️ Schiffe reparieren</h3>'+
+  (game.ships.length?'<div class="field"><label for="repairShip">Schiff auswählen</label><select id="repairShip">'+repairOptions+'</select></div><p>Die Reparatur kostet Geld und das Schiff ist währenddessen außer Betrieb.</p><button style="width:100%" onclick="repairSelectedShip()">Ausgewähltes Schiff überholen</button>':'<p class="notice">Du hast noch keine Schiffe, die repariert werden können.</p>')+
+  '</div><div class="order"><h3>⏳ Bestellungen in Arbeit</h3>'+
+  ((game.buildOrders.length?game.buildOrders.map(o=>'<p>'+escapeHtml(o.name)+' — '+shipType(o.type).name+' · noch '+o.remaining+' Tage</p>').join(''):'<p class="notice">Keine Neubauten in Arbeit.</p>')+
+  (game.repairOrders.length?game.repairOrders.map(o=>'<p>Überholung '+escapeHtml(o.name)+' · noch '+o.remaining+' Tage</p>').join(''):'') )+'</div>';
 }
 function buyUsedShip(typeId){const t=shipType(typeId),d=DIFFICULTIES[game.difficulty];if(!game.usedStock)game.usedStock=generateStock();if((game.usedStock[typeId]||0)<=0){toast('Dieser Typ ist ausverkauft.');return}const condition=10+Math.floor(Math.random()*81),price=Math.round(t.price*(.48+(.9-condition/100)*.4)*d.cost);if(game.cash<price){toast('Nicht genug Kapital.');return}game.cash-=price;game.usedStock[typeId]--;const id='s'+game.nextShipId++;const name=t.name+' '+id;game.ships.push({id,name,type:typeId,port:game.hq||'ham',trip:null,condition,deliveryRemaining:0});selectedShipId=id;addLog('Gebrauchtes Schiff gekauft: '+name+' ('+condition+' % Zustand).');saveGame();renderUI();renderShips();openShipyard();toast('Gebrauchtes Schiff gekauft · Zustand '+condition+' %')}
 function orderNewShip(typeId){const t=shipType(typeId),d=DIFFICULTIES[game.difficulty],price=Math.round(t.price*1.35*d.cost);if(game.cash<price){toast('Nicht genug Kapital für den Neubau.');return}if(!game.buildOrders)game.buildOrders=[];game.cash-=price;const id='s'+game.nextShipId++,name=t.name+' Neubau '+id;game.buildOrders.push({id,name,type:typeId,remaining:t.buildDays,port:game.hq||'ham'});addLog('Neubau beauftragt: '+name+'; Lieferung in etwa '+t.buildDays+' Tagen.');saveGame();renderUI();renderShipyard();toast('Neubau in Auftrag gegeben.')}
