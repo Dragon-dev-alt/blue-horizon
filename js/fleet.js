@@ -138,7 +138,7 @@ function acceptOrder(contractId){
  const hq=game.hq||'ham',hqBonus=(c.from===hq||c.to===hq)?0.10:0;
  revenue=Math.round(revenue*(1+hqBonus));
  const days=Math.max(1,Math.ceil(distance/(st.speed*24*t.speed)+t.handling+1));
- s.trip={contractId:c.id,from:c.from,to:c.to,cargo:c.cargo,coords,progress:0,distance,days,daysElapsed:0,revenue,baseRevenue:Math.round(units*t.fee*((a.demand+b.demand)/2)*diff.revenue+c.bonus*diff.revenue),hqBonus,units,cost:Math.round((distance*22+days*st.upkeep/7)*diff.cost)};
+ s.trip={contractId:c.id,from:c.from,to:c.to,cargo:c.cargo,coords,routeSmoothed:s.type!=='river',progress:0,distance,days,daysElapsed:0,revenue,baseRevenue:Math.round(units*t.fee*((a.demand+b.demand)/2)*diff.revenue+c.bonus*diff.revenue),hqBonus,units,cost:Math.round((distance*22+days*st.upkeep/7)*diff.cost)};
  s.status='sailing';selectedShipId=s.id;previewedRouteShipId=null;previewedRouteContractId=null;
  addLog(s.name+' übernimmt Auftrag von '+c.company+': '+a.name+' → '+b.name+(hqBonus?' · 10 % Hauptsitzbonus':'')+'.');
  saveGame();renderUI();renderShips();showSelectedShipRoute(true);
@@ -149,10 +149,20 @@ function revalidateExistingTripRoutes(){
  if(!game||!window.waterRouteDataReady)return;
  game.ships.forEach(s=>{
   if(!s.trip||s.type==='river')return;
-  if(Array.isArray(s.trip.coords)&&window.isWaterRouteSafe(s.trip.coords))return;
+  if(Array.isArray(s.trip.coords)&&window.isWaterRouteSafe(s.trip.coords)){
+   if(!s.trip.routeSmoothed){
+    const smoothed=smoothWaterRoute(s.trip.coords);
+    if(smoothed!==s.trip.coords){
+     s.trip.coords=smoothed;
+     s.trip.distance=routeDistanceNauticalMiles(smoothed);
+    }
+    s.trip.routeSmoothed=true;
+   }
+   return;
+  }
   const from=s.trip.from||s.port,to=s.trip.to;
   const replacement=port(from)&&port(to)?baseComputeWaterRoute(port(from),port(to)):null;
-  if(replacement){s.trip.coords=replacement;s.trip.distance=routeDistanceNauticalMiles(replacement);addLog('Sicherheitsprüfung: Route von '+port(from).name+' nach '+port(to).name+' aktualisiert.');}
+  if(replacement){s.trip.coords=replacement;s.trip.distance=routeDistanceNauticalMiles(replacement);s.trip.routeSmoothed=true;addLog('Sicherheitsprüfung: Route von '+port(from).name+' nach '+port(to).name+' aktualisiert.');}
   else{ s.trip=null;s.port=from;s.status='idle';addLog('Eine alte Route für '+s.name+' wurde gestoppt, da keine sichere Wasserroute verfügbar war.'); }
  });
 }
@@ -168,6 +178,16 @@ function showSelectedShipRoute(fitBounds=false){
  let coords=null,isActiveTrip=!!s.trip,contract=null;
  if(isActiveTrip&&Array.isArray(s.trip.coords)&&s.trip.coords.length>1){
   coords=s.trip.coords;
+  if(s.type!=='river'&&window.isWaterRouteSafe&&window.isWaterRouteSafe(coords)&&!s.trip.routeSmoothed){
+   const smoothed=smoothWaterRoute(coords);
+   if(smoothed!==coords){
+    coords=smoothed;
+    s.trip.coords=smoothed;
+    s.trip.distance=routeDistanceNauticalMiles(smoothed);
+   }
+   s.trip.routeSmoothed=true;
+   saveGame();
+  }
   if(s.type!=='river'&&window.isWaterRouteSafe&&!window.isWaterRouteSafe(coords)){
    const replacement=routeForContract({from:s.trip.from,to:s.trip.to},s);
    if(replacement&&replacement.length>1){coords=replacement;s.trip.coords=replacement;s.trip.distance=routeDistanceNauticalMiles(replacement);saveGame()}
