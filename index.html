@@ -1271,5 +1271,105 @@ setSpeed=function(speed){_setSpeedV20(speed);[['pauseBtn',0],['playBtn',1],['fas
 window.addEventListener('load',wirePortClickTargets);
 </script>
 
+<style>
+/* Blue Horizon: one consistent top-bar button palette */
+.top-actions button,.top-actions button.primary,.top-actions button.active{
+ background:#16384b!important;color:#e9f4fa!important;border:1px solid #31566b!important;
+ box-shadow:none!important;filter:none!important;opacity:1!important;font-weight:600
+}
+.top-actions button:hover{background:#20516a!important;color:#fff!important;border-color:#47d8d0!important}
+.top-actions button:focus-visible{outline:2px solid #47d8d0!important;outline-offset:2px}
+#playBtn.active,#pauseBtn.active,#fastBtn.active{
+ background:#087f83!important;color:#fff!important;border-color:#47d8d0!important;
+ box-shadow:inset 0 0 0 1px #47d8d0!important
+}
+#fleetWindowList .ship-row,#fleetList .ship-row{color:#e9f4fa!important;background:#102a3b!important;pointer-events:auto!important;cursor:pointer!important;touch-action:manipulation}
+#fleetWindowList .ship-row.selected,#fleetList .ship-row.selected{background:#153b4c!important;outline:2px solid #47d8d0!important;outline-offset:-2px}
+.leaflet-marker-pane .leaflet-marker-icon,.leaflet-overlay-pane .leaflet-interactive{pointer-events:auto!important;cursor:pointer!important}
+</style>
+<script>
+/* Central interaction layer. Selection is state-first; rendering errors cannot undo it. */
+function selectShip(id){
+ if(!game||!Array.isArray(game.ships))return;
+ const ship=game.ships.find(s=>String(s.id)===String(id));
+ if(!ship)return;
+ selectedShipId=ship.id;
+ document.querySelectorAll('#fleetWindowList .ship-row,#fleetList .ship-row').forEach(row=>{
+  row.classList.toggle('selected',String(row.dataset.shipId)===String(ship.id));
+ });
+ try{renderUI()}catch(err){console.error('[Blue Horizon] renderUI after ship selection:',err)}
+ try{renderShips()}catch(err){console.error('[Blue Horizon] renderShips after ship selection:',err)}
+ try{renderSelectedShipDetails()}catch(err){console.error('[Blue Horizon] ship details:',err)}
+}
+/* Attach one delegated click handler to each current fleet list. Rebinding is safe. */
+function wireFleetClicksFinal(){
+ if(!game)return;
+ ['fleetList','fleetWindowList'].forEach(listId=>{
+  const list=$(listId);if(!list||list.dataset.finalClickWired==='yes')return;
+  list.dataset.finalClickWired='yes';
+  list.addEventListener('click',function(event){
+   const row=event.target.closest('.ship-row');if(!row||!list.contains(row))return;
+   const id=row.dataset.shipId;
+   if(id!=null){event.preventDefault();selectShip(id)}
+  });
+ });
+}
+function wireHarborClicksFinal(){
+ if(!map||!Array.isArray(portMarkers))return;
+ portMarkers.forEach((marker,index)=>{
+  const p=PORTS[index];if(!marker||!p)return;
+  marker.off('click');
+  marker.on('click',function(event){
+   if(event&&event.originalEvent&&L&&L.DomEvent)L.DomEvent.stop(event.originalEvent);
+   openHarborWindow(p.id);
+  });
+ });
+}
+function wireShipMarkersFinal(){
+ if(!map||!game)return;
+ game.ships.forEach(ship=>{
+  const marker=shipMarkers[ship.id];if(!marker)return;
+  marker.off('click');
+  marker.on('click',function(event){
+   if(event&&event.originalEvent&&L&&L.DomEvent)L.DomEvent.stop(event.originalEvent);
+   selectShip(ship.id);
+  });
+  const element=marker.getElement&&marker.getElement();
+  if(element){element.style.pointerEvents='auto';element.style.cursor='pointer';element.setAttribute('aria-label','Schiff auswählen: '+ship.name)}
+ });
+}
+const _initMapFinal=initMap;
+initMap=function(){_initMapFinal();wireHarborClicksFinal();wireFleetClicksFinal()};
+const _renderShipsFinal=renderShips;
+renderShips=function(){_renderShipsFinal();wireShipMarkersFinal();wireHarborClicksFinal()};
+const _renderUIFinal=renderUI;
+renderUI=function(){
+ _renderUIFinal();
+ wireFleetClicksFinal();
+ if(game){
+  ['fleetList','fleetWindowList'].forEach(listId=>{
+   const list=$(listId);if(!list)return;
+   [...list.querySelectorAll('.ship-row')].forEach((row,index)=>{
+    const ship=game.ships[index];if(!ship)return;
+    row.dataset.shipId=String(ship.id);
+    row.classList.toggle('selected',String(ship.id)===String(selectedShipId));
+   });
+  });
+ }
+ const speed=typeof simulationSpeed==='number'?simulationSpeed:1;
+ [['pauseBtn',0],['playBtn',1],['fastBtn',1.5]].forEach(([id,value])=>{
+  const button=$(id);if(button)button.classList.toggle('active',speed===value);
+ });
+};
+const _setSpeedFinal=setSpeed;
+setSpeed=function(speed){
+ _setSpeedFinal(speed);
+ [['pauseBtn',0],['playBtn',1],['fastBtn',1.5]].forEach(([id,value])=>{
+  const button=$(id);if(button)button.classList.toggle('active',speed===value);
+ });
+};
+window.addEventListener('load',function(){wireHarborClicksFinal();wireShipMarkersFinal();wireFleetClicksFinal()});
+</script>
+
 </body>
 </html>
