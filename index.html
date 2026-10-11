@@ -206,3 +206,52 @@ function portTypeName(p){return p.level===3?'Internationaler Hafen':p.level===2?
 
 </script>
 </body></html>
+
+/* V1.1: Aufträge nur anbieten, wenn Schiff, Start-/Zielhafen und Route zusammenpassen. */
+CONTRACTS.push(
+ {id:'river1',company:'RheinCargo',from:'dui',to:'cgn',cargo:'containers',bonus:9000,deadline:5,desc:'Containertransport auf dem Rhein.'},
+ {id:'river2',company:'DonauLogistik',from:'vie',to:'bud',cargo:'bulk',bonus:12000,deadline:6,desc:'Schüttguttransport auf der Donau.'},
+ {id:'river3',company:'Oberrhein Handel',from:'bas',to:'str',cargo:'containers',bonus:8500,deadline:5,desc:'Containerladung zwischen Oberrheinhäfen.'},
+ {id:'river4',company:'Seine Fracht',from:'par',to:'rou',cargo:'bulk',bonus:7500,deadline:4,desc:'Schüttguttransport auf der Seine.'},
+ {id:'river5',company:'Mississippi Trade',from:'mem',to:'stl',cargo:'bulk',bonus:14000,deadline:7,desc:'Schüttguttransport auf dem Mississippi.'},
+ {id:'river6',company:'Yangtze Freight',from:'wuh',to:'chq',cargo:'containers',bonus:16000,deadline:7,desc:'Containertransport auf dem Jangtse.'}
+);
+function routeForContract(c,s){
+ const a=port(c.from),b=port(c.to);
+ if(!a||!b)return null;
+ if(s.type==='river'){
+  if(!a.river||!b.river)return null;
+  return riverRoute(a.id,b.id);
+ }
+ if(a.river||b.river)return null;
+ return computeWaterRoute(a,b);
+}
+function eligibleContracts(s){
+ if(!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>o.shipId===s.id))return[];
+ const origin=s.port,st=shipType(s.type);
+ return CONTRACTS.filter(c=>{
+  if(c.from!==origin||c.to===origin||!st.allowed.includes(c.cargo))return false;
+  const coords=routeForContract(c,s);if(!coords||coords.length<2)return false;
+  const distance=coords.reduce((sum,p,i)=>i?sum+haversine({lat:coords[i-1][1],lon:coords[i-1][0]},{lat:p[1],lon:p[0]}):0,0);
+  return distance<=st.range;
+ });
+}
+function acceptOrder(contractId){
+ const s=selectedShip(),c=CONTRACTS.find(x=>x.id===contractId);
+ if(!s||!c||s.trip||s.inYard||(game.repairOrders||[]).some(o=>o.shipId===s.id)||!shipType(s.type).allowed.includes(c.cargo)){
+  toast('Dieser Auftrag passt nicht zum ausgewählten Schiff.');return;
+ }
+ if(c.from!==s.port){toast('Das Schiff muss sich im Start-Hafen des Auftrags befinden.');return;}
+ const a=port(c.from),b=port(c.to),coords=routeForContract(c,s);
+ if(!coords||coords.length<2){toast('Für diese Häfen ist keine passende Wasserroute verfügbar. Es wird keine Luftlinie als Ersatz benutzt.');return;}
+ const t=cargo(c.cargo),st=shipType(s.type),diff=DIFFICULTIES[game.difficulty];
+ const distance=coords.reduce((sum,p,i)=>i?sum+haversine({lat:coords[i-1][1],lon:coords[i-1][0]},{lat:p[1],lon:p[1]===undefined?0: p[0]}):0,0);
+ if(distance>st.range){toast('Diese Route überschreitet die Reichweite dieses Schiffstyps.');return;}
+ const units=Math.floor(st.capacity*t.capacity);
+ const revenue=Math.round(units*t.fee*((a.demand+b.demand)/2)*diff.revenue+c.bonus*diff.revenue);
+ const days=Math.max(1,Math.ceil(distance/(st.speed*24*t.speed)+t.handling+1));
+ s.trip={contractId:c.id,from:c.from,to:c.to,cargo:c.cargo,coords,progress:0,distance,days,daysElapsed:0,revenue,units,cost:Math.round((distance*22+days*st.upkeep/7)*diff.cost)};
+ s.status='sailing';selectedShipId=s.id;
+ addLog(s.name+' übernimmt Auftrag von '+c.company+': '+a.name+' → '+b.name+'.');
+ saveGame();renderUI();renderShips();toast('Auftrag angenommen · '+days+' Spieltage geschätzt');
+}
