@@ -29,7 +29,42 @@ function selectShipAtPort(portId){
  selectShip(ship.id);
 }
 function iconForShip(s,angle=0){const t=shipType(s.type),z=map.getZoom(),size=Math.max(16,Math.min(25,22-(z-2)*.35)),hitSize=Math.max(40,size+18),shipHeight=Math.max(8,size*.48),selected=String(s.id)===String(selectedShipId);return L.divIcon({className:'ship-icon',html:'<div class="ship-hit-area'+(selected?' selected-ship-marker':'')+'" style="width:'+hitSize+'px;height:'+hitSize+'px;display:flex;align-items:center;justify-content:center;pointer-events:auto;cursor:pointer;box-sizing:border-box"><div class="ship-shape" style="width:'+size+'px;height:'+shipHeight+'px;flex:none;background:'+t.color+';transform:rotate('+(angle-90)+'deg)"></div></div>',iconSize:[hitSize,hitSize],iconAnchor:[hitSize/2,hitSize/2]})}
-function renderShips(){if(!map||!game)return;const alive=new Set(game.ships.map(s=>String(s.id)));Object.keys(shipMarkers).forEach(id=>{if(!alive.has(String(id))){map.removeLayer(shipMarkers[id]);delete shipMarkers[id]}});game.ships.forEach(s=>{ensureShipStats(s);let pos=port(s.port);if(s.trip&&s.trip.coords){const p=pointAlong(s.trip.coords,s.trip.progress);pos={lat:p[1],lon:p[0]}}let m=shipMarkers[s.id];if(!m){m=L.marker([pos.lat,pos.lon],{icon:iconForShip(s,s.trip?s.trip.angle||0:0),interactive:true,keyboard:true,riseOnHover:true,zIndexOffset:2000,autoPanOnFocus:false}).addTo(map);shipMarkers[s.id]=m}else{m.setLatLng([pos.lat,pos.lon]);m.setIcon(iconForShip(s,s.trip?s.trip.angle||0:0));m.setZIndexOffset(2000)}m.off('click');m.on('click',()=>queueShipSelection(s.id));m.bindTooltip(s.name+' · '+shipType(s.type).name,{direction:'top'});const el=m.getElement();if(el){el.style.pointerEvents='auto';el.style.cursor='pointer';el.dataset.shipId=String(s.id);el.setAttribute('role','button');el.setAttribute('tabindex','0');el.setAttribute('aria-label','Schiff auswählen: '+s.name);el.onclick=function(ev){ev.preventDefault();ev.stopPropagation();queueShipSelection(el.dataset.shipId);return false};el.onpointerup=function(ev){if(ev.button!==0&&ev.pointerType!=='touch')return;ev.stopPropagation();queueShipSelection(el.dataset.shipId)};el.onpointerdown=function(ev){if(ev.button!==0&&ev.pointerType!=='touch')return;ev.stopPropagation()};el.onkeydown=function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();ev.stopPropagation();queueShipSelection(el.dataset.shipId)}}}})}
+function renderShips(onlyShipId=null){
+ if(!map||!game)return;
+ const alive=new Set(game.ships.map(s=>String(s.id)));
+ Object.keys(shipMarkers).forEach(id=>{
+  if(!alive.has(String(id))){map.removeLayer(shipMarkers[id]);delete shipMarkers[id]}
+ });
+ game.ships.forEach(s=>{
+  if(onlyShipId!=null&&String(s.id)!==String(onlyShipId))return;
+  ensureShipStats(s);
+  let pos=port(s.port);
+  if(s.trip&&s.trip.coords){const p=pointAlong(s.trip.coords,s.trip.progress);pos={lat:p[1],lon:p[0]}}
+  let m=shipMarkers[s.id];
+  const isNew=!m;
+  if(isNew){
+   m=L.marker([pos.lat,pos.lon],{icon:iconForShip(s,s.trip?s.trip.angle||0:0),interactive:true,keyboard:true,riseOnHover:true,zIndexOffset:2000,autoPanOnFocus:false}).addTo(map);
+   shipMarkers[s.id]=m;
+   m.on('click',()=>queueShipSelection(s.id));
+   m.bindTooltip(s.name+' · '+shipType(s.type).name,{direction:'top'});
+  }else{
+   const current=m.getLatLng();
+   if(Math.abs(current.lat-pos.lat)>1e-7||Math.abs(current.lng-pos.lon)>1e-7)m.setLatLng([pos.lat,pos.lon]);
+   m.setIcon(iconForShip(s,s.trip?s.trip.angle||0:0));
+  }
+  const el=m.getElement();
+  if(el){
+   el.style.pointerEvents='auto';el.style.cursor='pointer';el.dataset.shipId=String(s.id);
+   el.setAttribute('role','button');el.setAttribute('tabindex','0');el.setAttribute('aria-label','Schiff auswählen: '+s.name);
+   if(isNew){
+    el.onclick=function(ev){ev.preventDefault();ev.stopPropagation();queueShipSelection(el.dataset.shipId);return false};
+    el.onpointerup=function(ev){if(ev.button!==0&&ev.pointerType!=='touch')return;ev.stopPropagation();queueShipSelection(el.dataset.shipId)};
+    el.onpointerdown=function(ev){if(ev.button!==0&&ev.pointerType!=='touch')return;ev.stopPropagation()};
+    el.onkeydown=function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();ev.stopPropagation();queueShipSelection(el.dataset.shipId)}};
+   }
+  }
+ });
+}
 function getRouteMetrics(coords){
  if(!Array.isArray(coords)||coords.length<2)return{cumulative:[0],total:0};
  const cached=routeMetricsCache.get(coords);
@@ -163,7 +198,7 @@ function baseComputeWaterRoute(a,b){
 function selectedShip(){return game.ships.find(s=>s.id===selectedShipId)||game.ships[0]}
 let selectedShipId='s1';
 
-function buyShip(typeId){const t=shipType(typeId),d=DIFFICULTIES[game.difficulty];if(!t)return;if(game.cash<t.price*d.cost){toast('Nicht genug Geld für dieses Schiff.');return}game.cash-=Math.round(t.price*d.cost);const id='s'+game.nextShipId++;const home=port(randomShipPort(typeId));game.ships.push({id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null,condition:100,range:randomShipRange(typeId)});selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'.');saveGame();renderUI();renderShips();showSelectedShipRoute(true);openShipyard();toast('Neues Schiff gekauft: '+t.name+'.')}
+function buyShip(typeId){const t=shipType(typeId),d=DIFFICULTIES[game.difficulty];if(!t)return;if(game.cash<t.price*d.cost){toast('Nicht genug Geld für dieses Schiff.');return}game.cash-=Math.round(t.price*d.cost);const id='s'+game.nextShipId++;const home=port(randomShipPort(typeId));game.ships.push({id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null,condition:100,range:randomShipRange(typeId)});selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'.');saveGame();renderUI();renderShips(id);showSelectedShipRoute(true);openShipyard();toast('Neues Schiff gekauft: '+t.name+'.')}
 function openShipyard(){if(!game)return;$('shipyard').classList.remove('hidden');renderShipyard()}
 function closeShipyard(){$('shipyard').classList.add('hidden')}
 
