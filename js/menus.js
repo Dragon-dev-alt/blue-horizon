@@ -24,7 +24,12 @@ window.addEventListener('water-route-loading-progress',event=>{
 });
 function setLoadingScreen(message,progress){
  const overlay=$('loadingScreen');
- if(overlay)overlay.classList.remove('hidden');
+ if(overlay){
+  overlay.classList.remove('hidden');
+  // Inline fallback keeps the loader visible even if an older .hidden rule is cached.
+  overlay.style.display='grid';
+  overlay.style.visibility='visible';
+ }
  const label=$('loadingMessage');
  const fill=$('loadingProgress');
  const percent=$('loadingPercent');
@@ -58,12 +63,21 @@ function waitForWaterRouting(timeoutMs=36000){
  });
 }
 function waitForPaint(){return new Promise(resolve=>requestAnimationFrame(()=>resolve()))}
+function hideLoadingScreen(){
+ const overlay=$('loadingScreen');
+ if(overlay){
+  overlay.classList.add('hidden');
+  overlay.style.display='none';
+  overlay.style.visibility='hidden';
+ }
+}
 async function startNewGame(){
  if(newGameStartupInProgress)return;
  const name=($('companyInput')?.value||'').trim()||'Blue Horizon Shipping';
  const hq=$('hqPort')?.value||'ham';
  if(!port(hq)){toast('Der gewählte Hauptsitzhafen ist nicht verfügbar.');return;}
  newGameStartupInProgress=true;
+ const startupStartedAt=performance.now();
  try{
   // Cover the setup screen before creating any game state so the browser can
   // paint the loader rather than appearing frozen during initialization.
@@ -83,6 +97,15 @@ async function startNewGame(){
   setLoadingScreen('Häfen, Spieloberfläche und Spielstand werden vorbereitet …',82);
   await waitForPaint();
 
+  // Keep the loader on screen long enough to be clearly visible, even when
+  // routing data was already cached from a previous visit.
+  const minimumLoaderMs=2400;
+  const remainingLoaderMs=minimumLoaderMs-(performance.now()-startupStartedAt);
+  if(remainingLoaderMs>0){
+   setLoadingScreen('Letzte Vorbereitungen – die Reederei wird eingerichtet …',92);
+   await new Promise(resolve=>setTimeout(resolve,remainingLoaderMs));
+  }
+
   $('mainMenu').classList.add('hidden');
   renderUI();
   if(map){
@@ -95,7 +118,7 @@ async function startNewGame(){
   saveGame();
   setLoadingScreen('Alles bereit – deine Reederei startet …',100);
   await waitForPaint();
-  $('loadingScreen')?.classList.add('hidden');
+  hideLoadingScreen();
   if(routingReady)toast('Firma gegründet – kaufe dein erstes Schiff in der Werft.');
   else toast('Firma gegründet. Wasserwege konnten nicht geladen werden; prüfe die Internetverbindung.');
  }catch(e){
