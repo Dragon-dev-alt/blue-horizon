@@ -27,7 +27,7 @@ function startNewGame(){
   $('mainMenu').classList.add('hidden');
   renderUI();
   if(map){map.setView([port(hq).lat,port(hq).lon],5);map.invalidateSize();renderShips();showSelectedShipRoute(false);}
-  toast('Firma gegründet – dein erstes Schiff wartet am Hauptsitz.');
+  toast('Firma gegründet – kaufe dein erstes Schiff in der Werft.');
  }catch(e){
   console.error('Fehler beim Gründen der Firma:',e);
   toast('Die Firma konnte nicht gestartet werden. Bitte Seite neu laden und erneut versuchen.');
