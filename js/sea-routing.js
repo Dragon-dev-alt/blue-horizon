@@ -19,6 +19,7 @@ window.searoute = (origin, destination) => seaRoute(origin, destination, {
 
 let landPolygons = [];
 let landGrid = new Map();
+const routeSafetyCache = new WeakMap();
 const CELL_DEGREES = 5;
 const GRID_X = 360 / CELL_DEGREES;
 const GRID_Y = 180 / CELL_DEGREES;
@@ -103,19 +104,28 @@ function addLandMask(topology) {
 }
 window.isWaterRouteSafe = function (coords) {
   if (!window.waterRouteDataReady || !Array.isArray(coords) || coords.length < 2) return false;
+  const cached = routeSafetyCache.get(coords);
+  if (cached !== undefined) return cached;
   for (let i = 1; i < coords.length; i++) {
     const a = coords[i - 1], b = coords[i];
     if (!Array.isArray(a) || !Array.isArray(b) || !Number.isFinite(a[0]) ||
-        !Number.isFinite(a[1]) || !Number.isFinite(b[0]) || !Number.isFinite(b[1])) return false;
+        !Number.isFinite(a[1]) || !Number.isFinite(b[0]) || !Number.isFinite(b[1])) {
+      routeSafetyCache.set(coords, false);
+      return false;
+    }
     const steps = Math.max(1, Math.ceil(distanceKm(a, b) / MAX_SAMPLE_KM));
     for (let j = 0; j <= steps; j++) {
       if (i > 1 && j === 0) continue;
       const f = j / steps;
       const lon = a[0] + (b[0] - a[0]) * f;
       const lat = a[1] + (b[1] - a[1]) * f;
-      if (pointIsLand(lon, lat)) return false;
+      if (pointIsLand(lon, lat)) {
+        routeSafetyCache.set(coords, false);
+        return false;
+      }
     }
   }
+  routeSafetyCache.set(coords, true);
   return true;
 };
 
