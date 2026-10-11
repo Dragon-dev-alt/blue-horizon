@@ -132,9 +132,21 @@ async function addLandMask(topology) {
     const outer = rings && rings[0];
     if (!outer || outer.length < 4) continue;
     let minLon = Infinity, maxLon = -Infinity, minLat = Infinity, maxLat = -Infinity;
-    for (const point of outer) {
+    for (let pointIndex = 0; pointIndex < outer.length; pointIndex++) {
+      const point = outer[pointIndex];
       minLon = Math.min(minLon, point[0]); maxLon = Math.max(maxLon, point[0]);
       minLat = Math.min(minLat, point[1]); maxLat = Math.max(maxLat, point[1]);
+      // A single continental coastline can itself contain many thousands of
+      // vertices, so yield during that scan too, not only between polygons.
+      if (pointIndex > 0 && pointIndex % 5000 === 0) {
+        window.dispatchEvent(new CustomEvent('water-route-loading-progress', {
+          detail: {
+            progress: polygons.length ? polygonIndex / polygons.length : 0,
+            message: 'Detaillierte Küstengeometrie wird vorbereitet …'
+          }
+        }));
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
     }
     // Rings around the date line get a world-wide longitude bbox so neither
     // side of the date line is omitted from the land-check index.
