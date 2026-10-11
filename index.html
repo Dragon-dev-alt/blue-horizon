@@ -696,5 +696,137 @@ const _renderUIV14=renderUI;
 renderUI=function(){_renderUIV14();syncSpeedButtons()};
 </script>
 
+
+<style>
+/* V1.5: reliable direct ship selection */
+#fleetWindowList .ship-row{position:relative;z-index:5;pointer-events:auto;cursor:pointer;min-height:54px}
+.leaflet-marker-icon.ship-icon{pointer-events:auto!important;cursor:pointer!important;z-index:1000!important}
+#ordersList .order{scroll-margin:12px}
+.ship-detail{border:1px solid #48cfc4;background:#0c2d3b;border-radius:10px;padding:12px;margin-bottom:10px}
+.ship-detail h3{margin:0 0 8px}
+</style>
+<script>
+/* V1.5 — selection is wired through real DOM handlers, not inline attributes */
+function selectShip(id){
+ const s=game&&game.ships.find(x=>String(x.id)===String(id));
+ if(!s){toast('Dieses Schiff wurde nicht gefunden.');return}
+ selectedShipId=s.id;
+ renderUI();
+ renderShips();
+ renderFleetWindow();
+ renderSelectedShipDetails();
+}
+function renderSelectedShipDetails(){
+ if(!game)return;
+ const box=$('ordersList'),help=$('ordersHelp');
+ if(!box||!help)return;
+ const s=selectedShip();
+ if(!s){help.textContent='Wähle ein Schiff in der Flotte oder direkt auf der Karte.';box.innerHTML='<div class="order">Noch kein Schiff ausgewählt.</div>';return}
+ ensureShipStats(s);
+ const t=shipType(s.type);
+ if(s.trip){
+  const tr=s.trip,c=allContracts().find(x=>x.id===tr.contractId);
+  help.textContent=s.name+' · laufender Auftrag';
+  box.innerHTML='<div class="ship-detail"><h3>🚢 '+escapeHtml(s.name)+'</h3><p><b>Status:</b> Unterwegs<br><b>Start:</b> '+escapeHtml(port(tr.from).name)+'<br><b>Ziel:</b> '+escapeHtml(port(tr.to).name)+'<br><b>Fracht:</b> '+escapeHtml(cargo(tr.cargo).name)+'<br><b>Fortschritt:</b> '+Math.round((tr.progress||0)*100)+' %<br><b>Entfernung:</b> '+Math.round(tr.distance||0).toLocaleString('de-DE')+' km<br><b>Geplante Dauer:</b> '+(tr.days||'?')+' Tage<br><b>Voraussichtlicher Erlös:</b> '+money(tr.revenue||0)+'<br><b>Geschätzte Kosten:</b> '+money(tr.cost||0)+'<br><b>Auftraggeber:</b> '+escapeHtml(c?c.company:'Auftrag')}</p></div>';
+  return;
+ }
+ const orders=eligibleContracts(s);
+ help.textContent='Ausgewählt: '+s.name+' · Hafen '+port(s.port).name+'. Verfügbare Aufträge für dieses Schiff:';
+ const details='<div class="ship-detail"><h3>⚓ '+escapeHtml(s.name)+'</h3><p><b>Schiffstyp:</b> '+escapeHtml(t.name)+'<br><b>Liegehafen:</b> '+escapeHtml(port(s.port).name)+'<br><b>Zustand:</b> '+(s.condition??100)+' %<br><b>Reichweite:</b> '+s.range.toLocaleString('de-DE')+' km<br><b>Geschwindigkeit:</b> '+t.speed+' kn<br><b>Kapazität:</b> '+t.capacity+' Einheiten</p></div>';
+ if(s.inYard||(game.repairOrders||[]).some(o=>o.shipId===s.id)){
+  box.innerHTML=details+'<div class="order"><h3>🛠️ Nicht einsatzbereit</h3><p>Dieses Schiff kann erst nach Abschluss der Reparatur neue Aufträge annehmen.</p></div>';return;
+ }
+ box.innerHTML=details+(orders.length?orders.map(c=>{
+  const a=port(c.from),b=port(c.to);
+  return '<div class="order"><h3>'+escapeHtml(c.company)+'</h3><p>'+escapeHtml(c.desc||'Frachtauftrag')+'<br><b>Route:</b> '+escapeHtml(a.name)+' → '+escapeHtml(b.name)+'<br><b>Fracht:</b> '+escapeHtml(cargo(c.cargo).name)+'<br><b>Bonus:</b> '+money(c.bonus)+'<br><b>Frist:</b> '+c.deadline+' Tage</p><button class="primary" style="width:100%" onclick="acceptOrder(\''+c.id+'\')">Auftrag übernehmen</button></div>';
+ }).join(''):'<div class="order"><h3>Derzeit keine passenden Aufträge</h3><p>In '+escapeHtml(port(s.port).name)+' gibt es momentan keinen Auftrag für dieses Schiff. Aufträge werden regelmäßig neu verteilt.</p></div>');
+}
+function renderFleetWindow(){
+ let w=$('fleetWindow');
+ if(!w){w=document.createElement('div');w.id='fleetWindow';w.className='overlay hidden';w.style.zIndex='2100';w.innerHTML='<div class="menu-card" style="max-height:85vh;overflow:auto"><div class="panel-head"><span>🚢 Deine Flotte</span><button id="fleetCloseBtn">Schließen ✕</button></div><div id="fleetWindowList"></div><p class="notice">Wähle ein Schiff aus, um Auftragsstatus und verfügbare Aufträge zu sehen.</p></div>';document.body.appendChild(w);$('fleetCloseBtn').onclick=closeFleetWindow}
+ if(!game)return;
+ const list=$('fleetWindowList');if(!list)return;
+ list.innerHTML='';
+ if(!game.ships.length){list.innerHTML='<p class="notice">Noch keine Schiffe.</p>';return}
+ game.ships.forEach(s=>{
+  ensureShipStats(s);
+  const b=document.createElement('button');b.type='button';b.className='ship-row'+(s.id===selectedShipId?' selected':'');b.style.cssText='width:100%;display:flex;text-align:left;position:relative;z-index:5;pointer-events:auto;cursor:pointer;background:'+(s.id===selectedShipId?'#153b4c':'#102a3b');
+  const dot=document.createElement('span');dot.className='ship-dot';dot.style.background=shipType(s.type).color;
+  const info=document.createElement('span');info.style.flex='1';
+  const title=document.createElement('b');title.textContent=s.name;
+  const small=document.createElement('small');small.textContent=shipType(s.type).name+' · '+(s.trip?'Auftrag: '+port(s.trip.to).name:s.inYard?'In der Werft':'Hafen: '+port(s.port).name);
+  info.append(title,small);b.append(dot,info);
+  b.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();selectShip(s.id);const win=$('fleetWindow');if(win)win.classList.remove('hidden')});
+  list.appendChild(b);
+ });
+}
+const _renderShipsV15=renderShips;
+renderShips=function(){
+ _renderShipsV15();
+ if(!map||!game)return;
+ Object.keys(shipMarkers).forEach(id=>{
+  const marker=shipMarkers[id];
+  marker.off('click');
+  marker.on('click',function(ev){
+   if(ev&&ev.originalEvent)L.DomEvent.stopPropagation(ev.originalEvent);
+   selectShip(id);
+  });
+  marker.setZIndexOffset(id===selectedShipId?2000:1000);
+  const el=marker.getElement();
+  if(el){el.style.pointerEvents='auto';el.style.cursor='pointer';el.style.zIndex=String(id===selectedShipId?2000:1000)}
+ });
+};
+const _renderUIV15=renderUI;
+renderUI=function(){
+ if(!game)return;
+ _renderUIV15();
+ const list=$('fleetList');
+ if(list){
+  list.querySelectorAll('.ship-row').forEach(el=>{
+   const match=(el.getAttribute('onclick')||'').match(/selectShip\('([^']+)'\)/);
+   if(match){el.onclick=ev=>{ev.preventDefault();ev.stopPropagation();selectShip(match[1])};el.style.pointerEvents='auto';el.style.cursor='pointer'}
+  });
+ }
+ renderSelectedShipDetails();
+ renderFleetWindow();
+ syncSpeedButtons();
+};
+
+/* Generate a fresh, varied set of contracts every seven in-game days.
+   Ports may have zero contracts; no class gets a guaranteed job. */
+function createHarborContracts(){
+ const rows=[];
+ PORTS.forEach(p=>{
+  const count=Math.floor(Math.random()*4); // 0–3, including none
+  const destinations=PORTS.filter(q=>q.id!==p.id);
+  for(let i=0;i<count;i++){
+   const dest=destinations[Math.floor(Math.random()*destinations.length)];
+   const compatible=CARGO.filter(c=>SHIP_TYPES.some(st=>st.allowed.includes(c.id)));
+   const cargoItem=compatible[Math.floor(Math.random()*compatible.length)];
+   rows.push({id:'market-'+game.day+'-'+p.id+'-'+i,company:['Oceanic Trade','Nordstern Logistics','BlueWave Cargo','Global Freight','HarborLink'][Math.floor(Math.random()*5)],from:p.id,to:dest.id,cargo:cargoItem.id,bonus:Math.round(12000+Math.random()*80000),deadline:12+Math.floor(Math.random()*30),desc:'Offener Frachtauftrag am Hafen '+p.name+'.'});
+  }
+ });
+ return rows;
+}
+function allContracts(){
+ if(!game)return CONTRACTS;
+ if(!Array.isArray(game.harborContracts))game.harborContracts=createHarborContracts();
+ return CONTRACTS.concat(game.harborContracts);
+}
+const _nextDayV15=nextDay;
+nextDay=function(){
+ if(!game)return;
+ const before=game.day;
+ _nextDayV15();
+ if(game&&Math.floor(before/7)!==Math.floor(game.day/7)){
+  game.harborContracts=createHarborContracts();
+  addLog('Der Auftragsmarkt wurde neu verteilt. Einige Häfen haben keine offenen Aufträge.');
+  saveGame();
+  renderUI();
+ }
+};
+/* Completed dynamically generated contracts are handled the same as fixed contracts. */
+</script>
+
 </body>
 </html>
