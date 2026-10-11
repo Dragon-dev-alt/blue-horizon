@@ -26,7 +26,7 @@ function startNewGame(){
   saveGame();
   $('mainMenu').classList.add('hidden');
   renderUI();
-  if(map){map.setView([port(hq).lat,port(hq).lon],5);map.invalidateSize();renderShips();}
+  if(map){map.setView([port(hq).lat,port(hq).lon],5);map.invalidateSize();renderShips();showSelectedShipRoute(false);}
   toast('Firma gegründet – dein erstes Schiff wartet am Hauptsitz.');
  }catch(e){
   console.error('Fehler beim Gründen der Firma:',e);
