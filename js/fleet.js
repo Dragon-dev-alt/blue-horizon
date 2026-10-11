@@ -102,24 +102,161 @@ function generateGuaranteedContract(s){
  }
  return null;
 }
-function eligibleContracts(s){
- if(!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)))return[];
+/*
+ * Eligibility checks used to execute during renderUI(), including route
+ * generation and land sampling. Compute them in small background tasks and
+ * let UI renders consume the cached result only.
+ */
+const contractEligibilityCache=new Map();
+const contractEligibilityPending=new Set();
+const MAX_ELIGIBILITY_CACHE=80;
+function contractEligibilityKey(s){
+ const generated=(game?.generatedContracts||[]).map(c=>String(c.id)+':'+String(c.from)+':'+String(c.to)).join(',');
+ const repairing=(game?.repairOrders||[]).some(o=>String(o.shipId)===String(s.id));
+ return [String(s.id),String(s.port),String(s.type),String(s.range),s.trip?'trip':'idle',
+  s.inYard?'yard':'ready',repairing?'repair':'clear',
+  window.waterRouteDataReady?'routes-ready':'routes-loading',generated].join('|');
+}
+function cacheContractEligibility(key,result){
+ if(contractEligibilityCache.has(key))contractEligibilityCache.delete(key);
+ contractEligibilityCache.set(key,result);
+ while(contractEligibilityCache.size>MAX_ELIGIBILITY_CACHE){
+  contractEligibilityCache.delete(contractEligibilityCache.keys().next().value);
+ }
+}
+function isContractEligibilityPending(s){
+ return !!s&&contractEligibilityPending.has(contractEligibilityKey(s));
+}
+function yieldToBrowser(){
+ return new Promise(resolve=>{
+  if(typeof window.requestIdleCallback==='function'){
+   window.requestIdleCallback(()=>resolve(),{timeout:180});
+  }else{
+   setTimeout(resolve,24);
+  }
+ });
+}
+function eligibilityStateIsCurrent(s,key){
+ if(!game||String(selectedShipId)!==String(s.id))return false;
+ const live=game.ships.find(item=>String(item.id)===String(s.id));
+ return !!live&&contractEligibilityKey(live)===key;
+}
+function contractHasCompatiblePorts(c,s){
+ if(!contractBelongsToShip(c,s))return false;
+ const destination=port(c.to);
+ return !!destination&&portCanServeShip(destination,s);
+}
+async function generateGuaranteedContractAsync(s,key){
+ if(!game||!s||s.trip||s.inYard)return null;
+ if(!Array.isArray(game.generatedContracts))game.generatedContracts=[];
+ let nextKey=key;
+ const existingIndex=game.generatedContracts.findIndex(c=>String(c.assignedShipId)===String(s.id)&&String(c.from)===String(s.port));
+ if(existingIndex>=0){
+  await yieldToBrowser();
+  if(!eligibilityStateIsCurrent(s,nextKey))return null;
+  const existing=game.generatedContracts[existingIndex],coords=routeForContract(existing,s);
+  if(coords&&coords.length>1&&routeDistanceNauticalMiles(coords)*1.852<=s.range)return existing;
+  game.generatedContracts.splice(existingIndex,1);
+  nextKey=contractEligibilityKey(s);
+ }
+ if(s.type!=='river'&&!window.waterRouteDataReady)return null;
+ const origin=port(s.port),st=shipType(s.type);
+ if(!origin||!st||!portCanServeShip(origin,s))return null;
+ const cargoId=st.allowed.find(id=>{const item=cargo(id);return item&&item.types.includes(s.type)});
+ if(!cargoId)return null;
+ const destinations=PORTS.filter(p=>p.id!==origin.id&&portCanServeShip(p,s)&&
+   (s.type==='river'?!!p.river:!p.river))
+  .map(p=>({p,directKm:haversine({lat:origin.lat,lon:origin.lon},{lat:p.lat,lon:p.lon})*1.852}))
+  .filter(item=>item.directKm<=s.range)
+  .sort((a,b)=>a.directKm-b.directKm);
+ for(const item of destinations){
+  await yieldToBrowser();
+  if(!eligibilityStateIsCurrent(s,nextKey))return null;
+  const target=item.p;
+  const contract={
+   id:'auto_'+String(s.id).replace(/[^a-zA-Z0-9_-]/g,'')+'_'+game.day+'_'+(game.nextContractId||1),
+   company:target.name+' Hafenlogistik',
+   from:origin.id,to:target.id,cargo:cargoId,
+   bonus:Math.round(Math.max(5000,item.directKm*15)),
+   deadline:8,
+   desc:'Automatisch erstellter Folgeauftrag für '+s.name+'.',
+   assignedShipId:String(s.id)
+  };
+  const coords=routeForContract(contract,s);
+  if(!coords||coords.length<2)continue;
+  const distanceNm=routeDistanceNauticalMiles(coords);
+  if(distanceNm*1.852>s.range)continue;
+  const freight=cargo(cargoId);
+  contract.deadline=Math.max(5,Math.ceil(distanceNm/(st.speed*24*freight.speed)+freight.handling+3));
+  game.nextContractId=(game.nextContractId||1)+1;
+  game.generatedContracts.push(contract);
+  saveGame();
+  return contract;
+ }
+ return null;
+}
+async function computeEligibleContractsAsync(s,key){
+ if(!game||!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)))return[];
  ensureShipStats(s);
  const st=shipType(s.type),origin=port(s.port);
  if(!st||!origin||!portCanServeShip(origin,s))return[];
+ if(s.type!=='river'&&!window.waterRouteDataReady)return[];
  const eligible=[];
- allContracts().forEach(c=>{
-  if(!contractBelongsToShip(c,s))return;
+ // Static checks are cheap; only matching contracts need route computation.
+ const candidates=allContracts().filter(c=>{
   const destination=port(c.to);
-  if(!destination||!portCanServeShip(destination,s))return;
-  const coords=routeForContract(c,s);
-  if(!coords||coords.length<2)return;
-  if(routeDistanceNauticalMiles(coords)*1.852>s.range)return;
-  eligible.push(c);
+  return contractHasCompatiblePorts(c,s)&&!!destination;
  });
+ for(const c of candidates){
+  await yieldToBrowser();
+  if(!eligibilityStateIsCurrent(s,key))return null;
+  const coords=routeForContract(c,s);
+  if(!coords||coords.length<2)continue;
+  if(routeDistanceNauticalMiles(coords)*1.852>s.range)continue;
+  eligible.push(c);
+ }
  if(eligible.length)return eligible;
- const generated=generateGuaranteedContract(s);
+ if(!eligibilityStateIsCurrent(s,key))return null;
+ const generated=await generateGuaranteedContractAsync(s,key);
  return generated?[generated]:[];
+}
+function scheduleContractEligibility(s,key){
+ if(contractEligibilityPending.has(key))return;
+ contractEligibilityPending.add(key);
+ (async()=>{
+  try{
+   // Always let the purchase/selection event finish and paint first.
+   await new Promise(resolve=>setTimeout(resolve,80));
+   if(!eligibilityStateIsCurrent(s,key))return;
+   const result=await computeEligibleContractsAsync(s,key);
+   if(result===null)return;
+   const live=game&&game.ships.find(item=>String(item.id)===String(s.id));
+   if(!live)return;
+   const finalKey=contractEligibilityKey(live);
+   cacheContractEligibility(finalKey,result);
+   if(finalKey!==key)cacheContractEligibility(key,result);
+   contractEligibilityPending.delete(key);
+   if(String(selectedShipId)===String(live.id)){
+    renderUI();
+    showSelectedShipRoute(false);
+   }
+  }catch(error){
+   console.warn('Aufträge konnten nicht im Hintergrund geprüft werden:',error);
+   const live=game&&game.ships.find(item=>String(item.id)===String(s.id));
+   if(live)cacheContractEligibility(contractEligibilityKey(live),[]);
+  }finally{
+   contractEligibilityPending.delete(key);
+  }
+ })();
+}
+function eligibleContracts(s){
+ if(!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)))return[];
+ ensureShipStats(s);
+ if(s.type!=='river'&&!window.waterRouteDataReady)return[];
+ const key=contractEligibilityKey(s);
+ if(contractEligibilityCache.has(key))return contractEligibilityCache.get(key);
+ scheduleContractEligibility(s,key);
+ return[];
 }
 function acceptOrder(contractId){
  const s=selectedShip(),c=allContracts().find(x=>x.id===contractId);
