@@ -98,7 +98,7 @@ const CONTRACTS=[
 /* Zustand und Speicherung */
 let game=null,activeSlot=0,map=null,portMarkers=[],shipMarkers={},routeLayers=[],simulationSpeed=1,simulationProgress=0,lastFrame=0,animationId=0,portsVisible=true,seaRoutingAvailable=false;
 const $=id=>document.getElementById(id),money=n=>'€ '+Math.round(n).toLocaleString('de-DE'),port=id=>PORTS.find(p=>p.id===id),shipType=id=>SHIP_TYPES.find(t=>t.id===id),cargo=id=>CARGO.find(c=>c.id===id);
-function makeGame(name,difficulty){const d=DIFFICULTIES[difficulty];return{company:name.trim()||'Blue Horizon Shipping',difficulty,cash:d.cash,day:1,rep:50,ships:[{id:'s1',name:'Nordstern',type:'long',port:'ham',trip:null},{id:'s2',name:'Elbe Star',type:'medium',port:'rot',trip:null},{id:'s3',name:'Baltic Wind',type:'coastal',port:'osl',trip:null}],nextShipId:4,log:['Willkommen bei '+(name.trim()||'Blue Horizon Shipping')+'. Deine erste Runde beginnt.'],completed:0,loans:0,created:Date.now()}}
+function baseMakeGame(name,difficulty){const d=DIFFICULTIES[difficulty];return{company:name.trim()||'Blue Horizon Shipping',difficulty,cash:d.cash,day:1,rep:50,ships:[{id:'s1',name:'Nordstern',type:'long',port:'ham',trip:null},{id:'s2',name:'Elbe Star',type:'medium',port:'rot',trip:null},{id:'s3',name:'Baltic Wind',type:'coastal',port:'osl',trip:null}],nextShipId:4,log:['Willkommen bei '+(name.trim()||'Blue Horizon Shipping')+'. Deine erste Runde beginnt.'],completed:0,loans:0,created:Date.now()}}
 function saveGame(){if(!game)return;try{localStorage.setItem(CONFIG.savePrefix+activeSlot,JSON.stringify(game));localStorage.setItem(CONFIG.activeKey,String(activeSlot))}catch(e){toast('Speichern nicht möglich: Browser-Speicher voll.')}}
 function loadSlot(slot){try{const raw=localStorage.getItem(CONFIG.savePrefix+slot);if(!raw)return null;const g=JSON.parse(raw);if(!g||!Array.isArray(g.ships)||!g.company)return null;return g}catch(e){return null}}
 function slotExists(slot){return !!loadSlot(slot)}
@@ -147,7 +147,7 @@ function init(){initMap();seaRoutingAvailable=typeof searoute==='function';if(!s
 window.addEventListener('load',init);
 
 /* === Erweiterung: gebrauchte Schiffe, Neubau, Reparaturen und Binnenschifffahrt === */
-const _oldMakeGame=makeGame;
+const _oldMakeGame=baseMakeGame;
 function generateStock(){const stock={};SHIP_TYPES.forEach(t=>stock[t.id]=Math.floor(Math.random()*5));return stock}
 function makeGame(name,difficulty,hq){const g=_oldMakeGame(name,difficulty,hq);g.ships=[];g.nextShipId=1;g.usedStock=generateStock();g.buildOrders=[];g.repairOrders=[];g.hq=hq||'ham';return g}
 function showNewGame(){hideSetups();$('menuActions').classList.add('hidden');$('newGameSetup').classList.add('visible');$('menuHeading').textContent='Neue Runde';$('menuDescription').textContent='Benenne deine Firma, wähle den Hauptsitzhafen und den Schwierigkeitsgrad.';$('companyInput').value='';$('hqPort').innerHTML=PORTS.map(p=>'<option value="'+p.id+'">'+p.name+' — '+p.country+(p.river?' · Binnenhafen':'')+'</option>').join('');$('hqPort').value='ham';chooseDifficulty('easy')}
