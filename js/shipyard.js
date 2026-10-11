@@ -79,8 +79,11 @@ function selectShipSafely(id){
  if(!ship){toast('Dieses Schiff wurde nicht gefunden.');return}
  try{
   selectedShipId=ship.id;
+  previewedRouteShipId=null;
+  previewedRouteContractId=null;
   renderUI();
   renderShips();
+  showSelectedShipRoute(true);
   saveGame();
   toast('Schiff ausgewählt: '+ship.name);
  }catch(err){
