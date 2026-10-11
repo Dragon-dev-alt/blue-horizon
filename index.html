@@ -163,6 +163,7 @@ function updateEstimate(){
 function startRoute(contractOverride){
  const s=state.ships.find(x=>x.id===state.selected),c=cargo($('cargoSelect').value),a=port($('fromSelect').value),b=port($('toSelect').value);
  if(!s||s.trip||a.id===b.id||!type(s.type).allowed.includes(c.id)){toast('Bitte prüfe Schiff, Fracht und Häfen.');return}
+ const rawDistance=haversine(a,b);if(s.type==='coastal'&&rawDistance>700){toast('Coastal-Schiffe sind auf kurze Küstenrouten begrenzt.');return}if(s.type==='medium'&&rawDistance>3500){toast('Dieses Schiff ist für mittlere Distanzen ausgelegt.');return}if(s.type==='river'&&(rawDistance>250||!['ham','rot','ant','sha'].includes(a.id)||!['ham','rot','ant','sha'].includes(b.id))){toast('Binnenschiffe benötigen eine kurze Route zwischen unterstützten Flusshäfen.');return}
  const days=getTripDays(s,a,b,c),distance=haversine(a,b),units=Math.floor(type(s.type).capacity*c.capacity),revenue=Math.round(units*c.fee*((a.demand+b.demand)/2)),fuel=Math.round(distance*(type(s.type).upkeep/24/type(s.type).speed)*.9),cost=Math.round(days*type(s.type).upkeep/7+fuel);
  const routeCoords=computeSeaRoute(a.id,b.id);if(!routeCoords){toast('Das maritime Routennetz ist noch nicht geladen. Bitte kurz warten und erneut versuchen.');return}
  if(state.cash<Math.min(cost,5000)){toast('Zu wenig Liquidität für den Start.');return}
