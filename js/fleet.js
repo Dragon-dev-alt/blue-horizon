@@ -58,50 +58,6 @@ function contractBelongsToShip(c,s){
   String(c.from)===String(s.port)&&String(c.to)!==String(s.port)&&
   shipType(s.type).allowed.includes(c.cargo);
 }
-function generateGuaranteedContract(s){
- if(!game||!s||s.trip||s.inYard)return null;
- if(!Array.isArray(game.generatedContracts))game.generatedContracts=[];
- const existingIndex=game.generatedContracts.findIndex(c=>String(c.assignedShipId)===String(s.id)&&String(c.from)===String(s.port));
- if(existingIndex>=0){
-  const existing=game.generatedContracts[existingIndex],coords=routeForContract(existing,s);
-  if(coords&&coords.length>1&&routeDistanceNauticalMiles(coords)*1.852<=s.range)return existing;
-  game.generatedContracts.splice(existingIndex,1);
- }
- if(s.type!=='river'&&!window.waterRouteDataReady)return null;
- const origin=port(s.port),st=shipType(s.type);
- if(!origin||!st||!portCanServeShip(origin,s))return null;
- const cargoId=st.allowed.find(id=>{const item=cargo(id);return item&&item.types.includes(s.type)});
- if(!cargoId)return null;
- const destinations=PORTS.filter(p=>p.id!==origin.id&&portCanServeShip(p,s)&&
-  (s.type==='river'?!!p.river:!p.river))
-  .map(p=>({p,directKm:haversine({lat:origin.lat,lon:origin.lon},{lat:p.lat,lon:p.lon})*1.852}))
-  .filter(item=>item.directKm<=s.range)
-  .sort((a,b)=>a.directKm-b.directKm);
- for(const item of destinations){
-  const target=item.p;
-  const contract={
-   id:'auto_'+String(s.id).replace(/[^a-zA-Z0-9_-]/g,'')+'_'+game.day+'_'+(game.nextContractId||1),
-   company:target.name+' Hafenlogistik',
-   from:origin.id,to:target.id,cargo:cargoId,
-   bonus:Math.round(Math.max(5000,item.directKm*15)),
-   deadline:8,
-   desc:'Automatisch erstellter Folgeauftrag für '+s.name+'.',
-   assignedShipId:String(s.id)
-  };
-  const coords=routeForContract(contract,s);
-  if(!coords||coords.length<2)continue;
-  const distanceNm=routeDistanceNauticalMiles(coords);
-  const distanceKm=distanceNm*1.852;
-  if(distanceKm>s.range)continue;
-  const freight=cargo(cargoId);
-  contract.deadline=Math.max(5,Math.ceil(distanceNm/(st.speed*24*freight.speed)+freight.handling+3));
-  game.nextContractId=(game.nextContractId||1)+1;
-  game.generatedContracts.push(contract);
-  saveGame();
-  return contract;
- }
- return null;
-}
 /*
  * Eligibility checks used to execute during renderUI(), including route
  * generation and land sampling. Compute them in small background tasks and
@@ -226,7 +182,7 @@ function scheduleContractEligibility(s,key){
  (async()=>{
   try{
    // Always let the purchase/selection event finish and paint first.
-   await new Promise(resolve=>setTimeout(resolve,80));
+   await new Promise(resolve=>setTimeout(resolve,320));
    if(!eligibilityStateIsCurrent(s,key))return;
    const result=await computeEligibleContractsAsync(s,key);
    if(result===null)return;
