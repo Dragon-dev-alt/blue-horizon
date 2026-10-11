@@ -115,7 +115,7 @@ function showPortInfo(portId,marker){
  const p=port(portId);if(!p||!marker)return;
  const stationed=game?game.ships.filter(s=>String(s.port)===String(p.id)&&!s.trip&&!s.inYard):[];
  const type=p.river?'Binnenhafen':(p.type==='international'||p.level===3?'Internationaler Hafen':'Seehafen');
- const rows=stationed.length?stationed.map(s=>'<button type="button" onclick="selectShipAtPort(\''+escapeHtml(s.id)+'\')" style="width:100%;margin-top:6px;text-align:left">🚢 '+escapeHtml(s.name)+' auswählen</button>').join(''):'<p style="margin:6px 0 0;color:#8faaba">Derzeit liegt hier kein einsatzbereites Schiff.</p>';
+ const rows=stationed.length?stationed.map(s=>'<button type="button" onclick="selectShip(\''+escapeHtml(s.id)+'\')" style="width:100%;margin-top:6px;text-align:left">🚢 '+escapeHtml(s.name)+' auswählen</button>').join(''):'<p style="margin:6px 0 0;color:#8faaba">Derzeit liegt hier kein einsatzbereites Schiff.</p>';
  marker.bindPopup('<div><strong>'+escapeHtml(p.name)+'</strong><br><span>'+escapeHtml(p.country)+' · '+type+'</span>'+rows+'</div>',{maxWidth:260}).openPopup();
 }
 function selectShipAtPort(portId){
