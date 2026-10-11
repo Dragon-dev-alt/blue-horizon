@@ -61,7 +61,7 @@ function baseComputeWaterRoute(a,b){
 function selectedShip(){return game.ships.find(s=>s.id===selectedShipId)||game.ships[0]}
 let selectedShipId='s1';
 
-function buyShip(typeId){const t=shipType(typeId),d=DIFFICULTIES[game.difficulty];if(!t)return;if(game.cash<t.price*d.cost){toast('Nicht genug Geld für dieses Schiff.');return}game.cash-=Math.round(t.price*d.cost);const id='s'+game.nextShipId++;const home=PORTS[(game.nextShipId*3)%PORTS.length];game.ships.push({id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null});selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'.');saveGame();renderUI();renderShips();openShipyard();toast('Schiff zur Flotte hinzugefügt')}
+function buyShip(typeId){const t=shipType(typeId),d=DIFFICULTIES[game.difficulty];if(!t)return;if(game.cash<t.price*d.cost){toast('Nicht genug Geld für dieses Schiff.');return}game.cash-=Math.round(t.price*d.cost);const id='s'+game.nextShipId++;const home=port(randomShipPort(typeId));game.ships.push({id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null,condition:100,range:randomShipRange(typeId)});selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'.');saveGame();renderUI();renderShips();showSelectedShipRoute(true);openShipyard();toast('Neues Schiff gekauft: '+t.name+'.')}
 function openShipyard(){if(!game)return;$('shipyard').classList.remove('hidden');renderShipyard()}
 function closeShipyard(){$('shipyard').classList.add('hidden')}
 
