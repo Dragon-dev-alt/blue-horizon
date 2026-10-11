@@ -260,8 +260,7 @@ function randomShipRange(typeId){const b=SHIP_RANGE_BANDS[typeId]||[500,shipType
 function randomShipPort(typeId){let valid=PORTS.filter(p=>typeId==='river'?!!p.river:!p.river);if(!valid.length)valid=PORTS;return valid[Math.floor(Math.random()*valid.length)].id}
 function ensureShipStats(s){if(!s)return s;if(!s.range)s.range=randomShipRange(s.type);if(!s.port)s.port=game?.hq||'ham';if(s.condition==null)s.condition=100;return s}
 function makeGame(name,difficulty,hq){
- /* Immer die ursprüngliche Basisfunktion aufrufen. Kein Aufruf von makeGame selbst,
-    da Funktionsdeklarationen mit gleichem Namen im Script hoisted werden. */
+ /* Basisspielzustand erweitern, individuelle Gebrauchtangebote anlegen und Startschiff einsetzen. */
  const g=baseMakeGame(name,difficulty);
  g.ships=[];
  g.nextShipId=1;
