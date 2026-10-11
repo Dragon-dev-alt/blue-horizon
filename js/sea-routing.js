@@ -83,11 +83,37 @@ function distanceKm(a, b) {
 }
 function addLandMask(topology) {
   const land = feature(topology, topology.objects.land);
-  const geometry = land && land.geometry;
-  const polygons = !geometry ? [] : geometry.type === 'MultiPolygon'
-    ? geometry.coordinates
-    : geometry.type === 'Polygon' ? [geometry.coordinates] : [];
-  if (!polygons.length) throw new Error('Die Landgeometrie enthält keine Polygone.');
+  const polygons = [];
+
+  // topojson.feature() gibt bei GeometryCollections eine FeatureCollection
+  // zurück. Die alte Version erwartete ausschließlich land.geometry und
+  // hielt die gesamte Prüfung deshalb fälschlich für leer.
+  function collectPolygons(value) {
+    if (!value) return;
+    if (value.type === 'FeatureCollection') {
+      (value.features || []).forEach(item => collectPolygons(item));
+      return;
+    }
+    if (value.type === 'Feature') {
+      collectPolygons(value.geometry);
+      return;
+    }
+    if (value.type === 'GeometryCollection') {
+      (value.geometries || []).forEach(collectPolygons);
+      return;
+    }
+    if (value.type === 'Polygon' && Array.isArray(value.coordinates)) {
+      polygons.push(value.coordinates);
+    } else if (value.type === 'MultiPolygon' && Array.isArray(value.coordinates)) {
+      polygons.push(...value.coordinates);
+    }
+  }
+  collectPolygons(land);
+  if (!polygons.length) {
+    const shape = land && land.type ? land.type : 'unbekannt';
+    throw new Error('Die Landgeometrie enthält keine Polygone (Format: ' + shape + ').');
+  }
+
   landPolygons = [];
   landGrid = new Map();
   for (const rings of polygons) {
