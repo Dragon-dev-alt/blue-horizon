@@ -32,22 +32,47 @@ function renderShips(){if(!map||!game)return;const alive=new Set(game.ships.map(
 function pointAlong(coords,t){let lengths=[],total=0;for(let i=1;i<coords.length;i++){const d=haversine({lat:coords[i-1][1],lon:coords[i-1][0]},{lat:coords[i][1],lon:coords[i][0]});lengths.push(d);total+=d}if(!total)return coords[0];let target=Math.max(0,Math.min(1,t))*total;for(let i=1;i<coords.length;i++){if(target<=lengths[i-1]){const f=lengths[i-1]?target/lengths[i-1]:0;return[coords[i-1][0]+(coords[i][0]-coords[i-1][0])*f,coords[i-1][1]+(coords[i][1]-coords[i-1][1])*f]}target-=lengths[i-1]}return coords[coords.length-1]}
 function baseComputeWaterRoute(a,b){
  const routeFn=window.searoute;
- if(!seaRoutingAvailable||!window.waterRouteDataReady||typeof routeFn!=='function'||typeof window.isWaterRouteSafe!=='function'||!a||!b)return null;
+ if(!seaRoutingAvailable||!window.waterRouteDataReady||typeof routeFn!=='function'||
+    typeof window.isWaterRouteSafe!=='function'||!a||!b)return null;
  const key=String(a.id)+'>'+String(b.id);
  if(waterRouteCache.has(key))return waterRouteCache.get(key);
+
+ const origin=[a.lon,a.lat],destination=[b.lon,b.lat];
+ const isUsableRoute=result=>{
+  const coords=result&&result.geometry&&result.geometry.coordinates;
+  const properties=result&&result.properties;
+  if(!Array.isArray(coords)||coords.length<2)return null;
+  if(properties&&((Number.isFinite(properties.originSnapKm)&&properties.originSnapKm>100)||
+      (Number.isFinite(properties.destinationSnapKm)&&properties.destinationSnapKm>100)))return null;
+  return coords;
+ };
  try{
-  const origin=[a.lon,a.lat],destination=[b.lon,b.lat];
-  let generated;
-  if(typeof window.searouteAlternatives==='function')generated=window.searouteAlternatives(origin,destination,{k:8});
-  else generated=routeFn(origin,destination);
-  const candidates=Array.isArray(generated)?generated:[generated];
-  for(const result of candidates){
-   const coords=result&&result.geometry&&result.geometry.coordinates,properties=result&&result.properties;
-   if(!Array.isArray(coords)||coords.length<2)continue;
-   if(properties&&((Number.isFinite(properties.originSnapKm)&&properties.originSnapKm>100)||(Number.isFinite(properties.destinationSnapKm)&&properties.destinationSnapKm>100)))continue;
-   if(!window.isWaterRouteSafe(coords))continue;
-   waterRouteCache.set(key,coords);
-   return coords;
+  // In den meisten Fällen reicht der Standardpfad. K-Alternativen sind deutlich teurer
+  // und werden daher nur berechnet, wenn die erste Route tatsächlich Land schneidet.
+  const primary=routeFn(origin,destination);
+  const primaryCoords=isUsableRoute(primary);
+  if(primaryCoords&&window.isWaterRouteSafe(primaryCoords)){
+   waterRouteCache.set(key,primaryCoords);
+   return primaryCoords;
+  }
+
+  if(typeof window.searouteAlternatives==='function'){
+   const generated=window.searouteAlternatives(origin,destination,{k:3});
+   const candidates=Array.isArray(generated)?generated:
+     generated&&Array.isArray(generated.features)?generated.features:
+     generated?[generated]:[];
+   for(const result of candidates){
+    if(result===primary)continue;
+    const coords=isUsableRoute(result);
+    if(!coords||coords===primaryCoords)continue;
+    // Eine Alternative, die dieselben Koordinaten wie die geprüfte Hauptroute liefert,
+    // darf keine zweite aufwendige Landprüfung auslösen.
+    if(primaryCoords&&coords.length===primaryCoords.length&&
+       coords.every((p,i)=>p[0]===primaryCoords[i][0]&&p[1]===primaryCoords[i][1]))continue;
+    if(!window.isWaterRouteSafe(coords))continue;
+    waterRouteCache.set(key,coords);
+    return coords;
+   }
   }
   waterRouteCache.set(key,null);
   return null;
