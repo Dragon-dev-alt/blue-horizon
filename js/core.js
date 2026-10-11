@@ -155,7 +155,31 @@ function chooseDifficulty(id){selectedDifficulty=id;document.querySelectorAll('[
 function firstFreeSlot(){for(let i=0;i<5;i++)if(!slotExists(i))return i;return -1}
 function showSaves(){hideSetups();$('menuActions').classList.add('hidden');$('savesSetup').classList.add('visible');$('menuHeading').textContent='Spielstände laden';$('menuDescription').textContent='Wähle eine gespeicherte Runde aus diesem Browser.';renderSaveList()}
 function renderSaveList(){$('saveList').innerHTML=Array.from({length:5},(_,i)=>{const g=loadSlot(i);return g?'<div class="save-row"><span><b>'+escapeHtml(g.company)+'</b><small>'+DIFFICULTIES[g.difficulty]?.label+' · Tag '+g.day+' · '+money(g.cash)+'</small></span><button onclick="loadGameSlot('+i+')">Laden</button></div>':'<div class="save-row"><span>Speicherplatz '+(i+1)+'<small>Leer</small></span><button disabled>Laden</button></div>'}).join('')}
-function loadGameSlot(slot){const g=loadSlot(slot);if(!g){toast('Spielstand konnte nicht geladen werden.');return}game=g;activeSlot=slot;selectedShipId=game.ships[0]?.id||null;if(!DIFFICULTIES[game.difficulty])game.difficulty='medium';$('mainMenu').classList.add('hidden');renderUI();renderShips();map.invalidateSize();showSelectedShipRoute(true);setSpeed(1);toast('Spielstand geladen: '+game.company)}
+function removeLegacyStarterShip(savedGame){
+ if(!savedGame||!Array.isArray(savedGame.ships))return false;
+ const initialIndex=savedGame.ships.findIndex(ship=>{
+  if(!ship||String(ship.id)!=='s1'||ship.trip||ship.inYard||ship.acquisitionPrice!=null)return false;
+  const type=shipType(ship.type);
+  if(!type||ship.name!==type.name+' s1')return false;
+  // Alte Spielstände enthielten das kostenlose s1 exakt am gewählten Hauptsitz.
+  return !savedGame.hq||String(ship.port)===String(savedGame.hq);
+ });
+ if(initialIndex<0)return false;
+ savedGame.ships.splice(initialIndex,1);
+ return true;
+}
+function loadGameSlot(slot){
+ const g=loadSlot(slot);
+ if(!g){toast('Spielstand konnte nicht geladen werden.');return}
+ const removedStarter=removeLegacyStarterShip(g);
+ game=g;activeSlot=slot;
+ selectedShipId=game.ships[0]?.id||null;
+ if(!DIFFICULTIES[game.difficulty])game.difficulty='medium';
+ $('mainMenu').classList.add('hidden');
+ renderUI();renderShips();map.invalidateSize();showSelectedShipRoute(true);
+ if(removedStarter){saveGame();toast('Kostenloses Startschiff entfernt. Kaufe dein erstes Schiff in der Werft.');}
+ else toast('Spielstand geladen: '+game.company);
+}
 function continueGame(){let slot=Number(localStorage.getItem(CONFIG.activeKey));if(!Number.isInteger(slot)||!slotExists(slot)){for(let i=0;i<5;i++)if(slotExists(i)){slot=i;break}}if(!slotExists(slot)){toast('Noch kein Spielstand vorhanden. Starte eine neue Runde.');showNewGame();return}loadGameSlot(slot)}
 function openMainMenu(){setSpeed(0);$('mainMenu').classList.remove('hidden');showMenuHome();$('continueHint').textContent=slotExists(Number(localStorage.getItem(CONFIG.activeKey)))?'Letzten Spielstand fortsetzen':'Noch kein Spielstand vorhanden'}
 /* Simulationszeit läuft unabhängig von der Bewegungsgeschwindigkeit im Routenmodell. */
