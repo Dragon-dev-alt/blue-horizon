@@ -46,7 +46,6 @@
 </div></div>
 <div class="overlay hidden" id="shipyard"><div class="menu-card"><div class="menu-brand"><div class="logo">⚓</div><div><h1>WERFT</h1><p>SCHIFFSKAUF & FLOTTE</p></div></div><div id="yardContent"></div><button style="width:100%;margin-top:12px" onclick="closeShipyard()">Zurück zum Spiel</button></div></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/@neilorange/searoute@1.0.0/dist/searoute.js"></script>
 <script>
 'use strict';
 /* =========================================================
@@ -158,7 +157,7 @@ function openMainMenu(){setSpeed(0);$('mainMenu').classList.remove('hidden');sho
 function setSpeed(speed){simulationSpeed=speed;lastFrame=performance.now();$('pauseBtn').classList.toggle('active',speed===0);$('playBtn').classList.toggle('active',speed===1);$('fastBtn').classList.toggle('active',speed===1.5);if(speed===0)toast('Simulation pausiert');else toast(speed===1.5?'Simulationszeit: 1,5×':'Simulation läuft')}
 function frame(now){if(!lastFrame)lastFrame=now;const dt=Math.min(100,now-lastFrame);lastFrame=now;if(game&&simulationSpeed>0&&!$('mainMenu').classList.contains('hidden')){}else if(game&&simulationSpeed>0){simulationProgress+=dt/CONFIG.daySeconds/1000*simulationSpeed;game.ships.forEach(s=>{if(s.trip){const tr=s.trip;tr.progress=Math.min(1,(tr.daysElapsed+simulationProgress)/tr.days);const p=pointAlong(tr.coords,tr.progress);const marker=shipMarkers[s.id];if(marker){marker.setLatLng([p[1],p[0]]);const p2=pointAlong(tr.coords,Math.min(1,tr.progress+.002));let dx=p2[0]-p[0];if(dx>180)dx-=360;if(dx< -180)dx+=360;tr.angle=Math.atan2(dx*Math.cos(p[1]*Math.PI/180),p2[1]-p[1])*180/Math.PI;const el=marker.getElement()?.querySelector('.ship-shape');if(el)el.style.transform='rotate('+(tr.angle-90)+'deg)'}}});while(simulationProgress>=1){simulationProgress-=1;nextDay()}if(Math.floor(now/500)!==Math.floor((now-dt)/500))renderUI()}animationId=requestAnimationFrame(frame)}
 /* Initialisierung */
-function init(){initMap();seaRoutingAvailable=typeof searoute==='function';if(!seaRoutingAvailable)console.warn('Maritime routing library unavailable; routes are disabled rather than drawn across land.');const active=Number(localStorage.getItem(CONFIG.activeKey));$('continueHint').textContent=Number.isInteger(active)&&slotExists(active)?'Letzten Spielstand fortsetzen':'Noch kein Spielstand vorhanden';requestAnimationFrame(frame)}
+function init(){initMap();seaRoutingAvailable=typeof searoute==='function';if(!seaRoutingAvailable)console.warn('Sea routing is not configured in this browser build; routes are disabled rather than drawn across land.');const active=Number(localStorage.getItem(CONFIG.activeKey));$('continueHint').textContent=Number.isInteger(active)&&slotExists(active)?'Letzten Spielstand fortsetzen':'Noch kein Spielstand vorhanden';requestAnimationFrame(frame)}
 window.addEventListener('load',init);
 
 /* === Erweiterung: gebrauchte Schiffe, Neubau, Reparaturen und Binnenschifffahrt === */
