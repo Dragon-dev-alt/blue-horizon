@@ -57,7 +57,7 @@ function baseComputeWaterRoute(a,b){
   }
 
   if(typeof window.searouteAlternatives==='function'){
-   const generated=window.searouteAlternatives(origin,destination,{k:3});
+   const generated=window.searouteAlternatives(origin,destination,{k:6});
    const candidates=Array.isArray(generated)?generated:
      generated&&Array.isArray(generated.features)?generated.features:
      generated?[generated]:[];
