@@ -86,27 +86,27 @@ async function startNewGame(){
  try{
   // Cover the setup screen before creating any game state so the browser can
   // paint the loader rather than appearing frozen during initialization.
-  setLoadingScreen('Reederei wird gegründet …',8);
+  setLoadingScreen('Lädt … Reederei wird gegründet',8);
   await waitForPaint();
   await waitForPaint();
 
-  setLoadingScreen('Startkapital, Werftangebote und Firmendaten werden vorbereitet …',24);
+  setLoadingScreen('Lädt … Startkapital und Firmendaten',24);
   game=makeGame(name,selectedDifficulty,hq);
   activeSlot=firstFreeSlot();if(activeSlot<0)activeSlot=0;
   selectedShipId=game.ships[0]?.id||null;
   saveGame();
   await waitForPaint();
 
-  setLoadingScreen('Wasserwegenetz und Landdaten werden geladen …',45);
+  setLoadingScreen('Lädt … Wasserwege und Landdaten',45);
   const routingReady=await waitForWaterRouting();
-  setLoadingScreen('Häfen, Spieloberfläche und Spielstand werden vorbereitet …',82);
+  setLoadingScreen('Lädt … Häfen und Spieloberfläche',82);
   await waitForPaint();
 
   // Keep the loader clearly visible even if the routing data was cached.
   const minimumLoaderMs=2600;
   const remainingLoaderMs=minimumLoaderMs-(performance.now()-startupStartedAt);
   if(remainingLoaderMs>0){
-   setLoadingScreen('Letzte Vorbereitungen – die Reederei wird eingerichtet …',92);
+   setLoadingScreen('Lädt … letzte Vorbereitungen',92);
    await new Promise(resolve=>setTimeout(resolve,remainingLoaderMs));
   }
 
