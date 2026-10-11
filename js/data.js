@@ -46,7 +46,14 @@ const PORTS=[
 {id:'dkr',name:'Dakar',country:'Senegal',lat:14.69,lon:-17.45,demand:1.02},
 {id:'wvb',name:'Walvis Bay',country:'Namibia',lat:-22.96,lon:14.51,demand:.96},
 {id:'ger',name:'Geraldton',country:'Australien',lat:-28.78,lon:114.61,demand:.92},
-{id:'bun',name:'Bunbury',country:'Australien',lat:-33.33,lon:115.64,demand:.92}
+{id:'bun',name:'Bunbury',country:'Australien',lat:-33.33,lon:115.64,demand:.92},
+{id:'tul',name:'Tulcea',country:'Rumänien',lat:45.17,lon:28.8,demand:.88,river:true},
+{id:'nov',name:'Novi Sad',country:'Serbien',lat:45.25,lon:19.85,demand:.9,river:true},
+{id:'cgr',name:'Cape Girardeau',country:'USA',lat:37.31,lon:-89.52,demand:.9,river:true},
+{id:'pad',name:'Paducah',country:'USA',lat:37.08,lon:-88.6,demand:.9,river:true},
+{id:'dyb',name:'Dyersburg',country:'USA',lat:36.03,lon:-89.38,demand:.9,river:true},
+{id:'yue',name:'Yueyang',country:'China',lat:29.37,lon:113.09,demand:.9,river:true},
+{id:'ful',name:'Fuling',country:'China',lat:29.7,lon:107.4,demand:.9,river:true}
 ];
 const CARGO=[
 {id:'containers',name:'Standardcontainer',icon:'📦',fee:170,capacity:1,speed:1,handling:1,types:['coastal','medium','long','ultra']},
