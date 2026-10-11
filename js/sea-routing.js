@@ -25,7 +25,8 @@ window.searoute = (origin, destination) => {
 // Alternative Pfade erst anfordern, wenn die normale Route die Landprüfung nicht besteht.
 window.searouteAlternatives = (origin, destination, options = {}) => {
   if (typeof seaRouteAlternativesImpl !== 'function') throw new Error('Alternative Routen sind noch nicht geladen.');
-  return seaRouteAlternativesImpl(origin, destination, { ...SEA_ROUTE_OPTIONS, ...options, network: DEFAULT_MARNET, k: 3 });
+  const k = Math.max(1, Math.min(6, Math.floor(Number(options.k) || 6)));
+  return seaRouteAlternativesImpl(origin, destination, { ...SEA_ROUTE_OPTIONS, ...options, network: DEFAULT_MARNET, k });
 };
 
 let landPolygons = [];
@@ -145,6 +146,12 @@ window.isWaterRouteSafe = function (coords) {
   if (!window.waterRouteDataReady || !Array.isArray(coords) || coords.length < 2) return false;
   const cached = routeSafetyCache.get(coords);
   if (cached !== undefined) return cached;
+
+  // Hafennetz-Knoten können direkt an der Küstenlinie liegen. Nur in einem
+  // kurzen Abschnitt am Start/Ziel erlauben wir solche Grenzpunkte; Landquerungen
+  // im restlichen Routenverlauf bleiben verboten.
+  const segmentLengths = [];
+  let totalLengthKm = 0;
   for (let i = 1; i < coords.length; i++) {
     const a = coords[i - 1], b = coords[i];
     if (!Array.isArray(a) || !Array.isArray(b) || !Number.isFinite(a[0]) ||
@@ -152,17 +159,34 @@ window.isWaterRouteSafe = function (coords) {
       routeSafetyCache.set(coords, false);
       return false;
     }
-    const steps = Math.max(1, Math.ceil(distanceKm(a, b) / MAX_SAMPLE_KM));
+    const length = distanceKm(a, b);
+    segmentLengths.push(length);
+    totalLengthKm += length;
+  }
+  const harborToleranceKm = Math.min(8, totalLengthKm * 0.1);
+  let traveledKm = 0;
+
+  for (let i = 1; i < coords.length; i++) {
+    const a = coords[i - 1], b = coords[i];
+    const segmentKm = segmentLengths[i - 1];
+    const steps = Math.max(1, Math.ceil(segmentKm / MAX_SAMPLE_KM));
     for (let j = 0; j <= steps; j++) {
       if (i > 1 && j === 0) continue;
       const f = j / steps;
       const lon = a[0] + (b[0] - a[0]) * f;
       const lat = a[1] + (b[1] - a[1]) * f;
       if (pointIsLand(lon, lat)) {
-        routeSafetyCache.set(coords, false);
-        return false;
+        const distanceFromStart = traveledKm + segmentKm * f;
+        const distanceFromEnd = totalLengthKm - distanceFromStart;
+        const onlyAtHarborApproach =
+          distanceFromStart <= harborToleranceKm || distanceFromEnd <= harborToleranceKm;
+        if (!onlyAtHarborApproach) {
+          routeSafetyCache.set(coords, false);
+          return false;
+        }
       }
     }
+    traveledKm += segmentKm;
   }
   routeSafetyCache.set(coords, true);
   return true;
