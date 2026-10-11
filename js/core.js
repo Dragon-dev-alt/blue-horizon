@@ -185,10 +185,12 @@ function baseRenderUI(){
  const orders=eligibleContracts(s);
  const underRepair=!!s&&(s.inYard||(game.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)));
  const waitingForRoutes=!!s&&!s.trip&&!underRepair&&s.type!=='river'&&!window.waterRouteDataReady;
+ const checkingForOrders=!!s&&!s.trip&&!underRepair&&!waitingForRoutes&&typeof isContractEligibilityPending==='function'&&isContractEligibilityPending(s);
  $('ordersHelp').textContent=!s?'Wähle ein Schiff aus.':
   s.trip?'Dieses Schiff ist unterwegs. Die türkisfarbene Linie zeigt seine aktive Route.':
   underRepair?'Dieses Schiff wird in der Werft überholt und ist vorübergehend nicht verfügbar.':
   waitingForRoutes?'Wasserwege werden geladen und auf Land geprüft. Sichere Aufträge erscheinen danach automatisch.':
+  checkingForOrders?'Passende Hafenaufträge werden im Hintergrund berechnet, damit die Karte flüssig bleibt.':
   orders.length?'Verfügbare Aufträge für '+s.name+'. Die gestrichelte goldene Linie zeigt die Routenvorschau.':
   'Es wird kein passender sicherer Hafenauftrag gefunden. Prüfe die Internetverbindung oder die Reichweite des Schiffs.';
  if(s&&s.trip){
@@ -197,8 +199,10 @@ function baseRenderUI(){
   $('ordersList').innerHTML='<p class="notice">Wähle ein Schiff aus der Flotte oder auf der Karte.</p>';
  }else if(underRepair){
   $('ordersList').innerHTML='<div class="order"><h3>In der Werft</h3><p>Aufträge werden nach Abschluss der Überholung wieder verfügbar.</p></div>';
- }else if(waitingForRoutes){
-  $('ordersList').innerHTML='<div class="order"><h3>Wasserwege werden geprüft</h3><p class="notice">Aufträge werden erst angezeigt, wenn eine Route gefunden wurde, die weder Inseln noch Festland kreuzt.</p></div>';
+ }else if(waitingForRoutes||checkingForOrders){
+  $('ordersList').innerHTML=waitingForRoutes
+   ?'<div class="order"><h3>Wasserwege werden geprüft</h3><p class="notice">Aufträge werden angezeigt, sobald das Routennetz bereit ist.</p></div>'
+   :'<div class="order"><h3>Aufträge werden gesucht</h3><p class="notice">Die Routen werden schrittweise im Hintergrund geprüft. Du kannst währenddessen weiter mit dem Spiel interagieren.</p></div>';
  }else if(orders.length){
   $('ordersList').innerHTML=orders.map(c=>'<div class="order"><h3>'+escapeHtml(c.company)+'</h3><p>'+port(c.from).name+' → '+port(c.to).name+'<br>'+cargo(c.cargo).icon+' '+cargo(c.cargo).name+'<br>Frist: '+c.deadline+' Spieltage</p><p>'+escapeHtml(c.desc)+'</p><div class="bonus">Bonus '+money(c.bonus*DIFFICULTIES[game.difficulty].revenue)+'</div><div class="contract-actions"><button type="button" class="route-preview-button" onclick="previewContractRoute(\''+c.id+'\')">Route ansehen</button><button class="primary" style="width:100%" onclick="acceptOrder(\''+c.id+'\')">Auftrag übernehmen</button></div></div>').join('');
  }else{
