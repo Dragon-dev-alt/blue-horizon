@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-label="Blue Horizon Ladebildschirm mit Containerschiff und Hafen im Abendlicht">
+<defs>
+ <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#061827" stop-opacity=".12"/><stop offset=".63" stop-color="#061827" stop-opacity=".05"/><stop offset="1" stop-color="#061827" stop-opacity=".72"/></linearGradient>
+ <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#061b2b" stop-opacity=".88"/><stop offset="1" stop-color="#061b2b" stop-opacity=".96"/></linearGradient>
+ <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<image href="./loading-harbor.svg" width="1600" height="900" preserveAspectRatio="xMidYMid slice"/>
+<rect width="1600" height="900" fill="url(#shade)"/>
+<g text-anchor="middle" font-family="Arial,Helvetica,sans-serif" fill="#f3f8ff">
+ <g transform="translate(800 56)" fill="none" stroke="#25e3f2" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="0" cy="0" r="11"/><path d="M0 12V76M-24 28H24M-25 52H25M-34 77Q-20 101 0 103Q20 101 34 77L23 85 15 65M-23 85L-14 65"/>
+  <path d="M-46 80Q-78 57 -112 75T-177 75M46 80Q78 57 112 75T177 75" stroke-width="5"/>
+ </g>
+ <text x="800" y="205" font-size="64" font-weight="800" letter-spacing="9">BLUE HORIZON</text>
+ <text x="800" y="239" font-size="16" font-weight="700" letter-spacing="5">DEINE REEDEREI. DEINE ROUTE. DEINE ZUKUNFT.</text>
+</g>
+<g font-family="Arial,Helvetica,sans-serif">
+ <rect x="160" y="754" width="1280" height="92" rx="10" fill="url(#panel)" stroke="#22d9ed" stroke-opacity=".72"/>
+ <g fill="#2ce7f2" font-weight="700" font-size="13" letter-spacing="1.1">
+  <text x="250" y="785">WELTWEITE ROUTEN</text><text x="548" y="785">EIGENE FLOTTE</text><text x="852" y="785">WIRTSCHAFT &amp; HANDEL</text><text x="1176" y="785">REALISTISCHE KARTE</text>
+ </g>
+ <g fill="#e1efff" font-size="13">
+  <text x="250" y="808">Entdecke ein komplettes</text><text x="250" y="826">Netz aus Häfen und Wasserwegen.</text>
+  <text x="548" y="808">Kaufe und verwalte deine</text><text x="548" y="826">Schiffe.</text>
+  <text x="852" y="808">Nutze Angebot und Nachfrage</text><text x="852" y="826">für maximalen Gewinn.</text>
+  <text x="1176" y="808">Detaillierte Küsten, Häfen</text><text x="1176" y="826">und Seegebiete.</text>
+ </g>
+ <g stroke="#25dcec" stroke-width="2" opacity=".65"><path d="M510 772V830M814 772V830M1138 772V830"/></g>
+ <g fill="none" stroke="#2ce7f2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M198 793q17 -15 34 0t34 0M202 803q17 -15 34 0t34 0M221 780v39M210 788l11 -8 11 8"/>
+  <path d="M522 800h52l-8 13h-36zM530 796v-15h36v15M537 781v-8h22v8M537 791h5m7 0h5m7 0h5"/>
+  <path d="M837 815v-20h9v20M855 815v-31h9v31M873 815v-43h9v43"/>
+  <circle cx="1159" cy="800" r="22"/><ellipse cx="1159" cy="800" rx="10" ry="22"/><path d="M1138 800h42M1143 786q16 10 32 0M1143 814q16 -10 32 0"/>
+ </g>
+ <g transform="translate(1260 660)">
+  <rect width="260" height="82" rx="10" fill="#061b2b" fill-opacity=".92" stroke="#25dcec" stroke-width="1.5"/>
+  <path d="M22 24q-9 -10 0 -17q9 7 0 17M22 24v8M17 33h10" fill="none" stroke="#2ce7f2" stroke-width="2.5" stroke-linecap="round"/>
+  <text x="43" y="23" fill="#2ce7f2" font-size="13" font-weight="700" letter-spacing="1">GUT ZU WISSEN</text>
+  <path d="M16 42H244" stroke="#2ce7f2" stroke-opacity=".45"/>
+  <g fill="#e1efff" font-size="12"><text x="16" y="58">Mehr geladene Daten helfen, Routen</text><text x="16" y="73">zu berechnen und sicherer zu fahren.</text></g>
+ </g>
+ <text x="800" y="878" fill="#e1efff" font-size="13" text-anchor="middle" letter-spacing="5">—  BLUE HORIZON  —</text>
+</g>
+</svg>
