@@ -9,3 +9,18 @@
 .route-preview-button{background:#17384a;border-color:#45738a}
 .route-preview-button:hover{background:#204f63;border-color:var(--cyan)}
 @media(max-width:760px){.contract-actions{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}.contract-actions button{padding:7px 5px;font-size:10px}}
+
+
+/* Startup loader: lightweight, accessible and fully hidden outside game creation. */
+.loading-screen{position:fixed;inset:0;z-index:4000;display:grid;place-items:center;padding:20px;background:radial-gradient(ellipse at 50% 18%,#12384b 0%,#07131f 68%);color:var(--text)}
+.loading-card{width:min(460px,100%);padding:clamp(24px,5vw,38px);text-align:center;border:1px solid #31566b;border-radius:20px;background:#0a1b29f7;box-shadow:0 20px 80px #0009}
+.loading-anchor{display:grid;place-items:center;width:62px;height:62px;margin:0 auto 18px;border:1px solid #47d8d088;border-radius:18px;background:#47d8d012;color:var(--cyan);font-size:30px;animation:loading-glow 2.2s ease-in-out infinite}
+.loading-kicker{margin:0 0 8px;color:var(--cyan);font-size:10px;font-weight:800;letter-spacing:2.5px}
+.loading-card h2{margin:0;font-size:22px;letter-spacing:.3px}
+.loading-message{min-height:38px;margin:12px 0 20px;color:#abc4d2;font-size:12px;line-height:1.6}
+.loading-progress{height:8px;overflow:hidden;border:1px solid #2a5064;border-radius:999px;background:#06131e}
+.loading-progress-fill{width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#168c99,#47d8d0);transition:width .3s ease}
+.loading-footer{display:flex;justify-content:space-between;gap:12px;margin-top:10px;color:#7f9aa9;font-size:9px;font-weight:800;letter-spacing:1.2px}
+.loading-footer strong{color:#d7faff;font-size:10px;font-variant-numeric:tabular-nums}
+@keyframes loading-glow{0%,100%{box-shadow:0 0 0 #47d8d000;transform:translateY(0)}50%{box-shadow:0 0 28px #47d8d01a;transform:translateY(-2px)}}
+@media(prefers-reduced-motion:reduce){.loading-anchor{animation:none}.loading-progress-fill{transition:none}}
