@@ -12,7 +12,7 @@
 
 
 /* Startup loader: lightweight, accessible and fully hidden outside game creation. */
-.loading-screen{position:fixed;inset:0;z-index:4000;display:grid;place-items:center;padding:20px;overflow:auto;isolation:isolate;background-color:#061522;background-image:url("./assets/loading-original.webp?v=original-art-20261012");background-position:center;background-size:cover;background-repeat:no-repeat;color:var(--text)}
+.loading-screen{position:fixed;inset:0;z-index:4000;display:grid;place-items:center;padding:20px;overflow:auto;isolation:isolate;background-color:#061522;background-image:url("./assets/Blauer%20Horizont%20%C3%BCber%20dem%20Containerhafen.png?v=loader-png-20261012");background-position:center;background-size:cover;background-repeat:no-repeat;color:var(--text)}
 .loading-card{width:min(510px,100%);max-height:calc(100vh - 40px);overflow:auto;padding:clamp(24px,5vw,38px);text-align:center;border:1px solid #5a8da0aa;border-radius:20px;background:rgba(5,20,34,.78);backdrop-filter:blur(2px);box-shadow:0 16px 48px #0008}
 .loading-anchor{display:grid;place-items:center;width:62px;height:62px;margin:0 auto 18px;border:1px solid #47d8d088;border-radius:18px;background:#47d8d012;color:var(--cyan);font-size:30px;animation:loading-glow 2.2s ease-in-out infinite}
 .loading-kicker{margin:0 0 8px;color:var(--cyan);font-size:10px;font-weight:800;letter-spacing:2.5px}
@@ -29,7 +29,7 @@
 /* Final loader design: show the uploaded artwork cleanly, with only a centered progress bar. */
 .loading-screen{
  background-color:#061522;
- background-image:url("./assets/loading-original.webp?v=loader-art-final-20261012");
+ background-image:url("./assets/Blauer%20Horizont%20%C3%BCber%20dem%20Containerhafen.png?v=loader-png-20261012");
  background-position:center center;
  background-size:cover;
  background-repeat:no-repeat;
