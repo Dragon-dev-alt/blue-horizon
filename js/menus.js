@@ -16,6 +16,12 @@ function showNewGame(){
  chooseDifficulty('easy');
 }
 let newGameStartupInProgress=false;
+window.addEventListener('water-route-loading-progress',event=>{
+ if(!newGameStartupInProgress||!event.detail)return;
+ const fraction=Number(event.detail.progress);
+ const progress=Number.isFinite(fraction)?Math.max(0,Math.min(1,fraction)):0;
+ setLoadingScreen(event.detail.message||'Küsten- und Hafendaten werden vorbereitet …',45+progress*30);
+});
 function setLoadingScreen(message,progress){
  const overlay=$('loadingScreen');
  if(overlay)overlay.classList.remove('hidden');
