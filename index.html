@@ -169,5 +169,18 @@ function renderUI(){if(!game)return;_oldRenderUI();$('fleetList').innerHTML=game
 const _oldEligible=eligibleContracts;
 function eligibleContracts(s){if(!s||s.trip||s.inYard)return[];return CONTRACTS.filter(c=>shipType(s.type).allowed.includes(c.cargo)&&!s.trip&&c.from!==c.to)}
 
+
+/* Binnenwasserstraßen: bewusst getrenntes Routennetz statt Luftlinien */
+const RIVER_LINKS=[
+ ['ham','dui'],['dui','cgn'],['cgn','fra'],['dui','rot'],['dui','ant'],['dui','str'],['str','bas'],
+ ['fra','par'],['par','rou'],['sev','lis'],['vie','bra'],['bra','bud'],['bud','bel'],['bel','gal'],
+ ['mem','stl'],['stl','pgh'],['wuh','chq']
+];
+function riverRoute(from,to){const adj={};RIVER_LINKS.forEach(([a,b])=>{(adj[a]||(adj[a]=[])).push(b);(adj[b]||(adj[b]=[])).push(a)});const q=[[from]],seen=new Set([from]);let found=null;while(q.length){const path=q.shift(),last=path[path.length-1];if(last===to){found=path;break}(adj[last]||[]).forEach(n=>{if(!seen.has(n)){seen.add(n);q.push(path.concat(n))}})}if(!found)return null;return found.map(id=>{const p=port(id);return[p.lon,p.lat]})}
+const _oldComputeWaterRoute=computeWaterRoute;
+function computeWaterRoute(a,b){if(a.river&&b.river){const r=riverRoute(a.id,b.id);if(r&&r.length>1)return r}return _oldComputeWaterRoute(a,b)}
+const _oldAcceptOrder=acceptOrder;
+function acceptOrder(contractId){const s=selectedShip(),c=CONTRACTS.find(x=>x.id===contractId);if(s&&s.type==='river'&&c){const a=port(c.from),b=port(c.to);if(!a?.river||!b?.river){toast('Binnenschiffe können nur Aufträge zwischen Binnenhäfen übernehmen.');return}}_oldAcceptOrder(contractId)}
+
 </script>
 </body></html>
