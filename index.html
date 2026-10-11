@@ -534,5 +534,167 @@ function renderFleetWindow(){
 function closeFleetWindow(){const w=$('fleetWindow');if(w)w.classList.add('hidden')}
 
 </script>
+
+<style>
+/* UI cleanup and interaction feedback */
+.side > .panel:first-child{display:none!important}
+button.active,.top-actions button.active{background:#087f83!important;border-color:#5cf4de!important;box-shadow:0 0 0 2px #5cf4de55,inset 0 0 0 1px #b9fff4;color:#fff;font-weight:800}
+.ship-icon{cursor:pointer!important;pointer-events:auto!important}
+.ship-icon .ship-shape{cursor:pointer!important;outline:2px solid transparent}
+.leaflet-marker-icon.ship-icon{z-index:700!important}
+.port-contract-button{display:block;width:100%;text-align:left;margin:6px 0}
+</style>
+<script>
+/* V1.4 interaction polish */
+function syncSpeedButtons(){
+ const speed=Number(simulationSpeed);
+ [['pauseBtn',0],['playBtn',1],['fastBtn',1.5]].forEach(([id,v])=>{const b=$(id);if(b){b.classList.toggle('active',speed===v);b.setAttribute('aria-pressed',speed===v?'true':'false')}})
+}
+const _setSpeedV14=setSpeed;
+setSpeed=function(speed){_setSpeedV14(speed);syncSpeedButtons()};
+window.addEventListener('load',()=>setTimeout(syncSpeedButtons,0));
+
+/* Separate tabs: used ships and repairs */
+function renderShipyard(){
+ if(!game)return;
+ normalizeUsedStock();
+ if(!game.buildOrders)game.buildOrders=[];
+ if(!game.repairOrders)game.repairOrders=[];
+ const d=DIFFICULTIES[game.difficulty];
+ const tab=(mode,label)=>'<button class="'+(yardMode===mode?'primary':'')+'" style="flex:1" onclick="yardMode=\''+mode+'\';renderShipyard()">'+label+'</button>';
+ const tabs='<div style="display:flex;gap:8px;margin:10px 0">'+tab('used','🚢 Gebrauchte Schiffe')+tab('repairs','🛠️ Reparaturen')+'</div>';
+ const back='<button style="width:100%;margin:8px 0" onclick="yardMode=\'home\';renderShipyard()">← Zur Werft-Auswahl</button>';
+ if(yardMode==='home'){
+  $('yardContent').innerHTML='<p class="notice">Wähle einen Bereich der Werft.</p>'+tabs+
+   '<div class="order"><h3>🚢 Gebrauchte Schiffe</h3><p>Nur Kaufangebote einzelner gebrauchter Schiffe.</p><button class="primary" style="width:100%" onclick="yardMode=\'used\';renderShipyard()">Gebrauchte Schiffe kaufen</button></div>'+
+   '<div class="order"><h3>🛠️ Reparaturen</h3><p>Hier kannst du deine vorhandenen Schiffe überholen lassen.</p><button style="width:100%" onclick="yardMode=\'repairs\';renderShipyard()">Reparaturen öffnen</button></div>'+
+   '<div class="order"><h3>⏳ Laufende Arbeiten</h3>'+((game.buildOrders.length?game.buildOrders.map(o=>'<p>'+escapeHtml(o.name)+' — noch '+o.remaining+' Tage</p>').join(''):'<p class="notice">Keine Neubauten in Arbeit.</p>')+(game.repairOrders.length?game.repairOrders.map(o=>'<p>Überholung '+escapeHtml(o.name)+' · noch '+o.remaining+' Tage</p>').join(''):'') )+'</div>';
+  return;
+ }
+ if(yardMode==='repairs'){
+  const ships=game.ships;
+  $('yardContent').innerHTML+='';
+  $('yardContent').innerHTML=tabs+back+'<p class="notice">Reparaturen sind getrennt vom Kauf gebrauchter Schiffe.</p>'+
+   (ships.length?'<div class="field"><label for="repairShip">Schiff auswählen</label><select id="repairShip">'+ships.map(sh=>'<option value="'+sh.id+'">'+escapeHtml(sh.name)+' · '+(sh.condition??100)+' % Zustand</option>').join('')+'</select></div><button class="primary" style="width:100%" onclick="repairSelectedShip()">Ausgewähltes Schiff überholen</button>':'<div class="order"><p>Du hast noch keine eigenen Schiffe.</p></div>')+
+   ((game.repairOrders||[]).length?'<h3>Laufende Reparaturen</h3>'+game.repairOrders.map(o=>'<div class="order"><b>'+escapeHtml(o.name)+'</b><p>Noch '+o.remaining+' Tage</p></div>').join(''):'');
+  return;
+ }
+ const typeId=$('yardType')?.value||SHIP_TYPES[0].id;
+ const opts=SHIP_TYPES.map(t=>'<option value="'+t.id+'" '+(t.id===typeId?'selected':'')+'>'+t.name+' · '+game.usedStock[t.id].length+' verfügbar</option>').join('');
+ const offers=game.usedStock[typeId]||[];
+ const cards=offers.length?offers.map(o=>{
+  const t=shipType(typeId),place=port(o.port);
+  return '<div class="order ship-offer-card" style="margin-top:12px"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><h3 style="margin:0">'+escapeHtml(o.name)+'</h3><span class="bonus">'+money(o.price)+'</span></div>'+shipIllustration(typeId,t.color)+'<p>'+escapeHtml(t.desc)+'<br><b>Zustand:</b> '+o.condition+' %<br><b>Reichweite:</b> '+o.range.toLocaleString('de-DE')+' km<br><b>Geschwindigkeit:</b> '+t.speed+' kn<br><b>Kapazität:</b> '+t.capacity+' Einheiten<br><b>Unterhalt:</b> '+money(Math.round(t.upkeep*d.upkeep))+'/Woche<br><b>Liegeplatz:</b> '+escapeHtml(place?place.name:'Unbekannter Hafen')+'</p><button class="primary" style="width:100%" onclick="buyUsedShip(\''+typeId+'\',\''+o.offerId+'\')">Dieses Schiff kaufen · '+money(o.price)+'</button></div>';
+ }).join(''):'<div class="order"><h3>Derzeit keine Angebote</h3><p>Für diese Klasse sind momentan keine gebrauchten Schiffe verfügbar. Wähle eine andere Klasse.</p></div>';
+ $('yardContent').innerHTML=tabs+back+'<div class="field" style="margin-top:10px"><label for="yardType">Schiffsklasse filtern</label><select id="yardType" onchange="renderShipyard()">'+opts+'</select></div><p class="notice">'+offers.length+' individuelles Angebot'+(offers.length===1?'':'e')+' für diese Schiffsklasse</p><div style="max-height:52vh;overflow-y:auto;padding-right:5px">'+cards+'</div>';
+}
+
+/* Contracts are generated per harbor, not for every ship class at every port. */
+function allContracts(){
+ if(!game)return CONTRACTS;
+ if(!Array.isArray(game.harborContracts)){
+  game.harborContracts=[];
+  PORTS.forEach(p=>{
+   const count=Math.floor(Math.random()*4); // 0–3 contracts; some ports have none
+   const destinations=PORTS.filter(q=>q.id!==p.id);
+   for(let i=0;i<count;i++){
+    const dest=destinations[Math.floor(Math.random()*destinations.length)];
+    const cargoOptions=CARGO.filter(c=>c.types.some(type=>SHIP_TYPES.some(st=>st.allowed.includes(c.id)&&st.id===type)));
+    const item=cargoOptions[Math.floor(Math.random()*cargoOptions.length)];
+    game.harborContracts.push({id:'harbor-'+p.id+'-'+i,company:['Oceanic Trade','Nordstern Logistics','BlueWave Cargo','Global Freight','HarborLink'][Math.floor(Math.random()*5)],from:p.id,to:dest.id,cargo:item.id,bonus:Math.round(12000+Math.random()*80000),deadline:12+Math.floor(Math.random()*30),desc:'Ein neuer regionaler Frachtauftrag.'});
+   }
+  });
+ }
+ return CONTRACTS.concat(game.harborContracts);
+}
+const _eligibleContractsV14=eligibleContracts;
+eligibleContracts=function(s){
+ if(!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>o.shipId===s.id))return[];
+ ensureShipStats(s);const st=shipType(s.type),origin=s.port;
+ return allContracts().filter(c=>{
+  if(c.from!==origin||c.to===origin||!st.allowed.includes(c.cargo))return false;
+  const coords=routeForContract(c,s);if(!coords||coords.length<2)return false;
+  const distance=coords.reduce((sum,p,i)=>i?sum+haversine({lat:coords[i-1][1],lon:coords[i-1][0]},{lat:coords[i][1],lon:coords[i][0]}):0,0);
+  return distance<=s.range;
+ });
+};
+const _acceptOrderV14=acceptOrder;
+acceptOrder=function(contractId){
+ const c=allContracts().find(x=>x.id===contractId);
+ if(!c){toast('Dieser Auftrag ist nicht mehr verfügbar.');return}
+ const s=selectedShip();
+ if(!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>o.shipId===s.id)||!shipType(s.type).allowed.includes(c.cargo)){toast('Dieser Auftrag passt nicht zum ausgewählten Schiff.');return}
+ ensureShipStats(s);
+ if(c.from!==s.port){toast('Das Schiff muss sich im Start-Hafen des Auftrags befinden.');return}
+ const a=port(c.from),b=port(c.to),coords=routeForContract(c,s);
+ if(!coords||coords.length<2){toast('Für diese Häfen ist keine passende Wasserroute verfügbar.');return}
+ const distance=coords.reduce((sum,p,i)=>i?sum+haversine({lat:coords[i-1][1],lon:coords[i-1][0]},{lat:coords[i][1],lon:coords[i][0]}):0,0);
+ if(distance>s.range){toast('Diese Route überschreitet die Reichweite dieses Schiffs.');return}
+ const t=cargo(c.cargo),st=shipType(s.type),diff=DIFFICULTIES[game.difficulty],units=Math.floor(st.capacity*t.capacity);
+ let revenue=Math.round(units*t.fee*((a.demand+b.demand)/2)*diff.revenue+c.bonus*diff.revenue);
+ const hq=game.hq||'ham',hqBonus=(c.from===hq||c.to===hq)?0.10:0;
+ revenue=Math.round(revenue*(1+hqBonus));
+ const days=Math.max(1,Math.ceil(distance/(st.speed*24*t.speed)+t.handling+1));
+ s.trip={contractId:c.id,from:c.from,to:c.to,cargo:c.cargo,coords,progress:0,distance,days,daysElapsed:0,revenue,baseRevenue:Math.round(units*t.fee*((a.demand+b.demand)/2)*diff.revenue+c.bonus*diff.revenue),hqBonus,units,cost:Math.round((distance*22+days*st.upkeep/7)*diff.cost)};
+ s.status='sailing';selectedShipId=s.id;addLog(s.name+' übernimmt Auftrag von '+c.company+': '+a.name+' → '+b.name+'.');
+ saveGame();renderUI();renderShips();toast('Auftrag angenommen · '+days+' Spieltage');
+};
+
+/* Clickable ports with their own local contract list. */
+function openHarborWindow(portId){
+ if(!game)return;
+ const p=port(portId);if(!p)return;
+ const contracts=allContracts().filter(c=>c.from===portId);
+ let w=$('harborWindow');
+ if(!w){w=document.createElement('div');w.id='harborWindow';w.className='overlay';w.style.zIndex='2300';document.body.appendChild(w)}
+ w.innerHTML='<div class="menu-card" style="max-height:85vh;overflow:auto"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h2 style="margin:0">⚓ '+escapeHtml(p.name)+' · Aufträge</h2><button onclick="$(\'harborWindow\').classList.add(\'hidden\')">Schließen ✕</button></div><p class="notice">'+escapeHtml(p.country)+' · Nachfrage '+Math.round(p.demand*100)+' %</p>'+
+ (contracts.length?contracts.map(c=>'<div class="order"><h3>'+escapeHtml(c.company)+'</h3><p>'+escapeHtml(c.desc||'Frachtauftrag')+'<br><b>Ziel:</b> '+escapeHtml(port(c.to).name)+'<br><b>Fracht:</b> '+escapeHtml(cargo(c.cargo).name)+'<br><b>Bonus:</b> '+money(c.bonus)+'<br><b>Frist:</b> '+c.deadline+' Tage</p><button class="port-contract-button" onclick="selectHarborContract(\''+c.id+'\',\''+portId+'\')">Auftrag im Auftragsfenster anzeigen</button></div>').join(''):'<div class="order"><h3>Keine Aufträge verfügbar</h3><p>In diesem Hafen gibt es momentan keine offenen Aufträge. Schaue später erneut vorbei oder prüfe einen anderen Hafen.</p></div>')+'</div>';
+ w.classList.remove('hidden');
+}
+function selectHarborContract(id,portId){
+ const c=allContracts().find(x=>x.id===id);
+ if(!c)return;
+ const s=selectedShip();
+ if(s&&s.port===portId&&!s.trip&&shipType(s.type).allowed.includes(c.cargo)){
+  closeFleetWindow();$('harborWindow')?.classList.add('hidden');
+  renderUI();
+  const list=$('orderList')||document.querySelector('.order-list');
+  if(list){const card=[...list.querySelectorAll('[onclick]')].find(el=>(el.getAttribute('onclick')||'').includes(id));if(card)card.scrollIntoView({behavior:'smooth',block:'center'})}
+  toast('Auftrag ausgewählt. Prüfe die Route und nimm ihn im Auftragsfenster an.');
+ }else{
+  toast('Wähle zuerst ein einsatzbereites Schiff dieses Hafens mit passender Frachtart.');
+ }
+}
+const _initMapV14=initMap;
+initMap=function(){
+ _initMapV14();
+ if(!map)return;
+ // Make every ship marker explicitly clickable and visibly selectable.
+ renderShips();
+ Object.keys(shipMarkers).forEach(id=>{
+  const m=shipMarkers[id];m.off('click');m.on('click',()=>{selectShip(id);const sh=game?.ships.find(x=>x.id===id);if(sh)toast('Ausgewählt: '+sh.name)});
+  m.options.zIndexOffset=1000;m.setZIndexOffset(1000);
+ });
+ // Attach port click handlers to the original port markers.
+ portMarkers.forEach((m,i)=>{
+  const p=PORTS[i];m.off('click');m.on('click',()=>openHarborWindow(p.id));
+  m.bindTooltip(p.name+' · '+p.country+' · anklicken für Hafenaufträge',{direction:'top'});
+  m.setStyle({radius:6,weight:2,fillOpacity:1});
+ });
+};
+const _renderShipsV14=renderShips;
+renderShips=function(){
+ _renderShipsV14();
+ if(!map||!game)return;
+ Object.keys(shipMarkers).forEach(id=>{
+  const m=shipMarkers[id];m.off('click');m.on('click',()=>{selectShip(id);toast('Ausgewählt: '+(game.ships.find(s=>s.id===id)?.name||'Schiff'))});
+  m.setZIndexOffset(1000);
+  if(id===selectedShipId)m.setOpacity(1);
+ });
+};
+const _renderUIV14=renderUI;
+renderUI=function(){_renderUIV14();syncSpeedButtons()};
+</script>
+
 </body>
 </html>
