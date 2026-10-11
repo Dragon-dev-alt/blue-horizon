@@ -245,7 +245,7 @@ function acceptOrder(contractId){
  const a=port(c.from),b=port(c.to),coords=routeForContract(c,s);
  if(!coords||coords.length<2){toast('Für diese Häfen ist keine passende Wasserroute verfügbar. Es wird keine Luftlinie als Ersatz benutzt.');return;}
  const t=cargo(c.cargo),st=shipType(s.type),diff=DIFFICULTIES[game.difficulty];
- const distance=coords.reduce((sum,p,i)=>i?sum+haversine({lat:coords[i-1][1],lon:coords[i-1][0]},{lat:p[1],lon:p[1]===undefined?0: p[0]}):0,0);
+ const distance=coords.reduce((sum,p,i)=>i?sum+haversine({lat:coords[i-1][1],lon:coords[i-1][0]},{lat:p[1],lon:p[0]}):0,0);
  if(distance>st.range){toast('Diese Route überschreitet die Reichweite dieses Schiffstyps.');return;}
  const units=Math.floor(st.capacity*t.capacity);
  const revenue=Math.round(units*t.fee*((a.demand+b.demand)/2)*diff.revenue+c.bonus*diff.revenue);
