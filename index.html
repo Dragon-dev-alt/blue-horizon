@@ -1047,5 +1047,116 @@ eligibleContracts=function(s){
 };
 </script>
 
+
+<style>
+/* V1.8: explicit selected-state styling; Play is not permanently primary */
+#playBtn{background:var(--panel,#132b3b)!important;color:var(--text,#e8f3f8)!important;border-color:var(--line,#284454)!important;box-shadow:none!important}
+#playBtn.active{background:var(--accent,#25c6b7)!important;color:#06242a!important;border-color:var(--accent,#25c6b7)!important;box-shadow:0 0 0 2px rgba(37,198,183,.2)!important}
+#pauseBtn.active,#fastBtn.active{background:var(--accent,#25c6b7)!important;color:#06242a!important;border-color:var(--accent,#25c6b7)!important}
+#fleetWindowList .ship-row,#fleetList .ship-row{display:flex!important;align-items:center;gap:10px;width:100%;min-height:54px;text-align:left;pointer-events:auto!important;cursor:pointer!important;position:relative;z-index:999999}
+.leaflet-marker-icon.ship-icon,.leaflet-marker-icon.ship-icon *{pointer-events:auto!important;cursor:pointer!important}
+#fleetWindow{z-index:999999!important}
+</style>
+<script>
+/* V1.8: event delegation independent of the many legacy renderer overrides. */
+document.addEventListener('click',function(e){
+ const row=e.target&&e.target.closest&&e.target.closest('#fleetWindowList .ship-row,#fleetList .ship-row');
+ if(row){
+  const id=row.dataset.shipId||((row.getAttribute('onclick')||'').match(/selectShip\(['"]([^'"]+)['"]\)/)||[])[1];
+  if(id&&game&&game.ships.some(s=>String(s.id)===String(id))){
+   e.preventDefault();e.stopImmediatePropagation();
+   selectedShipId=game.ships.find(s=>String(s.id)===String(id)).id;
+   try{renderSelectedShipDetails()}catch(_){}
+   try{renderUI()}catch(_){}
+   try{renderShips()}catch(_){}
+   try{renderSelectedShipDetails()}catch(_){}
+   const w=$('fleetWindow');if(w&&row.closest('#fleetWindowList'))w.classList.remove('hidden');
+  }
+ }
+ const marker=e.target&&e.target.closest&&e.target.closest('.leaflet-marker-icon.ship-icon,.ship-icon,.ship-shape');
+ if(marker&&game){
+  const id=Object.keys(shipMarkers).find(k=>{const m=shipMarkers[k],el=m&&m.getElement&&m.getElement();return el&&(el===marker||el.contains(marker))});
+  if(id&&game.ships.some(s=>String(s.id)===String(id))){
+   e.preventDefault();e.stopImmediatePropagation();
+   selectedShipId=game.ships.find(s=>String(s.id)===String(id)).id;
+   try{renderUI()}catch(_){}
+   try{renderShips()}catch(_){}
+   try{renderSelectedShipDetails()}catch(_){}
+  }
+ }
+},true);
+const _renderUIV18=renderUI;
+renderUI=function(){
+ _renderUIV18();
+ const list=$('fleetWindowList');
+ if(list&&game)[...list.querySelectorAll('.ship-row')].forEach((el,i)=>{const sh=game.ships[i];if(sh)el.dataset.shipId=String(sh.id)});
+ const side=$('fleetList');
+ if(side&&game)[...side.querySelectorAll('.ship-row')].forEach((el,i)=>{const sh=game.ships[i];if(sh)el.dataset.shipId=String(sh.id)});
+ const pb=$('playBtn');if(pb)pb.classList.toggle('active',simulationSpeed===1);
+ const pa=$('pauseBtn');if(pa)pa.classList.toggle('active',simulationSpeed===0);
+ const fb=$('fastBtn');if(fb)fb.classList.toggle('active',simulationSpeed===1.5);
+};
+const _setSpeedV18=setSpeed;
+setSpeed=function(speed){_setSpeedV18(speed);const pb=$('playBtn');if(pb)pb.classList.toggle('active',speed===1)};
+/* Rebuild the market from navigable routes. Stale saved invalid contracts are discarded. */
+function contractHasNavigableShip(c){
+ const a=port(c.from),b=port(c.to);
+ if(!a||!b||a.id===b.id||!cargo(c.cargo))return false;
+ return SHIP_TYPES.some(st=>{
+  if(!st.allowed.includes(c.cargo))return false;
+  if(st.id==='river'){if(!a.river||!b.river)return false}
+  else if(a.river||b.river)return false;
+  const route=routeForContract(c,{type:st.id,port:a.id,range:st.range});
+  if(!route||route.length<2)return false;
+  const km=route.reduce((sum,pt,i)=>i?sum+haversine({lat:route[i-1][1],lon:route[i-1][0]},{lat:pt[1],lon:pt[0]}):0,0);
+  return km<=st.range;
+ });
+}
+function createHarborContracts(){
+ const rows=[],companies=['Oceanic Trade','Nordstern Logistics','BlueWave Cargo','Global Freight','HarborLink','RheinCargo','Danube Freight'];
+ PORTS.forEach(p=>{
+  const count=Math.floor(Math.random()*4),candidates=[];
+  for(const dest of PORTS){
+   if(dest.id===p.id)continue;
+   for(const st of SHIP_TYPES){
+    if(st.id==='river'?(!p.river||!dest.river):(p.river||dest.river))continue;
+    for(const cg of CARGO){
+     if(!st.allowed.includes(cg.id))continue;
+     const c={from:p.id,to:dest.id,cargo:cg.id};
+     if(!contractHasNavigableShip(c))continue;
+     const route=routeForContract(c,{type:st.id,port:p.id,range:st.range});
+     const km=route.reduce((sum,pt,i)=>i?sum+haversine({lat:route[i-1][1],lon:route[i-1][0]},{lat:pt[1],lon:pt[0]}):0,0);
+     if(km<=st.range)candidates.push({dest,st,cg,km});
+    }
+   }
+  }
+  const used=new Set();
+  for(let i=0;i<count&&candidates.length;i++){
+   const ix=Math.floor(Math.random()*candidates.length),x=candidates.splice(ix,1)[0];
+   if(used.has(x.dest.id))continue;used.add(x.dest.id);
+   rows.push({id:'market-'+game.day+'-'+p.id+'-'+i,company:companies[Math.floor(Math.random()*companies.length)],from:p.id,to:x.dest.id,cargo:x.cg.id,bonus:Math.round((x.st.id==='river'?4000:12000)+Math.random()*(x.st.id==='river'?14000:80000)),deadline:Math.max(3,Math.ceil(x.km/(x.st.speed*24))+4+Math.floor(Math.random()*12)),desc:(x.st.id==='river'?'Binnenwasserstraßen-Transport':'Seefrachtauftrag')+' von '+p.name+' nach '+x.dest.name+'.'});
+  }
+ });
+ return rows;
+}
+const _allContractsV18=allContracts;
+allContracts=function(){
+ const rows=_allContractsV18().filter(contractHasNavigableShip);
+ if(game&&Array.isArray(game.harborContracts))game.harborContracts=game.harborContracts.filter(contractHasNavigableShip);
+ return rows;
+};
+const _eligibleV18=eligibleContracts;
+eligibleContracts=function(ship){
+ if(!ship||ship.trip||ship.inYard||(game.repairOrders||[]).some(o=>o.shipId===ship.id))return[];
+ ensureShipStats(ship);
+ return allContracts().filter(c=>{
+  if(c.from!==ship.port||!shipType(ship.type).allowed.includes(c.cargo))return false;
+  const route=routeForContract(c,ship);if(!route||route.length<2)return false;
+  const km=route.reduce((sum,pt,i)=>i?sum+haversine({lat:route[i-1][1],lon:route[i-1][0]},{lat:pt[1],lon:pt[0]}):0,0);
+  return km<=ship.range;
+ });
+};
+</script>
+
 </body>
 </html>
