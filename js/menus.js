@@ -26,9 +26,10 @@ function setLoadingScreen(message,progress){
  const overlay=$('loadingScreen');
  if(overlay){
   overlay.classList.remove('hidden');
-  // Inline fallback keeps the loader visible even if an older .hidden rule is cached.
+  // Explicit visibility plus a versioned asset URL makes the transition reliable.
   overlay.style.display='grid';
   overlay.style.visibility='visible';
+  overlay.setAttribute('aria-hidden','false');
  }
  const label=$('loadingMessage');
  const fill=$('loadingProgress');
@@ -62,13 +63,17 @@ function waitForWaterRouting(timeoutMs=36000){
   else if(window.waterRouteDataError||window.waterRouteDataLoading===false)finish(false);
  });
 }
-function waitForPaint(){return new Promise(resolve=>requestAnimationFrame(()=>resolve()))}
+function waitForPaint(){return new Promise(resolve=>{
+ if(typeof requestAnimationFrame==='function')requestAnimationFrame(()=>resolve());
+ else setTimeout(resolve,16);
+})}
 function hideLoadingScreen(){
  const overlay=$('loadingScreen');
  if(overlay){
   overlay.classList.add('hidden');
   overlay.style.display='none';
   overlay.style.visibility='hidden';
+  overlay.setAttribute('aria-hidden','true');
  }
 }
 async function startNewGame(){
@@ -97,9 +102,8 @@ async function startNewGame(){
   setLoadingScreen('Häfen, Spieloberfläche und Spielstand werden vorbereitet …',82);
   await waitForPaint();
 
-  // Keep the loader on screen long enough to be clearly visible, even when
-  // routing data was already cached from a previous visit.
-  const minimumLoaderMs=2400;
+  // Keep the loader clearly visible even if the routing data was cached.
+  const minimumLoaderMs=2600;
   const remainingLoaderMs=minimumLoaderMs-(performance.now()-startupStartedAt);
   if(remainingLoaderMs>0){
    setLoadingScreen('Letzte Vorbereitungen – die Reederei wird eingerichtet …',92);
