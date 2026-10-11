@@ -194,5 +194,15 @@ function eligibleContracts(s){
  return CONTRACTS.filter(c=>c.from===origin&&st.allowed.includes(c.cargo)&&c.to!==origin&&portCanServeShip(port(c.from),s)&&portCanServeShip(port(c.to),s)&&(s.type!=='river'||(port(c.from).river&&port(c.to).river)));
 }
 
+
+/* Jedes bestehende Hafenobjekt erhält ein explizites Level für die Kette
+   Binnenhafen → Regionalhafen → internationaler Hafen. */
+PORTS.forEach(p=>{
+ if(p.river){p.type='inland';p.level=1}
+ else if(['ham','rot','lon','ant','nyc','hou','sin','sha','dub','mum','sao','van','tyo','syd'].includes(p.id)){p.type='international';p.level=3}
+ else {p.type='regional';p.level=2}
+});
+function portTypeName(p){return p.level===3?'Internationaler Hafen':p.level===2?'Regionaler Seehafen':'Binnenhafen'}
+
 </script>
 </body></html>
