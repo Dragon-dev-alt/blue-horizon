@@ -14,7 +14,7 @@ function normalizeUsedStock(){
  SHIP_TYPES.forEach(t=>{
   const value=game.usedStock[t.id];
   if(Array.isArray(value)){
-   value.forEach((o,i)=>{if(!o.offerId)o.offerId=t.id+'-legacy-'+i+'-'+Math.random().toString(36).slice(2,6);if(!o.type)o.type=t.id;if(!o.condition)o.condition=10+Math.floor(Math.random()*81);if(!o.range)o.range=randomShipRange(t.id);if(!o.port)o.port=randomShipPort(t.id);if(!o.price)o.price=Math.round(t.price*(.48+(.9-o.condition/100)*.4)*DIFFICULTIES[game.difficulty].cost);if(!o.name)o.name=t.name+' '+(i+1)});
+   value.forEach((o,i)=>{if(!o.offerId)o.offerId=t.id+'-legacy-'+i+'-'+Math.random().toString(36).slice(2,6);if(!o.type)o.type=t.id;if(!o.condition)o.condition=10+Math.floor(Math.random()*81);if(!o.range)o.range=randomShipRange(t.id);const offerPort=port(o.port);if(!offerPort||!!offerPort.river!==(t.id==='river'))o.port=randomShipPort(t.id);if(!o.price)o.price=Math.round(t.price*(.48+(.9-o.condition/100)*.4)*DIFFICULTIES[game.difficulty].cost);if(!o.name)o.name=t.name+' '+(i+1)});
   } else {
    const count=Math.max(0,Math.min(8,Number(value)||0));
    game.usedStock[t.id]=Array.from({length:count},(_,i)=>stockOffer(t.id,i));
