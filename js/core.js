@@ -87,12 +87,30 @@ function smoothWaterRoute(coords){
  if(window.isWaterRouteSafe(once))return once;
  return coords;
 }
+/* Bounded LRU cache: prevent route geometry for every port pair from
+   accumulating indefinitely during a long play session. */
+const MAX_CACHED_WATER_ROUTES=180;
+function cacheWaterRoute(key,coords){
+ if(waterRouteCache.has(key))waterRouteCache.delete(key);
+ waterRouteCache.set(key,coords);
+ if(waterRouteCache.size>MAX_CACHED_WATER_ROUTES){
+  const oldest=waterRouteCache.keys().next().value;
+  waterRouteCache.delete(oldest);
+ }
+ return coords;
+}
 function baseComputeWaterRoute(a,b){
  const routeFn=window.searoute;
  if(!seaRoutingAvailable||!window.waterRouteDataReady||typeof routeFn!=='function'||
     typeof window.isWaterRouteSafe!=='function'||!a||!b)return null;
  const key=String(a.id)+'>'+String(b.id);
- if(waterRouteCache.has(key))return waterRouteCache.get(key);
+ if(waterRouteCache.has(key)){
+  const cached=waterRouteCache.get(key);
+  // Refresh this entry's position in the LRU order.
+  waterRouteCache.delete(key);
+  waterRouteCache.set(key,cached);
+  return cached;
+ }
 
  const origin=[a.lon,a.lat],destination=[b.lon,b.lat];
  const isUsableRoute=result=>{
@@ -110,7 +128,7 @@ function baseComputeWaterRoute(a,b){
   const primaryCoords=isUsableRoute(primary);
   if(primaryCoords&&window.isWaterRouteSafe(primaryCoords)){
    const smooth=smoothWaterRoute(primaryCoords);
-   waterRouteCache.set(key,smooth);
+   cacheWaterRoute(key,smooth);
    return smooth;
   }
 
@@ -129,14 +147,14 @@ function baseComputeWaterRoute(a,b){
        coords.every((p,i)=>p[0]===primaryCoords[i][0]&&p[1]===primaryCoords[i][1]))continue;
     if(!window.isWaterRouteSafe(coords))continue;
     const smooth=smoothWaterRoute(coords);
-    waterRouteCache.set(key,smooth);
+    cacheWaterRoute(key,smooth);
     return smooth;
    }
   }
-  waterRouteCache.set(key,null);
+  cacheWaterRoute(key,null);
   return null;
  }catch(e){
-  waterRouteCache.set(key,null);
+  cacheWaterRoute(key,null);
   console.warn('Keine sichere Wasserroute gefunden:',e);
   return null;
  }
