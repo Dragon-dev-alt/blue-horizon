@@ -30,6 +30,19 @@ function selectShipAtPort(portId){
 function iconForShip(s,angle=0){const t=shipType(s.type),z=map.getZoom(),size=Math.max(16,Math.min(25,22-(z-2)*.35)),hitSize=Math.max(40,size+18),shipHeight=Math.max(8,size*.48),selected=String(s.id)===String(selectedShipId);return L.divIcon({className:'ship-icon',html:'<div class="ship-hit-area'+(selected?' selected-ship-marker':'')+'" style="width:'+hitSize+'px;height:'+hitSize+'px;display:flex;align-items:center;justify-content:center;pointer-events:auto;cursor:pointer;box-sizing:border-box"><div class="ship-shape" style="width:'+size+'px;height:'+shipHeight+'px;flex:none;background:'+t.color+';transform:rotate('+(angle-90)+'deg)"></div></div>',iconSize:[hitSize,hitSize],iconAnchor:[hitSize/2,hitSize/2]})}
 function renderShips(){if(!map||!game)return;const alive=new Set(game.ships.map(s=>String(s.id)));Object.keys(shipMarkers).forEach(id=>{if(!alive.has(String(id))){map.removeLayer(shipMarkers[id]);delete shipMarkers[id]}});game.ships.forEach(s=>{ensureShipStats(s);let pos=port(s.port);if(s.trip&&s.trip.coords){const p=pointAlong(s.trip.coords,s.trip.progress);pos={lat:p[1],lon:p[0]}}let m=shipMarkers[s.id];if(!m){m=L.marker([pos.lat,pos.lon],{icon:iconForShip(s,s.trip?s.trip.angle||0:0),interactive:true,keyboard:true,riseOnHover:true,zIndexOffset:2000,autoPanOnFocus:false}).addTo(map);shipMarkers[s.id]=m}else{m.setLatLng([pos.lat,pos.lon]);m.setIcon(iconForShip(s,s.trip?s.trip.angle||0:0));m.setZIndexOffset(2000)}m.off('click');m.on('click',()=>queueShipSelection(s.id));m.bindTooltip(s.name+' · '+shipType(s.type).name,{direction:'top'});const el=m.getElement();if(el){el.style.pointerEvents='auto';el.style.cursor='pointer';el.dataset.shipId=String(s.id);el.setAttribute('role','button');el.setAttribute('tabindex','0');el.setAttribute('aria-label','Schiff auswählen: '+s.name);el.onclick=function(ev){ev.preventDefault();ev.stopPropagation();queueShipSelection(el.dataset.shipId);return false};el.onpointerup=function(ev){if(ev.button!==0&&ev.pointerType!=='touch')return;ev.stopPropagation();queueShipSelection(el.dataset.shipId)};el.onpointerdown=function(ev){if(ev.button!==0&&ev.pointerType!=='touch')return;ev.stopPropagation()};el.onkeydown=function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();ev.stopPropagation();queueShipSelection(el.dataset.shipId)}}}})}
 function pointAlong(coords,t){let lengths=[],total=0;for(let i=1;i<coords.length;i++){const d=haversine({lat:coords[i-1][1],lon:coords[i-1][0]},{lat:coords[i][1],lon:coords[i][0]});lengths.push(d);total+=d}if(!total)return coords[0];let target=Math.max(0,Math.min(1,t))*total;for(let i=1;i<coords.length;i++){if(target<=lengths[i-1]){const f=lengths[i-1]?target/lengths[i-1]:0;return[coords[i-1][0]+(coords[i][0]-coords[i-1][0])*f,coords[i-1][1]+(coords[i][1]-coords[i-1][1])*f]}target-=lengths[i-1]}return coords[coords.length-1]}
+/* Runde harte Kanten mit einer Chaikin-Ecke ab. Die geglättete Linie wird nur
+   übernommen, wenn die Landprüfung sie ebenfalls freigibt. */
+function smoothWaterRoute(coords){
+ if(!Array.isArray(coords)||coords.length<3)return coords;
+ const out=[coords[0]];
+ for(let i=1;i<coords.length;i++){
+  const a=coords[i-1],b=coords[i];
+  out.push([a[0]*0.75+b[0]*0.25,a[1]*0.75+b[1]*0.25]);
+  out.push([a[0]*0.25+b[0]*0.75,a[1]*0.25+b[1]*0.75]);
+ }
+ out.push(coords[coords.length-1]);
+ return window.isWaterRouteSafe&&window.isWaterRouteSafe(out)?out:coords;
+}
 function baseComputeWaterRoute(a,b){
  const routeFn=window.searoute;
  if(!seaRoutingAvailable||!window.waterRouteDataReady||typeof routeFn!=='function'||
@@ -52,8 +65,9 @@ function baseComputeWaterRoute(a,b){
   const primary=routeFn(origin,destination);
   const primaryCoords=isUsableRoute(primary);
   if(primaryCoords&&window.isWaterRouteSafe(primaryCoords)){
-   waterRouteCache.set(key,primaryCoords);
-   return primaryCoords;
+   const smooth=smoothWaterRoute(primaryCoords);
+   waterRouteCache.set(key,smooth);
+   return smooth;
   }
 
   if(typeof window.searouteAlternatives==='function'){
@@ -70,8 +84,9 @@ function baseComputeWaterRoute(a,b){
     if(primaryCoords&&coords.length===primaryCoords.length&&
        coords.every((p,i)=>p[0]===primaryCoords[i][0]&&p[1]===primaryCoords[i][1]))continue;
     if(!window.isWaterRouteSafe(coords))continue;
-    waterRouteCache.set(key,coords);
-    return coords;
+    const smooth=smoothWaterRoute(coords);
+    waterRouteCache.set(key,smooth);
+    return smooth;
    }
   }
   waterRouteCache.set(key,null);
