@@ -81,7 +81,7 @@ function distanceKm(a, b) {
     Math.cos(rad(a[1])) * Math.cos(rad(b[1])) * Math.sin(dLon / 2) ** 2;
   return 6371 * 2 * Math.asin(Math.min(1, Math.sqrt(q)));
 }
-function addLandMask(topology) {
+async function addLandMask(topology) {
   const land = feature(topology, topology.objects.land);
   const polygons = [];
 
@@ -116,7 +116,19 @@ function addLandMask(topology) {
 
   landPolygons = [];
   landGrid = new Map();
-  for (const rings of polygons) {
+  for (let polygonIndex = 0; polygonIndex < polygons.length; polygonIndex++) {
+    // Yield periodically so large high-resolution coastlines do not block the
+    // main thread in one long task. Company startup can show progress meanwhile.
+    if (polygonIndex > 0 && polygonIndex % 250 === 0) {
+      window.dispatchEvent(new CustomEvent('water-route-loading-progress', {
+        detail: {
+          progress: polygonIndex / polygons.length,
+          message: 'Küstenlinien werden indiziert (' + Math.round(polygonIndex / polygons.length * 100) + ' %) …'
+        }
+      }));
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+    const rings = polygons[polygonIndex];
     const outer = rings && rings[0];
     if (!outer || outer.length < 4) continue;
     let minLon = Infinity, maxLon = -Infinity, minLat = Infinity, maxLat = -Infinity;
@@ -224,7 +236,7 @@ window.isWaterRouteSafe = function (coords) {
       clearTimeout(timeout);
     }
     if (!response.ok) throw new Error('Landkarten-Daten konnten nicht geladen werden (HTTP ' + response.status + ').');
-    addLandMask(await response.json());
+    await addLandMask(await response.json());
     window.waterRouteDataLoading = false;
     window.waterRouteDataReady = true;
     window.dispatchEvent(new Event('water-route-data-ready'));
