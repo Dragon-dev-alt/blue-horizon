@@ -123,6 +123,17 @@ function acceptOrder(contractId){
  toast('Auftrag angenommen · '+days+' Spieltage · '+(hqBonus?'10 % Hauptsitzbonus':'kein Hauptsitzbonus'));
 }
 let previewedRouteShipId=null,previewedRouteContractId=null;
+function revalidateExistingTripRoutes(){
+ if(!game||!window.waterRouteDataReady)return;
+ game.ships.forEach(s=>{
+  if(!s.trip||s.type==='river')return;
+  if(Array.isArray(s.trip.coords)&&window.isWaterRouteSafe(s.trip.coords))return;
+  const from=s.trip.from||s.port,to=s.trip.to;
+  const replacement=port(from)&&port(to)?baseComputeWaterRoute(port(from),port(to)):null;
+  if(replacement){s.trip.coords=replacement;s.trip.distance=routeDistanceNauticalMiles(replacement);addLog('Sicherheitsprüfung: Route von '+port(from).name+' nach '+port(to).name+' aktualisiert.');}
+  else{ s.trip=null;s.port=from;s.status='idle';addLog('Eine alte Route für '+s.name+' wurde gestoppt, da keine sichere Wasserroute verfügbar war.'); }
+ });
+}
 function clearSelectedShipRoute(){
  if(map)routeLayers.forEach(layer=>{try{map.removeLayer(layer)}catch(e){}});
  routeLayers=[];
