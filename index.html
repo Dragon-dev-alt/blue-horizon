@@ -182,5 +182,17 @@ function computeWaterRoute(a,b){if(a.river&&b.river){const r=riverRoute(a.id,b.i
 const _oldAcceptOrder=acceptOrder;
 function acceptOrder(contractId){const s=selectedShip(),c=CONTRACTS.find(x=>x.id===contractId);if(s&&s.type==='river'&&c){const a=port(c.from),b=port(c.to);if(!a?.river||!b?.river){toast('Binnenschiffe können nur Aufträge zwischen Binnenhäfen übernehmen.');return}}_oldAcceptOrder(contractId)}
 
+
+/* Korrekturen für V1-Aufträge und Hafenklassen */
+function portLevel(p){if(p.type==='international'||p.level===3)return 3;if(p.type==='regional'||p.level===2)return 2;if(p.river||p.type==='inland')return 1;return p.level||2}
+function portTypeName(p){return portLevel(p)===3?'Internationaler Hafen':portLevel(p)===2?'Regionaler Seehafen':'Binnenhafen'}
+function portCanServeShip(p,s){const level=portLevel(p);if(s.type==='river')return !!p.river;if(s.type==='coastal')return level>=2;return level>=1}
+function currentPortId(s){return s.trip?s.trip.to:s.port}
+function eligibleContracts(s){
+ if(!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>o.shipId===s.id))return[];
+ const origin=currentPortId(s),st=shipType(s.type);
+ return CONTRACTS.filter(c=>c.from===origin&&st.allowed.includes(c.cargo)&&c.to!==origin&&portCanServeShip(port(c.from),s)&&portCanServeShip(port(c.to),s)&&(s.type!=='river'||(port(c.from).river&&port(c.to).river)));
+}
+
 </script>
 </body></html>
