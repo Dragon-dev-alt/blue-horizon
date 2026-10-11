@@ -325,6 +325,106 @@ function startNewGame(){
  }
 }
 
+
+/* V1.2: individuelle Schiffsangebote, Reichweite, Hauptsitzbonus und Flottenfenster */
+const SHIP_RANGE_BANDS={
+ coastal:[800,1800], medium:[2500,5000], long:[10000,30000], ultra:[15000,30000],
+ tanker:[8000,30000], bulk:[4000,20000], 'ro-ro':[2500,7000], river:[200,800]
+};
+function randomShipRange(typeId){const b=SHIP_RANGE_BANDS[typeId]||[500,shipType(typeId).range];return Math.round((b[0]+Math.random()*(b[1]-b[0]))/100)*100}
+function randomShipPort(typeId){let valid=PORTS.filter(p=>typeId==='river'?!!p.river:!p.river);if(!valid.length)valid=PORTS;return valid[Math.floor(Math.random()*valid.length)].id}
+function ensureShipStats(s){if(!s)return s;if(!s.range)s.range=randomShipRange(s.type);if(!s.port)s.port=game?.hq||'ham';if(s.condition==null)s.condition=100;return s}
+const _makeGameV12=makeGame;
+function makeGame(name,difficulty,hq){
+ const g=_makeGameV12(name,difficulty,hq);
+ const starterType=shipType('coastal');
+ g.ships=[{id:'s1',name:'Coastal-Frachter s1',type:'coastal',port:g.hq,trip:null,condition:100,range:randomShipRange('coastal'),deliveryRemaining:0}];
+ g.nextShipId=2;
+ return g;
+}
+function renderShipyard(){
+ if(!game)return;
+ const d=DIFFICULTIES[game.difficulty];
+ if(!game.usedStock)game.usedStock=generateStock();
+ if(!game.buildOrders)game.buildOrders=[];
+ if(!game.repairOrders)game.repairOrders=[];
+ const intro='<p class="notice">Wähle einen Schiffstyp. Jedes angebotene Schiff hat eine eigene Reichweite und liegt an einem Hafen der passenden Klasse.</p>';
+ const back='<button style="width:100%;margin-top:10px" onclick="yardMode=\'home\';renderShipyard()">← Zur Werft-Auswahl</button>';
+ if(yardMode==='home'){
+  $('yardContent').innerHTML=intro+
+   '<div class="order"><h3>🚢 Gebrauchte Schiffe</h3><p>Schiffstyp wählen, Werte prüfen und ein einzelnes Schiff kaufen.</p><button class="primary" style="width:100%" onclick="yardMode=\'used\';renderShipyard()">Schiffe anzeigen</button></div>'+
+   '<div class="order"><h3>🏗️ Individueller Schiffsbau</h3><p>Eigene Schiffe konfigurieren.</p><button style="width:100%" disabled>Coming soon</button></div>'+
+   '<div class="order"><h3>🛠️ Reparaturen</h3><p>Überholung vorhandener Schiffe.</p><button style="width:100%" onclick="yardMode=\'used\';renderShipyard()">Flotte und Reparaturen öffnen</button></div>';
+  return;
+ }
+ const typeId=$('yardType')?.value||SHIP_TYPES[0].id,selected=shipType(typeId),band=SHIP_RANGE_BANDS[typeId]||[0,selected.range],stock=game.usedStock[typeId]||0;
+ const opts=SHIP_TYPES.map(t=>'<option value="'+t.id+'" '+(t.id===typeId?'selected':'')+'>'+t.name+' · '+(game.usedStock[t.id]||0)+' verfügbar</option>').join('');
+ const purchase=stock?'<button class="primary" style="width:100%" onclick="buyUsedShip(\''+typeId+'\')">Dieses Schiff kaufen</button>':'<button style="width:100%" disabled>Derzeit ausverkauft</button>';
+ const repairOptions=game.ships.map(sh=>'<option value="'+sh.id+'">'+escapeHtml(sh.name)+' · '+sh.condition+' %</option>').join('');
+ $('yardContent').innerHTML=intro+back+
+ '<div class="field" style="margin-top:14px"><label for="yardType">Schiffstyp auswählen</label><select id="yardType" onchange="renderShipyard()">'+opts+'</select></div>'+
+ '<div class="order"><h3>'+selected.name+'</h3><p>'+selected.desc+'<br>Frachtvolumen: '+selected.capacity+' Einheiten<br>Geschwindigkeit: '+selected.speed+' kn<br>Reichweite: '+band[0].toLocaleString('de-DE')+'–'+band[1].toLocaleString('de-DE')+' km (jedes Schiff erhält einen individuellen Wert)<br>Preis: '+money(Math.round(selected.price*.48*d.cost))+'–'+money(Math.round(selected.price*.88*d.cost))+'<br>Unterhalt: '+money(Math.round(selected.upkeep*d.upkeep))+'/Tag</p><div class="bonus">'+stock+' verfügbar</div><button class="primary" style="width:100%" onclick="buyUsedShip(\''+typeId+'\')" '+(!stock?'disabled':'')+'>Gebraucht kaufen</button></div>'+
+ '<div class="order"><h3>🛠️ Schiffe reparieren</h3>'+(game.ships.length?'<div class="field"><label for="repairShip">Schiff auswählen</label><select id="repairShip">'+repairOptions+'</select></div><p>Das Schiff ist während der Reparatur außer Betrieb.</p><button style="width:100%" onclick="repairSelectedShip()">Ausgewähltes Schiff überholen</button>':'<p class="notice">Keine Schiffe vorhanden.</p>')+'</div>'+
+ '<div class="order"><h3>⏳ Bestellungen in Arbeit</h3>'+((game.buildOrders.length?game.buildOrders.map(o=>'<p>'+escapeHtml(o.name)+' — '+shipType(o.type).name+' · noch '+o.remaining+' Tage</p>').join(''):'<p class="notice">Keine Neubauten in Arbeit.</p>')+(game.repairOrders.length?game.repairOrders.map(o=>'<p>Überholung '+escapeHtml(o.name)+' · noch '+o.remaining+' Tage</p>').join(''):''))+'</div>';
+}
+function buyUsedShip(typeId){
+ const t=shipType(typeId),d=DIFFICULTIES[game.difficulty];
+ if(!game.usedStock)game.usedStock=generateStock();
+ if((game.usedStock[typeId]||0)<=0){toast('Dieser Typ ist ausverkauft.');return}
+ const condition=10+Math.floor(Math.random()*81),price=Math.round(t.price*(.48+(.9-condition/100)*.4)*d.cost);
+ if(game.cash<price){toast('Nicht genug Kapital.');return}
+ game.cash-=price;game.usedStock[typeId]--;
+ const id='s'+game.nextShipId++,name=t.name+' '+id,range=randomShipRange(typeId),home=randomShipPort(typeId);
+ game.ships.push({id,name,type:typeId,port:home,trip:null,condition,range,deliveryRemaining:0});
+ selectedShipId=id;addLog('Gebrauchtes Schiff gekauft: '+name+' ('+condition+' % Zustand), Reichweite '+range.toLocaleString('de-DE')+' km, Hafen '+port(home).name+'.');
+ saveGame();renderUI();renderShips();openShipyard();toast('Schiff gekauft · '+port(home).name+' · Reichweite '+range.toLocaleString('de-DE')+' km');
+}
+function eligibleContracts(s){
+ if(!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>o.shipId===s.id))return[];
+ ensureShipStats(s);const st=shipType(s.type),origin=s.port;
+ return CONTRACTS.filter(c=>{
+  if(c.from!==origin||c.to===origin||!st.allowed.includes(c.cargo))return false;
+  const coords=routeForContract(c,s);if(!coords||coords.length<2)return false;
+  const distance=coords.reduce((sum,p,i)=>i?sum+haversine({lat:coords[i-1][1],lon:coords[i-1][0]},{lat:p[1],lon:p[0]}):0,0);
+  return distance<=s.range;
+ });
+}
+function acceptOrder(contractId){
+ const s=selectedShip(),c=CONTRACTS.find(x=>x.id===contractId);
+ if(!s||!c||s.trip||s.inYard||(game.repairOrders||[]).some(o=>o.shipId===s.id)||!shipType(s.type).allowed.includes(c.cargo)){toast('Dieser Auftrag passt nicht zum ausgewählten Schiff.');return}
+ ensureShipStats(s);
+ if(c.from!==s.port){toast('Das Schiff muss sich im Start-Hafen des Auftrags befinden.');return}
+ const a=port(c.from),b=port(c.to),coords=routeForContract(c,s);
+ if(!coords||coords.length<2){toast('Für diese Häfen ist keine passende Wasserroute verfügbar.');return}
+ const distance=coords.reduce((sum,p,i)=>i?sum+haversine({lat:coords[i-1][1],lon:coords[i-1][0]},{lat:p[1],lon:p[0]}):0,0);
+ if(distance>s.range){toast('Diese Route ist '+Math.round(distance).toLocaleString('de-DE')+' km lang und überschreitet die Reichweite dieses Schiffs ('+s.range.toLocaleString('de-DE')+' km).');return}
+ const t=cargo(c.cargo),st=shipType(s.type),diff=DIFFICULTIES[game.difficulty],units=Math.floor(st.capacity*t.capacity);
+ let revenue=Math.round(units*t.fee*((a.demand+b.demand)/2)*diff.revenue+c.bonus*diff.revenue);
+ const hq=game.hq||'ham',hqBonus=(c.from===hq||c.to===hq)?0.10:0;
+ revenue=Math.round(revenue*(1+hqBonus));
+ const days=Math.max(1,Math.ceil(distance/(st.speed*24*t.speed)+t.handling+1));
+ s.trip={contractId:c.id,from:c.from,to:c.to,cargo:c.cargo,coords,progress:0,distance,days,daysElapsed:0,revenue,baseRevenue:Math.round(units*t.fee*((a.demand+b.demand)/2)*diff.revenue+c.bonus*diff.revenue),hqBonus,units,cost:Math.round((distance*22+days*st.upkeep/7)*diff.cost)};
+ s.status='sailing';selectedShipId=s.id;addLog(s.name+' übernimmt Auftrag von '+c.company+': '+a.name+' → '+b.name+(hqBonus?' · 10 % Hauptsitzbonus':'')+'.');
+ saveGame();renderUI();renderShips();toast('Auftrag angenommen · '+days+' Spieltage · '+(hqBonus?'10 % Hauptsitzbonus':'kein Hauptsitzbonus'));
+}
+const _renderUIBeforeFleetModal=renderUI;
+function toggleFleetWindow(){const w=$('fleetWindow');if(w)w.classList.toggle('hidden')}
+function renderFleetWindow(){
+ let w=$('fleetWindow');if(!w){w=document.createElement('div');w.id='fleetWindow';w.className='overlay hidden';w.style.zIndex='2100';w.innerHTML='<div class="menu-card" style="max-height:85vh;overflow:auto"><div class="panel-head" style="padding:0 0 12px;margin-bottom:10px">🚢 Deine Flotte <button onclick="toggleFleetWindow()">Schließen ✕</button></div><div id="fleetWindowList"></div><p class="notice">Schiffe befinden sich an unterschiedlichen Häfen. Wähle ein Schiff, um seine Aufträge rechts anzuzeigen.</p></div>';document.body.appendChild(w)}
+ const list=$('fleetWindowList');
+ list.innerHTML=game.ships.length?game.ships.map(s=>{ensureShipStats(s);return '<div class="ship-row '+(s.id===selectedShipId?'selected':'')+'" onclick="selectShip(\''+s.id+'\');toggleFleetWindow()"><span class="ship-dot" style="background:'+shipType(s.type).color+'"></span><div><b>'+escapeHtml(s.name)+'</b><small>'+shipType(s.type).name+' · '+s.capacity+' · '+s.range.toLocaleString('de-DE')+' km Reichweite · '+(s.trip?'Unterwegs nach '+port(s.trip.to).name:s.inYard?'In der Werft':'Hafen: '+port(s.port).name)+'</small></div></div>'}).join(''):'<p class="notice">Noch keine Schiffe.</p>';
+}
+function renderUI(){
+ if(!game)return;
+ game.ships.forEach(ensureShipStats);
+ _renderUIBeforeFleetModal();
+ const head=document.querySelector('.side .panel .panel-head');
+ if(head&&!$('fleetWindowButton')){const b=document.createElement('button');b.id='fleetWindowButton';b.textContent='Flotte öffnen ↗';b.style.padding='5px 8px';b.style.fontSize='10px';b.onclick=()=>{renderFleetWindow();toggleFleetWindow()};head.appendChild(b)}
+ const list=$('fleetList');if(list)list.classList.add('hidden');
+ const count=$('fleetCount');if(count)count.textContent=game.ships.length+' Schiffe';
+ renderFleetWindow();
+}
+
 </script>
 </body>
 </html>
