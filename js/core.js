@@ -1,6 +1,7 @@
 'use strict';
 /* Zustand und Speicherung */
-let game=null,activeSlot=0,map=null,portMarkers=[],shipMarkers={},routeLayers=[],waterRouteCache=new Map(),simulationSpeed=1,simulationProgress=0,lastFrame=0,animationId=0,portsVisible=true,seaRoutingAvailable=false;
+let game=null,activeSlot=0,map=null,portMarkers=[],shipMarkers={},routeLayers=[],waterRouteCache=new Map(),simulationSpeed=1,simulationProgress=0,lastFrame=0,lastShipFrame=0,lastHudRefresh=0,animationId=0,portsVisible=true,seaRoutingAvailable=false;
+const routeMetricsCache=new WeakMap();
 const $=id=>document.getElementById(id),money=n=>'€ '+Math.round(n).toLocaleString('de-DE'),port=id=>PORTS.find(p=>p.id===id),shipType=id=>SHIP_TYPES.find(t=>t.id===id),cargo=id=>CARGO.find(c=>c.id===id);
 function baseMakeGame(name,difficulty){const d=DIFFICULTIES[difficulty];return{company:name.trim()||'Blue Horizon Shipping',difficulty,cash:d.cash,day:1,rep:50,ships:[{id:'s1',name:'Nordstern',type:'long',port:'ham',trip:null},{id:'s2',name:'Elbe Star',type:'medium',port:'rot',trip:null},{id:'s3',name:'Baltic Wind',type:'coastal',port:'osl',trip:null}],nextShipId:4,log:['Willkommen bei '+(name.trim()||'Blue Horizon Shipping')+'. Deine erste Runde beginnt.'],completed:0,loans:0,created:Date.now()}}
 function saveGame(){if(!game)return;try{localStorage.setItem(CONFIG.savePrefix+activeSlot,JSON.stringify(game));localStorage.setItem(CONFIG.activeKey,String(activeSlot))}catch(e){toast('Speichern nicht möglich: Browser-Speicher voll.')}}
@@ -29,31 +30,61 @@ function selectShipAtPort(portId){
 }
 function iconForShip(s,angle=0){const t=shipType(s.type),z=map.getZoom(),size=Math.max(16,Math.min(25,22-(z-2)*.35)),hitSize=Math.max(40,size+18),shipHeight=Math.max(8,size*.48),selected=String(s.id)===String(selectedShipId);return L.divIcon({className:'ship-icon',html:'<div class="ship-hit-area'+(selected?' selected-ship-marker':'')+'" style="width:'+hitSize+'px;height:'+hitSize+'px;display:flex;align-items:center;justify-content:center;pointer-events:auto;cursor:pointer;box-sizing:border-box"><div class="ship-shape" style="width:'+size+'px;height:'+shipHeight+'px;flex:none;background:'+t.color+';transform:rotate('+(angle-90)+'deg)"></div></div>',iconSize:[hitSize,hitSize],iconAnchor:[hitSize/2,hitSize/2]})}
 function renderShips(){if(!map||!game)return;const alive=new Set(game.ships.map(s=>String(s.id)));Object.keys(shipMarkers).forEach(id=>{if(!alive.has(String(id))){map.removeLayer(shipMarkers[id]);delete shipMarkers[id]}});game.ships.forEach(s=>{ensureShipStats(s);let pos=port(s.port);if(s.trip&&s.trip.coords){const p=pointAlong(s.trip.coords,s.trip.progress);pos={lat:p[1],lon:p[0]}}let m=shipMarkers[s.id];if(!m){m=L.marker([pos.lat,pos.lon],{icon:iconForShip(s,s.trip?s.trip.angle||0:0),interactive:true,keyboard:true,riseOnHover:true,zIndexOffset:2000,autoPanOnFocus:false}).addTo(map);shipMarkers[s.id]=m}else{m.setLatLng([pos.lat,pos.lon]);m.setIcon(iconForShip(s,s.trip?s.trip.angle||0:0));m.setZIndexOffset(2000)}m.off('click');m.on('click',()=>queueShipSelection(s.id));m.bindTooltip(s.name+' · '+shipType(s.type).name,{direction:'top'});const el=m.getElement();if(el){el.style.pointerEvents='auto';el.style.cursor='pointer';el.dataset.shipId=String(s.id);el.setAttribute('role','button');el.setAttribute('tabindex','0');el.setAttribute('aria-label','Schiff auswählen: '+s.name);el.onclick=function(ev){ev.preventDefault();ev.stopPropagation();queueShipSelection(el.dataset.shipId);return false};el.onpointerup=function(ev){if(ev.button!==0&&ev.pointerType!=='touch')return;ev.stopPropagation();queueShipSelection(el.dataset.shipId)};el.onpointerdown=function(ev){if(ev.button!==0&&ev.pointerType!=='touch')return;ev.stopPropagation()};el.onkeydown=function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();ev.stopPropagation();queueShipSelection(el.dataset.shipId)}}}})}
-function pointAlong(coords,t){let lengths=[],total=0;for(let i=1;i<coords.length;i++){const d=haversine({lat:coords[i-1][1],lon:coords[i-1][0]},{lat:coords[i][1],lon:coords[i][0]});lengths.push(d);total+=d}if(!total)return coords[0];let target=Math.max(0,Math.min(1,t))*total;for(let i=1;i<coords.length;i++){if(target<=lengths[i-1]){const f=lengths[i-1]?target/lengths[i-1]:0;return[coords[i-1][0]+(coords[i][0]-coords[i-1][0])*f,coords[i-1][1]+(coords[i][1]-coords[i-1][1])*f]}target-=lengths[i-1]}return coords[coords.length-1]}
-/* Mehrere Chaikin-Durchgänge ersetzen harte Routenknicke durch weiche Kurven.
-   Start und Ziel bleiben exakt am Hafen. Die stärkste Glättung wird nur benutzt,
-   wenn sie nach der Landprüfung sicher bleibt; andernfalls wird weniger geglättet. */
+function getRouteMetrics(coords){
+ if(!Array.isArray(coords)||coords.length<2)return{cumulative:[0],total:0};
+ const cached=routeMetricsCache.get(coords);
+ if(cached)return cached;
+ const cumulative=new Array(coords.length);
+ cumulative[0]=0;
+ for(let i=1;i<coords.length;i++){
+  cumulative[i]=cumulative[i-1]+haversine(
+   {lat:coords[i-1][1],lon:coords[i-1][0]},
+   {lat:coords[i][1],lon:coords[i][0]}
+  );
+ }
+ const result={cumulative,total:cumulative[cumulative.length-1]};
+ routeMetricsCache.set(coords,result);
+ return result;
+}
+function pointAlong(coords,t){
+ if(!Array.isArray(coords)||!coords.length)return[0,0];
+ if(coords.length===1||t<=0)return coords[0];
+ if(t>=1)return coords[coords.length-1];
+ const metrics=getRouteMetrics(coords),target=Math.max(0,Math.min(1,t))*metrics.total;
+ if(!metrics.total)return coords[0];
+ // Binary search makes each animation position O(log n), instead of walking
+ // from the beginning of a potentially long route on every animation frame.
+ let low=1,high=coords.length-1;
+ while(low<high){
+  const mid=(low+high)>>1;
+  if(metrics.cumulative[mid]<target)low=mid+1;else high=mid;
+ }
+ const i=low,segmentStart=metrics.cumulative[i-1],segmentLength=metrics.cumulative[i]-segmentStart;
+ const f=segmentLength?(target-segmentStart)/segmentLength:0;
+ return[
+  coords[i-1][0]+(coords[i][0]-coords[i-1][0])*f,
+  coords[i-1][1]+(coords[i][1]-coords[i-1][1])*f
+ ];
+}
+/* Zwei Chaikin-Durchgänge glätten harte Knicke, ohne unnötig viele Punkte
+   zu erzeugen. Bei Küstennähe fällt die Funktion auf einen Durchgang zurück. */
 function smoothWaterRoute(coords){
  if(!Array.isArray(coords)||coords.length<3)return coords;
  if(typeof window.isWaterRouteSafe!=='function')return coords;
- const candidates=[];
- let current=coords;
- for(let pass=1;pass<=4;pass++){
-  const next=[coords[0]];
-  for(let i=1;i<current.length;i++){
-   const a=current[i-1],b=current[i];
-   next.push([a[0]*0.75+b[0]*0.25,a[1]*0.75+b[1]*0.25]);
-   next.push([a[0]*0.25+b[0]*0.75,a[1]*0.25+b[1]*0.75]);
+ const cutCorners=input=>{
+  const out=[input[0]];
+  for(let i=1;i<input.length;i++){
+   const a=input[i-1],b=input[i];
+   out.push([a[0]*0.75+b[0]*0.25,a[1]*0.75+b[1]*0.25]);
+   out.push([a[0]*0.25+b[0]*0.75,a[1]*0.25+b[1]*0.75]);
   }
-  next.push(coords[coords.length-1]);
-  candidates.push(next);
-  current=next;
- }
- // Vier Durchgänge liefern sichtbar runde Kurven. Bei Küstennähe kann eine
- // stärkere Glättung zu nahe ans Land rücken, daher vom stärksten Kandidaten absteigen.
- for(let i=candidates.length-1;i>=0;i--){
-  if(window.isWaterRouteSafe(candidates[i]))return candidates[i];
- }
+  out.push(input[input.length-1]);
+  return out;
+ };
+ const once=cutCorners(coords);
+ const twice=cutCorners(once);
+ if(window.isWaterRouteSafe(twice))return twice;
+ if(window.isWaterRouteSafe(once))return once;
  return coords;
 }
 function baseComputeWaterRoute(a,b){
@@ -143,7 +174,7 @@ function baseRenderUI(){
   orders.length?'Verfügbare Aufträge für '+s.name+'. Die gestrichelte goldene Linie zeigt die Routenvorschau.':
   'Es wird kein passender sicherer Hafenauftrag gefunden. Prüfe die Internetverbindung oder die Reichweite des Schiffs.';
  if(s&&s.trip){
-  $('ordersList').innerHTML='<div class="order"><h3>Schiff auf Fahrt</h3><p>Ziel: '+port(s.trip.to).name+'<br>Fortschritt: '+Math.round(s.trip.progress*100)+' %</p></div>';
+  $('ordersList').innerHTML='<div class="order"><h3>Schiff auf Fahrt</h3><p>Ziel: '+port(s.trip.to).name+'<br>Fortschritt: <span id="tripProgressText">'+Math.round(s.trip.progress*100)+' %</span></p></div>';
  }else if(!s){
   $('ordersList').innerHTML='<p class="notice">Wähle ein Schiff aus der Flotte oder auf der Karte.</p>';
  }else if(underRepair){
@@ -155,7 +186,6 @@ function baseRenderUI(){
  }else{
   $('ordersList').innerHTML='<div class="order"><h3>Kein sicherer Auftrag gefunden</h3><p>Es wird kein Auftrag angeboten, dessen Wasserroute vollständig geprüft wurde und innerhalb der Schiffsreichweite liegt. Nach dem Laden weiterer Wasserwege wird automatisch erneut gesucht.</p></div>';
  }
- saveGame();
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 /* Menüs und Speicherstände */
@@ -204,7 +234,59 @@ function continueGame(){let slot=Number(localStorage.getItem(CONFIG.activeKey));
 function openMainMenu(){setSpeed(0);$('mainMenu').classList.remove('hidden');showMenuHome();$('continueHint').textContent=slotExists(Number(localStorage.getItem(CONFIG.activeKey)))?'Letzten Spielstand fortsetzen':'Noch kein Spielstand vorhanden'}
 /* Simulationszeit läuft unabhängig von der Bewegungsgeschwindigkeit im Routenmodell. */
 function setSpeed(speed){simulationSpeed=speed;lastFrame=performance.now();[['pauseBtn',0,'Simulation pausieren'],['playBtn',1,'Simulation mit normaler Geschwindigkeit'],['fastBtn',1.5,'Simulation 1,5-fach beschleunigen']].forEach(([id,value,title])=>{const button=$(id);if(!button)return;const active=speed===value;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));button.title=active?(value===0?'Simulation ist pausiert':value===1?'Simulation läuft mit normaler Geschwindigkeit':'Simulation läuft mit 1,5-facher Geschwindigkeit'):title});if(speed===0)toast('Simulation pausiert');else toast(speed===1.5?'Simulationszeit: 1,5×':'Simulation läuft')}
-function frame(now){if(!lastFrame)lastFrame=now;const dt=Math.min(100,now-lastFrame);lastFrame=now;if(game&&simulationSpeed>0&&!$('mainMenu').classList.contains('hidden')){}else if(game&&simulationSpeed>0){simulationProgress+=dt/CONFIG.daySeconds/1000*simulationSpeed;game.ships.forEach(s=>{if(s.trip){const tr=s.trip;tr.progress=Math.min(1,(tr.daysElapsed+simulationProgress)/tr.days);const p=pointAlong(tr.coords,tr.progress);const marker=shipMarkers[s.id];if(marker){marker.setLatLng([p[1],p[0]]);const p2=pointAlong(tr.coords,Math.min(1,tr.progress+.002));let dx=p2[0]-p[0];if(dx>180)dx-=360;if(dx< -180)dx+=360;tr.angle=Math.atan2(dx*Math.cos(p[1]*Math.PI/180),p2[1]-p[1])*180/Math.PI;const el=marker.getElement()?.querySelector('.ship-shape');if(el)el.style.transform='rotate('+(tr.angle-90)+'deg)'}}});while(simulationProgress>=1){simulationProgress-=1;nextDay()}if(Math.floor(now/500)!==Math.floor((now-dt)/500))renderUI()}animationId=requestAnimationFrame(frame)}
+function updateHudStats(){
+ if(!game)return;
+ $('companyLabel').textContent=game.company.toUpperCase();
+ $('cashStat').textContent=money(game.cash);
+ $('fleetStat').textContent=game.ships.length+' Schiffe';
+ $('fleetCount').textContent=game.ships.length+' Schiffe';
+ $('dayStat').textContent='Tag '+game.day;
+ $('repStat').textContent='★ '+game.rep;
+ $('dateLabel').textContent='Jahr '+(Math.floor((game.day-1)/360)+1)+' · Tag '+game.day;
+ const progress=$('tripProgressText'),s=selectedShip();
+ if(progress&&s&&s.trip)progress.textContent=Math.round(s.trip.progress*100)+' %';
+}
+function frame(now){
+ if(!lastFrame)lastFrame=now;
+ const dt=Math.min(100,now-lastFrame);
+ lastFrame=now;
+ const menuVisible=!$('mainMenu').classList.contains('hidden');
+ if(game&&simulationSpeed>0&&!menuVisible){
+  simulationProgress+=dt/CONFIG.daySeconds/1000*simulationSpeed;
+  while(simulationProgress>=1){
+   simulationProgress-=1;
+   nextDay();
+  }
+  // Limit Leaflet marker repositioning and DOM rotation to 30 FPS. Simulation
+  // time itself still uses every animation frame, so the game clock stays smooth.
+  if(now-lastShipFrame>=1000/30){
+   lastShipFrame=now;
+   game.ships.forEach(s=>{
+    if(!s.trip)return;
+    const tr=s.trip;
+    tr.progress=Math.min(1,(tr.daysElapsed+simulationProgress)/tr.days);
+    const marker=shipMarkers[s.id];
+    if(!marker)return;
+    const p=pointAlong(tr.coords,tr.progress);
+    marker.setLatLng([p[1],p[0]]);
+    const p2=pointAlong(tr.coords,Math.min(1,tr.progress+0.002));
+    let dx=p2[0]-p[0];
+    if(dx>180)dx-=360;
+    if(dx< -180)dx+=360;
+    tr.angle=Math.atan2(dx*Math.cos(p[1]*Math.PI/180),p2[1]-p[1])*180/Math.PI;
+    const el=marker.getElement()?.querySelector('.ship-shape');
+    if(el)el.style.transform='rotate('+(tr.angle-90)+'deg)';
+   });
+  }
+  // Update small numeric labels only. Rebuilding the order list, rechecking
+  // contracts and serializing the complete save are reserved for game events.
+  if(now-lastHudRefresh>=1000){
+   lastHudRefresh=now;
+   updateHudStats();
+  }
+ }
+ animationId=requestAnimationFrame(frame);
+}
 /* Initialisierung */
 function init(){initMap();seaRoutingAvailable=typeof window.searoute==='function'&&window.waterRouteDataReady===true;if(!seaRoutingAvailable)console.info('Wasserwege werden geladen und auf Landkreuzungen geprüft.');const active=Number(localStorage.getItem(CONFIG.activeKey));$('continueHint').textContent=Number.isInteger(active)&&slotExists(active)?'Letzten Spielstand fortsetzen':'Noch kein Spielstand vorhanden';requestAnimationFrame(frame)}
 window.addEventListener('water-route-data-ready',()=>{seaRoutingAvailable=typeof window.searoute==='function'&&typeof window.isWaterRouteSafe==='function'&&window.waterRouteDataReady===true;waterRouteCache.clear();if(game){revalidateExistingTripRoutes();renderUI();renderShips();showSelectedShipRoute(true);saveGame()}console.info('Wasserwege und Landprüfung sind bereit.');if(!game)toast('Wasserwege geladen – Routen werden auf Land geprüft.')});
