@@ -309,7 +309,7 @@ function startNewGame(){
  const name=($('companyInput')?.value||'').trim()||'Blue Horizon Shipping';
  const hq=$('hqPort')?.value||'ham';
  if(!port(hq)){toast('Der gewählte Hauptsitzhafen ist nicht verfügbar.');return;}
- if(!confirm('Neue Runde für „'+name+'“ starten? Du beginnst ohne Schiffe.'))return;
+ if(!confirm('Neue Runde für „'+name+'“ starten? Du beginnst mit einem ersten Schiff am Hauptsitz.'))return;
  try{
   game=makeGame(name,selectedDifficulty,hq);
   activeSlot=firstFreeSlot();if(activeSlot<0)activeSlot=0;
@@ -318,7 +318,7 @@ function startNewGame(){
   $('mainMenu').classList.add('hidden');
   renderUI();
   if(map){map.setView([port(hq).lat,port(hq).lon],5);map.invalidateSize();renderShips();}
-  toast('Firma gegründet – du startest ohne Schiffe.');
+  toast('Firma gegründet – dein erstes Schiff wartet am Hauptsitz.');
  }catch(e){
   console.error('Fehler beim Gründen der Firma:',e);
   toast('Die Firma konnte nicht gestartet werden. Bitte Seite neu laden und erneut versuchen.');
@@ -334,10 +334,16 @@ const SHIP_RANGE_BANDS={
 function randomShipRange(typeId){const b=SHIP_RANGE_BANDS[typeId]||[500,shipType(typeId).range];return Math.round((b[0]+Math.random()*(b[1]-b[0]))/100)*100}
 function randomShipPort(typeId){let valid=PORTS.filter(p=>typeId==='river'?!!p.river:!p.river);if(!valid.length)valid=PORTS;return valid[Math.floor(Math.random()*valid.length)].id}
 function ensureShipStats(s){if(!s)return s;if(!s.range)s.range=randomShipRange(s.type);if(!s.port)s.port=game?.hq||'ham';if(s.condition==null)s.condition=100;return s}
-const _makeGameV12=makeGame;
 function makeGame(name,difficulty,hq){
- const g=_makeGameV12(name,difficulty,hq);
- const starterType=shipType('coastal');
+ /* Immer die ursprüngliche Basisfunktion aufrufen. Kein Aufruf von makeGame selbst,
+    da Funktionsdeklarationen mit gleichem Namen im Script hoisted werden. */
+ const g=baseMakeGame(name,difficulty);
+ g.ships=[];
+ g.nextShipId=1;
+ g.usedStock=generateStock();
+ g.buildOrders=[];
+ g.repairOrders=[];
+ g.hq=hq||'ham';
  g.ships=[{id:'s1',name:'Coastal-Frachter s1',type:'coastal',port:g.hq,trip:null,condition:100,range:randomShipRange('coastal'),deliveryRemaining:0}];
  g.nextShipId=2;
  return g;
@@ -425,6 +431,16 @@ function renderUI(){
  renderFleetWindow();
 }
 
+
+/* Roadmap: geplante Funktionen sichtbar halten */
+function showRoadmap(){
+ let w=$('roadmapWindow');
+ if(!w){w=document.createElement('div');w.id='roadmapWindow';w.className='overlay';w.style.zIndex='2200';w.innerHTML='<div class="menu-card" style="max-height:85vh;overflow:auto"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><h2 style="margin:0">🧭 Blue Horizon – Roadmap</h2><button onclick="closeRoadmap()">Schließen ✕</button></div><p class="notice">Geplante Erweiterungen für kommende Versionen.</p><div class="order"><h3>🌊 Schiffbare Gewässer-Ansicht</h3><p>Eine Kartenebene, die schiffbare Meeresgebiete und Wasserstraßen sichtbar macht und nicht befahrbare Bereiche klar unterscheidet.</p><span class="bonus">Geplant</span></div><div class="order"><h3>🏗️ Individueller Schiffsbau</h3><p>Schiffe nach eigenen Vorgaben konfigurieren.</p><span class="bonus">Coming soon</span></div><div class="order"><h3>🧍 Passagierbeförderung</h3><p>Personenverkehr als zusätzliche Auftragsart.</p><span class="bonus">Coming soon</span></div></div>';document.body.appendChild(w)}
+ w.classList.remove('hidden');
+}
+function closeRoadmap(){const w=$('roadmapWindow');if(w)w.classList.add('hidden')}
+window.addEventListener('keydown',e=>{if(e.key==='Escape')closeRoadmap()});
+window.addEventListener('load',()=>{const b=document.createElement('button');b.textContent='🧭 Roadmap';b.title='Geplante Funktionen ansehen';b.onclick=showRoadmap;const actions=document.querySelector('.top-actions');if(actions)actions.insertBefore(b,actions.lastElementChild)});
 </script>
 </body>
 </html>
