@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 :root{--bg:#07131f;--panel:#0c2030;--panel2:#112a3c;--line:#24445a;--text:#e9f4fa;--muted:#8faaba;--cyan:#47d8d0;--gold:#f5bd59;--green:#6de0a2;--red:#ff7777}
-*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Segoe UI,Arial,sans-serif}body{overflow:hidden}button,input,select{font:inherit}button{border:1px solid #31566b;border-radius:9px;background:#16384b;color:var(--text);padding:9px 12px;cursor:pointer}button:hover{border-color:var(--cyan);background:#20516a}button:disabled{opacity:.45;cursor:not-allowed}.primary{background:#087f83;border-color:#26c6be;font-weight:750}.danger{background:#44262b;border-color:#874a4a}.muted{color:var(--muted)}.money{color:var(--green);font-weight:800}.gold{color:var(--gold)}.app{height:100dvh;display:grid;grid-template-rows:auto 1fr}.topbar{z-index:500;display:flex;align-items:center;gap:10px;min-height:62px;padding:8px 14px;background:#081724f2;border-bottom:1px solid var(--line);flex-wrap:wrap}.brand{display:flex;align-items:center;gap:9px;margin-right:8px}.logo{width:35px;height:35px;border-radius:11px;background:linear-gradient(145deg,#5cf4de,#087c9a);display:grid;place-items:center;font-size:20px;color:#03202b}.brand strong{letter-spacing:1px}.brand small{display:block;font-size:9px;letter-spacing:2px;color:var(--muted)}.stat{border:1px solid var(--line);border-radius:9px;padding:6px 10px;min-width:82px}.stat small{display:block;font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}.stat b{font-size:13px}.top-actions{display:flex;gap:6px;margin-left:auto}.workspace{min-height:0;position:relative}.map{position:absolute;inset:0;background:#102e3a}.map-tools{position:absolute;z-index:400;top:12px;left:12px;display:flex;gap:7px;flex-wrap:wrap}.map-label{border:1px solid var(--line);background:#071827ed;border-radius:10px;padding:10px 13px;box-shadow:0 4px 15px #0005}.map-label strong{display:block;font-size:12px;letter-spacing:1px}.map-label small{color:var(--muted);font-size:10px}.side{position:absolute;z-index:450;right:10px;top:12px;bottom:12px;width:300px;display:flex;flex-direction:column;gap:9px;pointer-events:none}.panel{pointer-events:auto;background:#0c2030f5;border:1px solid var(--line);border-radius:13px;overflow:hidden;box-shadow:0 5px 20px #0004}.panel-head{padding:12px;border-bottom:1px solid var(--line);font-size:11px;letter-spacing:1px;font-weight:800;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between}.panel-body{padding:12px}.fleet-list{max-height:180px;overflow:auto}.ship-row{display:flex;gap:8px;align-items:center;padding:9px;border-bottom:1px solid #24445a;cursor:pointer;font-size:12px}.ship-row:hover,.ship-row.selected{background:#153b4c}.ship-dot{width:20px;height:11px;clip-path:polygon(0 0,75% 0,100% 50%,75% 100%,0 100%);flex-shrink:0}.ship-row small{display:block;color:var(--muted);margin-top:3px}.field{margin-bottom:10px}.field label{display:block;font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:5px}.field select,.field input{width:100%;padding:10px;border:1px solid #31566b;background:#081a27;color:var(--text);border-radius:8px;min-width:0}.order-list{max-height:calc(100dvh - 340px);overflow:auto}.order{border:1px solid #294a5d;background:#102a3b;border-radius:9px;padding:10px;margin-bottom:8px}.order h3{font-size:12px;margin:0 0 6px}.order p{font-size:11px;line-height:1.5;color:var(--muted);margin:4px 0}.order .bonus{color:var(--gold);font-weight:800;margin:6px 0}.bottom-log{position:absolute;left:12px;bottom:12px;z-index:400;width:min(390px,calc(100% - 340px));max-height:100px;overflow:auto;background:#0c2030ee;border:1px solid var(--line);border-radius:12px}.log-head{padding:9px 12px;border-bottom:1px solid var(--line);font-size:10px;letter-spacing:1px;font-weight:800}.log-lines{font-size:10px;color:var(--muted);padding:8px 12px;line-height:1.6}.ship-icon{background:transparent;border:0}.ship-shape{border:1px solid #fff9;box-shadow:0 1px 5px #000a;clip-path:polygon(0 0,76% 0,100% 50%,76% 100%,0 100%);transform-origin:center center}.ship-shape.selected-ship-marker{outline:2px solid var(--cyan);outline-offset:2px;box-shadow:0 0 10px var(--cyan),0 1px 5px #000a}.leaflet-container{font:inherit}.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#0c2030;color:var(--text)}.leaflet-popup-content{font-size:12px}.overlay{position:fixed;inset:0;z-index:2000;background:radial-gradient(ellipse at 50% 20%,#12384b 0%,#07131f 68%);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto}.menu-card{width:min(560px,100%);border:1px solid #31566b;background:#0a1b29f5;border-radius:20px;padding:clamp(20px,5vw,36px);box-shadow:0 20px 80px #0008}.menu-brand{display:flex;gap:13px;align-items:center;margin-bottom:24px}.menu-brand .logo{width:54px;height:54px;font-size:28px}.menu-brand h1{font-size:25px;letter-spacing:2px;margin:0}.menu-brand p{font-size:10px;letter-spacing:2px;color:var(--muted);margin:4px 0}.menu-card h2{font-size:17px;margin:0 0 7px}.menu-card>p{font-size:12px;color:var(--muted);line-height:1.6}.menu-actions{display:grid;gap:9px;margin:20px 0}.menu-actions button{padding:13px;text-align:left}.menu-actions button strong{display:block}.menu-actions button small{display:block;color:#a8c2d0;margin-top:3px}.setup{display:none;border-top:1px solid var(--line);padding-top:18px;margin-top:14px}.setup.visible{display:block}.difficulty{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0 14px}.difficulty button{padding:9px 4px;font-size:11px}.difficulty button.active{border-color:var(--cyan);background:#075e67;box-shadow:inset 0 0 0 1px var(--cyan)}.save-row{display:flex;align-items:center;gap:8px;margin:8px 0;padding:10px;border:1px solid var(--line);border-radius:9px}.save-row span{flex:1;font-size:12px}.save-row small{display:block;color:var(--muted);margin-top:4px}.notice{font-size:11px;color:var(--muted);line-height:1.5}.soon{border:1px dashed #568097;border-radius:9px;padding:10px;color:#b4cad6;font-size:11px;margin-top:10px}.hidden{display:none!important}@media(max-width:760px){.topbar{gap:5px;padding:7px}.brand{min-width:auto}.brand small{display:none}.stat{min-width:auto;padding:5px 7px}.stat small{font-size:8px}.stat b{font-size:11px}.top-actions{gap:4px}.top-actions button{padding:8px;font-size:11px}.side{top:auto;left:8px;right:8px;bottom:8px;width:auto;max-height:48%;gap:6px}.panel-head{padding:9px}.panel-body{padding:9px}.fleet-list{max-height:80px}.order-list{max-height:190px}.bottom-log{display:none}.map-tools{top:8px;left:8px}.map-label{padding:7px 9px}.map-label small{display:none}.difficulty{grid-template-columns:repeat(2,1fr)}} 
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Segoe UI,Arial,sans-serif}body{overflow:hidden}button,input,select{font:inherit}button{border:1px solid #31566b;border-radius:9px;background:#16384b;color:var(--text);padding:9px 12px;cursor:pointer}button:hover{border-color:var(--cyan);background:#20516a}button:disabled{opacity:.45;cursor:not-allowed}.primary{background:#087f83;border-color:#26c6be;font-weight:750}.danger{background:#44262b;border-color:#874a4a}.muted{color:var(--muted)}.money{color:var(--green);font-weight:800}.gold{color:var(--gold)}.app{height:100dvh;display:grid;grid-template-rows:auto 1fr}.topbar{z-index:500;display:flex;align-items:center;gap:10px;min-height:62px;padding:8px 14px;background:#081724f2;border-bottom:1px solid var(--line);flex-wrap:wrap}.brand{display:flex;align-items:center;gap:9px;margin-right:8px}.logo{width:35px;height:35px;border-radius:11px;background:linear-gradient(145deg,#5cf4de,#087c9a);display:grid;place-items:center;font-size:20px;color:#03202b}.brand strong{letter-spacing:1px}.brand small{display:block;font-size:9px;letter-spacing:2px;color:var(--muted)}.stat{border:1px solid var(--line);border-radius:9px;padding:6px 10px;min-width:82px}.stat small{display:block;font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}.stat b{font-size:13px}.top-actions{display:flex;gap:6px;margin-left:auto}.workspace{min-height:0;position:relative}.map{position:absolute;inset:0;background:#102e3a}.map-tools{position:absolute;z-index:400;top:12px;left:12px;display:flex;gap:7px;flex-wrap:wrap}.map-label{border:1px solid var(--line);background:#071827ed;border-radius:10px;padding:10px 13px;box-shadow:0 4px 15px #0005}.map-label strong{display:block;font-size:12px;letter-spacing:1px}.map-label small{color:var(--muted);font-size:10px}.side{position:absolute;z-index:450;right:10px;top:12px;bottom:12px;width:300px;display:flex;flex-direction:column;gap:9px;pointer-events:none}.panel{pointer-events:auto;background:#0c2030f5;border:1px solid var(--line);border-radius:13px;overflow:hidden;box-shadow:0 5px 20px #0004}.panel-head{padding:12px;border-bottom:1px solid var(--line);font-size:11px;letter-spacing:1px;font-weight:800;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between}.panel-body{padding:12px}.fleet-list{max-height:180px;overflow:auto}.ship-row{display:flex;gap:8px;align-items:center;padding:9px;border-bottom:1px solid #24445a;cursor:pointer;font-size:12px}.ship-row:hover,.ship-row.selected{background:#153b4c}.ship-dot{width:20px;height:11px;clip-path:polygon(0 0,75% 0,100% 50%,75% 100%,0 100%);flex-shrink:0}.ship-row small{display:block;color:var(--muted);margin-top:3px}.field{margin-bottom:10px}.field label{display:block;font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:5px}.field select,.field input{width:100%;padding:10px;border:1px solid #31566b;background:#081a27;color:var(--text);border-radius:8px;min-width:0}.order-list{max-height:calc(100dvh - 340px);overflow:auto}.order{border:1px solid #294a5d;background:#102a3b;border-radius:9px;padding:10px;margin-bottom:8px}.order h3{font-size:12px;margin:0 0 6px}.order p{font-size:11px;line-height:1.5;color:var(--muted);margin:4px 0}.order .bonus{color:var(--gold);font-weight:800;margin:6px 0}.bottom-log{position:absolute;left:12px;bottom:12px;z-index:400;width:min(390px,calc(100% - 340px));max-height:100px;overflow:auto;background:#0c2030ee;border:1px solid var(--line);border-radius:12px}.log-head{padding:9px 12px;border-bottom:1px solid var(--line);font-size:10px;letter-spacing:1px;font-weight:800}.log-lines{font-size:10px;color:var(--muted);padding:8px 12px;line-height:1.6}.ship-icon{background:transparent;border:0}.ship-shape{border:1px solid #fff9;box-shadow:0 1px 5px #000a;clip-path:polygon(0 0,76% 0,100% 50%,76% 100%,0 100%);transform-origin:center center}.ship-shape.selected-ship-marker{outline:2px solid var(--cyan);outline-offset:2px;box-shadow:0 0 10px var(--cyan),0 1px 5px #000a}.leaflet-container{font:inherit}.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#0c2030;color:var(--text)}.leaflet-popup-content{font-size:12px}.overlay{position:fixed;inset:0;z-index:2000;background:radial-gradient(ellipse at 50% 20%,#12384b 0%,#07131f 68%);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto}.menu-card{width:min(560px,100%);border:1px solid #31566b;background:#0a1b29f5;border-radius:20px;padding:clamp(20px,5vw,36px);box-shadow:0 20px 80px #0008}.menu-brand{display:flex;gap:13px;align-items:center;margin-bottom:24px}.menu-brand .logo{width:54px;height:54px;font-size:28px}.menu-brand h1{font-size:25px;letter-spacing:2px;margin:0}.menu-brand p{font-size:10px;letter-spacing:2px;color:var(--muted);margin:4px 0}.menu-card h2{font-size:17px;margin:0 0 7px}.menu-card>p{font-size:12px;color:var(--muted);line-height:1.6}.menu-actions{display:grid;gap:9px;margin:20px 0}.menu-actions button{padding:13px;text-align:left}.menu-actions button strong{display:block}.menu-actions button small{display:block;color:#a8c2d0;margin-top:3px}.setup{display:none;border-top:1px solid var(--line);padding-top:18px;margin-top:14px}.setup.visible{display:block}.difficulty{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0 14px}.difficulty button{padding:9px 4px;font-size:11px}.difficulty button.active{border-color:var(--cyan);background:#075e67;box-shadow:inset 0 0 0 1px var(--cyan)}.save-row{display:flex;align-items:center;gap:8px;margin:8px 0;padding:10px;border:1px solid var(--line);border-radius:9px}.save-row span{flex:1;font-size:12px}.save-row small{display:block;color:var(--muted);margin-top:4px}.notice{font-size:11px;color:var(--muted);line-height:1.5}.soon{border:1px dashed #568097;border-radius:9px;padding:10px;color:#b4cad6;font-size:11px;margin-top:10px}.hidden{display:none!important}@media(max-width:760px){.topbar{gap:5px;padding:7px}.brand{min-width:auto}.brand small{display:none}.stat{min-width:auto;padding:5px 7px}.stat small{font-size:8px}.stat b{font-size:11px}.top-actions{gap:4px}.top-actions button{padding:8px;font-size:11px}.side{top:auto;left:8px;right:8px;bottom:8px;width:auto;max-height:48%;gap:6px}.panel-head{padding:9px}.panel-body{padding:9px}.fleet-list{max-height:80px}.order-list{max-height:190px}.bottom-log{display:none}.map-tools{top:8px;left:8px}.map-label{padding:7px 9px}.map-label small{display:none}.difficulty{grid-template-columns:repeat(2,1fr)}}
 /* Interaktive Marker müssen Maus-/Touch-Ereignisse empfangen. */
 .leaflet-marker-pane{pointer-events:auto!important}.leaflet-marker-pane .leaflet-marker-icon{pointer-events:auto!important;cursor:pointer!important}.ship-icon,.ship-icon .ship-hit-area{pointer-events:auto!important;cursor:pointer!important}.ship-icon .ship-hit-area.selected-ship-marker{border:2px solid var(--cyan);border-radius:50%;box-shadow:0 0 0 3px #47d8d066,0 0 18px #47d8d0;background:#47d8d018}
 </style>
@@ -131,13 +131,11 @@ function baseComputeWaterRoute(a,b){const routeFn=window.searoute;if(!seaRouting
 /* Flotte, Aufträge und Fahrten */
 function selectedShip(){return game.ships.find(s=>s.id===selectedShipId)||game.ships[0]}
 let selectedShipId='s1';
-function selectShip(id){if(!game)return;const s=game.ships.find(x=>String(x.id)===String(id));if(!s){toast('Dieses Schiff wurde nicht gefunden.');return}selectedShipId=s.id;renderUI();renderShips();saveGame()}
-function eligibleContracts(s){if(!s)return[];return CONTRACTS.filter(c=>shipType(s.type).allowed.includes(c.cargo)&&!s.trip&&c.from!==c.to)}
-function acceptOrder(contractId){const s=selectedShip(),c=CONTRACTS.find(x=>x.id===contractId);if(!s||!c||s.trip||!shipType(s.type).allowed.includes(c.cargo)){toast('Dieser Auftrag passt nicht zum ausgewählten Schiff.');return}if(s.type==='river'){toast('Flussrouting ist noch nicht verfügbar.');return}const a=port(c.from),b=port(c.to),coords=resolveWaterRoute(a,b);if(!coords){toast('Für diese Häfen ist keine bestätigte Wasserroute verfügbar. Es wird keine Luftlinie als Ersatz benutzt.');return}const distance=coords.reduce((sum,p,i)=>i?sum+haversine({lat:coords[i-1][1],lon:coords[i-1][0]},{lat:p[1],lon:p[0]}):0,0);if(distance>shipType(s.type).range){toast('Diese Route überschreitet die Reichweite dieses Schiffstyps.');return}const t=cargo(c.cargo),diff=DIFFICULTIES[game.difficulty],units=Math.floor(shipType(s.type).capacity*t.capacity),revenue=Math.round(units*t.fee*((a.demand+b.demand)/2)*diff.revenue+c.bonus*diff.revenue),days=Math.max(1,Math.ceil(distance/(shipType(s.type).speed*24*t.speed)+t.handling+1));s.trip={contractId:c.id,from:c.from,to:c.to,cargo:c.cargo,coords,progress:0,distance,days,daysElapsed:0,revenue,units,cost:Math.round((distance*22+days*shipType(s.type).upkeep/7)*diff.cost)};s.status='sailing';selectedShipId=s.id;addLog(s.name+' übernimmt Auftrag von '+c.company+': '+a.name+' → '+b.name+'.');saveGame();renderUI();renderShips();toast('Auftrag angenommen · '+days+' Spieltage geschätzt')}
+
 function buyShip(typeId){const t=shipType(typeId),d=DIFFICULTIES[game.difficulty];if(!t)return;if(game.cash<t.price*d.cost){toast('Nicht genug Geld für dieses Schiff.');return}game.cash-=Math.round(t.price*d.cost);const id='s'+game.nextShipId++;const home=PORTS[(game.nextShipId*3)%PORTS.length];game.ships.push({id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null});selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'.');saveGame();renderUI();renderShips();openShipyard();toast('Schiff zur Flotte hinzugefügt')}
 function openShipyard(){if(!game)return;$('shipyard').classList.remove('hidden');renderShipyard()}
 function closeShipyard(){$('shipyard').classList.add('hidden')}
-function renderShipyard(){const d=DIFFICULTIES[game.difficulty];$('yardContent').innerHTML='<p class="notice">Schwierigkeitsgrad: '+d.label+' · Kaufpreise × '+d.cost.toFixed(2).replace('.',',')+'</p><div class="field"><label>Schiffsklasse</label><select id="yardType" onchange="renderShipyard()">'+SHIP_TYPES.map(t=>'<option value="'+t.id+'" '+(t.id===$('yardType')?.value?'selected':'')+'>'+t.className+' — '+t.name+'</option>').join('')+'</select></div>'+SHIP_TYPES.filter(t=>t.id===($('yardType')?.value||'coastal')).map(t=>'<div class="order"><h3>'+t.name+'</h3><p>'+t.desc+'<br>Geschwindigkeit '+t.speed+' kn · Kapazität '+t.capacity+' Einheiten<br>Unterhalt '+money(t.upkeep*d.upkeep)+'/Woche</p><div class="bonus">'+money(t.price*d.cost)+'</div><button class="primary" onclick="buyShip(\''+t.id+'\')">Schiff kaufen</button></div>').join('')}
+
 function advanceGameDay(){if(!game)return;game.day++;const d=DIFFICULTIES[game.difficulty];let expenses=0;game.ships.forEach(s=>{expenses+=shipType(s.type).upkeep*d.upkeep/7;if(s.trip){const tr=s.trip;tr.daysElapsed++;tr.progress=Math.min(1,tr.daysElapsed/tr.days);if(tr.progress>=1){const c=CONTRACTS.find(x=>x.id===tr.contractId);game.cash+=tr.revenue-tr.cost;game.rep=Math.min(100,game.rep+1);game.completed++;addLog(s.name+' erreicht '+port(tr.to).name+'. Nettoerlös: '+money(tr.revenue-tr.cost)+'.');s.port=tr.to;s.trip=null;s.status='idle'}}});game.cash-=expenses;game.cash-=1800*d.cost;if(game.day%7===0){game.cash-=12500*d.upkeep;addLog('Wöchentliche Verwaltungskosten: '+money(12500*d.upkeep)+'.')}if(game.cash<0)game.rep=Math.max(0,game.rep-2);(game.buildOrders||[]).forEach(o=>{o.remaining--;if(o.remaining<=0){game.ships.push({id:o.id,name:o.name,type:o.type,port:o.port,trip:null,condition:100,deliveryRemaining:0});addLog('Neubau ausgeliefert: '+o.name+' (100 % Zustand).')}});game.buildOrders=(game.buildOrders||[]).filter(o=>o.remaining>0);(game.repairOrders||[]).forEach(o=>{o.remaining--;if(o.remaining<=0){const ship=game.ships.find(x=>x.id===o.shipId);if(ship){ship.condition=o.target;ship.inYard=false;addLog(ship.name+' ist nach der Überholung wieder einsatzbereit ('+ship.condition+' %).')}}});game.repairOrders=(game.repairOrders||[]).filter(o=>o.remaining>0);if(game.day%3===0)saveGame();renderUI();renderShips()}
 function nextDay(){if(!game)return;advanceGameDay();}
 function baseRenderUI(){if(!game)return;$('companyLabel').textContent=game.company.toUpperCase();$('cashStat').textContent=money(game.cash);$('fleetStat').textContent=game.ships.length+' Schiffe';$('fleetCount').textContent=game.ships.length+' Schiffe';$('dayStat').textContent='Tag '+game.day;$('repStat').textContent='★ '+game.rep;$('dateLabel').textContent='Jahr '+(Math.floor((game.day-1)/360)+1)+' · Tag '+game.day;$('logLines').innerHTML=game.log.slice(0,6).map(x=>'<div>'+escapeHtml(x)+'</div>').join('');$('fleetList').innerHTML=game.ships.map(s=>'<div class="ship-row '+(s.id===selectedShipId?'selected':'')+'" onclick="selectShip(\''+s.id+'\')"><span class="ship-dot" style="background:'+shipType(s.type).color+'"></span><div><b>'+escapeHtml(s.name)+'</b><small>'+shipType(s.type).className+' · '+(s.trip?'Unterwegs nach '+port(s.trip.to).name:'Im Hafen: '+port(s.port).name)+'</small></div></div>').join('');const s=selectedShip();$('selectedShipLabel').textContent=s?s.name:'';const orders=eligibleContracts(s);$('ordersHelp').textContent=s?(s.trip?'Dieses Schiff ist unterwegs. Neue Aufträge sind nach der Ankunft verfügbar.':'Verfügbare Aufträge für '+s.name+'. Frachtarten passen zum Schiff.'):'Wähle ein Schiff aus.';$('ordersList').innerHTML=s&&s.trip?'<div class="order"><h3>Schiff auf Fahrt</h3><p>Ziel: '+port(s.trip.to).name+'<br>Fortschritt: '+Math.round(s.trip.progress*100)+' %</p></div>':orders.map(c=>'<div class="order"><h3>'+escapeHtml(c.company)+'</h3><p>'+port(c.from).name+' → '+port(c.to).name+'<br>'+cargo(c.cargo).icon+' '+cargo(c.cargo).name+'<br>Frist: '+c.deadline+' Spieltage</p><p>'+escapeHtml(c.desc)+'</p><div class="bonus">Bonus '+money(c.bonus*DIFFICULTIES[game.difficulty].revenue)+'</div><button class="primary" style="width:100%" onclick="acceptOrder(\''+c.id+'\')">Auftrag übernehmen</button></div>').join('')||'<p class="notice">Für diesen Schiffstyp gibt es aktuell keine freien Aufträge.</p>';saveGame()}
@@ -146,9 +144,9 @@ function escapeHtml(s){return String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<'
 let selectedDifficulty='easy';
 function hideSetups(){$('newGameSetup').classList.remove('visible');$('savesSetup').classList.remove('visible')}
 function showMenuHome(){hideSetups();$('menuActions').classList.remove('hidden');$('menuHeading').textContent='Deine Reederei beginnt hier';$('menuDescription').textContent='Baue ein internationales Schifffahrtsunternehmen auf, übernimm Firmenaufträge und erweitere deine Flotte.'}
-function showNewGame(){hideSetups();$('menuActions').classList.add('hidden');$('newGameSetup').classList.add('visible');$('menuHeading').textContent='Neue Runde';$('menuDescription').textContent='Gib deiner Reederei einen Namen und wähle die gewünschte Herausforderung.';$('companyInput').value='';chooseDifficulty('easy')}
+
 function chooseDifficulty(id){selectedDifficulty=id;document.querySelectorAll('[data-difficulty]').forEach(b=>b.classList.toggle('active',b.dataset.difficulty===id));$('difficultyInfo').textContent=DIFFICULTIES[id].desc}
-function startNewGame(){const name=$('companyInput').value.trim()||'Blue Horizon Shipping';if(!confirm('Neue Runde für „'+name+'“ starten? Ein vorhandener Spielstand wird nicht gelöscht.'))return;game=makeGame(name,selectedDifficulty);activeSlot=firstFreeSlot();if(activeSlot<0){activeSlot=0;toast('Alle 5 Speicherplätze belegt; Speicherplatz 1 wird ersetzt.')}selectedShipId='s1';saveGame();$('mainMenu').classList.add('hidden');renderUI();renderShips();map.invalidateSize();toast('Willkommen bei '+name+'!')}
+
 function firstFreeSlot(){for(let i=0;i<5;i++)if(!slotExists(i))return i;return -1}
 function showSaves(){hideSetups();$('menuActions').classList.add('hidden');$('savesSetup').classList.add('visible');$('menuHeading').textContent='Spielstände laden';$('menuDescription').textContent='Wähle eine gespeicherte Runde aus diesem Browser.';renderSaveList()}
 function renderSaveList(){$('saveList').innerHTML=Array.from({length:5},(_,i)=>{const g=loadSlot(i);return g?'<div class="save-row"><span><b>'+escapeHtml(g.company)+'</b><small>'+DIFFICULTIES[g.difficulty]?.label+' · Tag '+g.day+' · '+money(g.cash)+'</small></span><button onclick="loadGameSlot('+i+')">Laden</button></div>':'<div class="save-row"><span>Speicherplatz '+(i+1)+'<small>Leer</small></span><button disabled>Laden</button></div>'}).join('')}
@@ -163,55 +161,12 @@ function init(){initMap();seaRoutingAvailable=typeof window.searoute==='function
 window.addEventListener('load',init);
 
 /* === Erweiterung: gebrauchte Schiffe, Neubau, Reparaturen und Binnenschifffahrt === */
-const _oldMakeGame=baseMakeGame;
-function generateStock(){const stock={};SHIP_TYPES.forEach(t=>stock[t.id]=Math.floor(Math.random()*5));return stock}
-function makeGame(name,difficulty,hq){const g=_oldMakeGame(name,difficulty,hq);g.ships=[];g.nextShipId=1;g.usedStock=generateStock();g.buildOrders=[];g.repairOrders=[];g.hq=hq||'ham';return g}
-function showNewGame(){hideSetups();$('menuActions').classList.add('hidden');$('newGameSetup').classList.add('visible');$('menuHeading').textContent='Neue Runde';$('menuDescription').textContent='Benenne deine Firma, wähle den Hauptsitzhafen und den Schwierigkeitsgrad.';$('companyInput').value='';$('hqPort').innerHTML=PORTS.map(p=>'<option value="'+p.id+'">'+p.name+' — '+p.country+(p.river?' · Binnenhafen':'')+'</option>').join('');$('hqPort').value='ham';chooseDifficulty('easy')}
-function startNewGame(){const name=$('companyInput').value.trim()||'Blue Horizon Shipping',hq=$('hqPort').value;if(!hq){toast('Bitte Hauptsitzhafen wählen.');return}if(!confirm('Neue Runde für „'+name+'“ starten? Du startest mit einem ersten Schiff am Hauptsitz.'))return;game=makeGame(name,selectedDifficulty,hq);activeSlot=firstFreeSlot();if(activeSlot<0)activeSlot=0;selectedShipId=game.ships[0]?.id||null;saveGame();$('mainMenu').classList.add('hidden');renderUI();renderShips();map.setView([port(hq).lat,port(hq).lon],5);map.invalidateSize();toast('Firma gegründet – dein erstes Schiff ist einsatzbereit.')}
+
 /* Werft-Oberfläche: erst Kaufweg wählen, dann Details anzeigen. */
 var yardMode='home';
-function renderShipyard(){
- if(!game)return;
- const d=DIFFICULTIES[game.difficulty];
- if(!game.usedStock)game.usedStock=generateStock();
- if(!game.buildOrders)game.buildOrders=[];
- if(!game.repairOrders)game.repairOrders=[];
- const intro='<p class="notice">Schwierigkeitsgrad: '+d.label+' · Preise angepasst an die Schwierigkeit.</p>';
- const back='<button style="width:100%;margin-top:10px" onclick="yardMode=\'home\';renderShipyard()">← Zur Werft-Auswahl</button>';
- if(yardMode==='home'){
-  $('yardContent').innerHTML=intro+
-   '<div class="order"><h3>🚢 Gebrauchte Schiffe</h3><p>Kaufe ein sofort verfügbares Schiff. Preis und Zustand unterscheiden sich je nach Angebot.</p><button class="primary" style="width:100%" onclick="yardMode=\'used\';renderShipyard()">Gebrauchte Schiffe auswählen</button></div>'+
-   '<div class="order"><h3>🏗️ Individueller Schiffsbau</h3><p>Stelle später dein eigenes Schiff nach deinen Wünschen zusammen.</p><button style="width:100%" disabled>Coming soon</button><p class="notice">Individueller Schiffstyp, Ausstattung und technische Werte werden später ergänzt.</p></div>'+
-   '<div class="order"><h3>🛠️ Reparaturen</h3><p>Schiffe mit Gebrauchsspuren kannst du in die Werft zur Überholung geben.</p><button style="width:100%" onclick="yardMode=\'used\';renderShipyard()">Flotte und Reparaturen öffnen</button></div>'+
-   '<div class="order"><h3>⏳ Bestellungen in Arbeit</h3>'+
-   ((game.buildOrders.length?game.buildOrders.map(o=>'<p>'+escapeHtml(o.name)+' — '+shipType(o.type).name+' · noch '+o.remaining+' Tage</p>').join(''):'<p class="notice">Keine Neubauten in Arbeit.</p>')+
-   (game.repairOrders.length?game.repairOrders.map(o=>'<p>Überholung '+escapeHtml(o.name)+' · noch '+o.remaining+' Tage</p>').join(''):'') )+'</div>';
-  return;
- }
- const typeId=$('yardType')?.value||SHIP_TYPES[0].id;
- const selected=shipType(typeId);
- const opts=SHIP_TYPES.map(t=>'<option value="'+t.id+'" '+(t.id===typeId?'selected':'')+'>'+t.name+' · '+(game.usedStock[t.id]||0)+' verfügbar</option>').join('');
- const stock=game.usedStock[typeId]||0;
- const conditionText=stock?'Gebrauchte Schiffe haben zufällige Zustände zwischen 10 % und 90 %.':'Für diesen Typ ist aktuell kein gebrauchtes Schiff verfügbar.';
- const purchase=stock?'<button class="primary" style="width:100%" onclick="buyUsedShip(\''+typeId+'\')">Gebraucht kaufen · '+money(Math.round(selected.price*.48*d.cost))+'–'+money(Math.round(selected.price*.88*d.cost))+'</button>':'<button style="width:100%" disabled>Derzeit ausverkauft</button>';
- const repairOptions=game.ships.map(sh=>'<option value="'+sh.id+'">'+escapeHtml(sh.name)+' · '+sh.condition+' %</option>').join('');
- $('yardContent').innerHTML=intro+back+
-  '<div class="field" style="margin-top:14px"><label for="yardType">Schiffstyp auswählen</label><select id="yardType" onchange="renderShipyard()">'+opts+'</select></div>'+
-  '<div class="order"><h3>'+selected.name+'</h3><p>'+selected.desc+'<br>Geschwindigkeit: '+selected.speed+' kn · Kapazität: '+selected.capacity+' Einheiten<br>Unterhalt: '+money(Math.round(selected.upkeep*d.upkeep))+'/Tag</p><div class="bonus">'+stock+' verfügbar</div><p class="notice">'+conditionText+'</p>'+purchase+'</div>'+
-  '<div class="order"><h3>🛠️ Schiffe reparieren</h3>'+
-  (game.ships.length?'<div class="field"><label for="repairShip">Schiff auswählen</label><select id="repairShip">'+repairOptions+'</select></div><p>Die Reparatur kostet Geld und das Schiff ist währenddessen außer Betrieb.</p><button style="width:100%" onclick="repairSelectedShip()">Ausgewähltes Schiff überholen</button>':'<p class="notice">Du hast noch keine Schiffe, die repariert werden können.</p>')+
-  '</div><div class="order"><h3>⏳ Bestellungen in Arbeit</h3>'+
-  ((game.buildOrders.length?game.buildOrders.map(o=>'<p>'+escapeHtml(o.name)+' — '+shipType(o.type).name+' · noch '+o.remaining+' Tage</p>').join(''):'<p class="notice">Keine Neubauten in Arbeit.</p>')+
-  (game.repairOrders.length?game.repairOrders.map(o=>'<p>Überholung '+escapeHtml(o.name)+' · noch '+o.remaining+' Tage</p>').join(''):'') )+'</div>';
-}
-function buyUsedShip(typeId){const t=shipType(typeId),d=DIFFICULTIES[game.difficulty];if(!game.usedStock)game.usedStock=generateStock();if((game.usedStock[typeId]||0)<=0){toast('Dieser Typ ist ausverkauft.');return}const condition=10+Math.floor(Math.random()*81),price=Math.round(t.price*(.48+(.9-condition/100)*.4)*d.cost);if(game.cash<price){toast('Nicht genug Kapital.');return}game.cash-=price;game.usedStock[typeId]--;const id='s'+game.nextShipId++;const name=t.name+' '+id;game.ships.push({id,name,type:typeId,port:game.hq||'ham',trip:null,condition,deliveryRemaining:0});selectedShipId=id;addLog('Gebrauchtes Schiff gekauft: '+name+' ('+condition+' % Zustand).');saveGame();renderUI();renderShips();openShipyard();toast('Gebrauchtes Schiff gekauft · Zustand '+condition+' %')}
+
 function orderNewShip(typeId){const t=shipType(typeId),d=DIFFICULTIES[game.difficulty],price=Math.round(t.price*1.35*d.cost);if(game.cash<price){toast('Nicht genug Kapital für den Neubau.');return}if(!game.buildOrders)game.buildOrders=[];game.cash-=price;const id='s'+game.nextShipId++,name=t.name+' Neubau '+id;game.buildOrders.push({id,name,type:typeId,remaining:t.buildDays,port:game.hq||'ham'});addLog('Neubau beauftragt: '+name+'; Lieferung in etwa '+t.buildDays+' Tagen.');saveGame();renderUI();renderShipyard();toast('Neubau in Auftrag gegeben.')}
 function repairSelectedShip(){const id=$('repairShip')?.value,s=game.ships.find(x=>x.id===id);if(!s){toast('Wähle ein Schiff aus.');return}if(s.trip){toast('Ein Schiff auf See kann nicht in die Werft.');return}if(s.condition>=100){toast('Dieses Schiff ist bereits in Bestzustand.');return}if((game.repairOrders||[]).some(o=>o.shipId===id)){toast('Dieses Schiff wird bereits überholt.');return}const t=shipType(s.type),target=100,days=Math.max(2,Math.ceil((target-s.condition)/4)),price=Math.round(t.price*(target-s.condition)/100*.22*DIFFICULTIES[game.difficulty].cost);if(game.cash<price){toast('Nicht genug Kapital für die Reparatur.');return}game.cash-=price;game.repairOrders.push({shipId:id,name:s.name,remaining:days,target});s.inYard=true;addLog(s.name+' zur Überholung in die Werft gebracht ('+days+' Tage).');saveGame();renderUI();renderShipyard();toast('Überholung gestartet: '+days+' Tage')}
-const _oldRenderUI=renderUI;
-function renderUI(){if(!game)return;_oldRenderUI();$('fleetList').innerHTML=game.ships.length?game.ships.map(s=>'<div class="ship-row '+(s.id===selectedShipId?'selected':'')+'" onclick="selectShip(\''+s.id+'\')"><span class="ship-dot" style="background:'+shipType(s.type).color+'"></span><div><b>'+escapeHtml(s.name)+'</b><small>'+shipType(s.type).name+' · Zustand '+(s.condition??100)+' % · '+(s.inYard?'In der Werft':s.trip?'Unterwegs nach '+port(s.trip.to).name:'Hafen: '+port(s.port).name)+'</small></div></div>').join(''):'<div class="panel-body notice">Noch keine Schiffe. Öffne die Werft, um gebrauchte Schiffe zu kaufen oder einen Neubau zu bestellen.</div>';const s=selectedShip();$('selectedShipLabel').textContent=s?s.name+' · '+shipType(s.type).name:'';if(!s){$('ordersHelp').textContent='Du hast noch keine Schiffe. Kaufe ein gebrauchtes Schiff oder beauftrage einen Neubau in der Werft.';$('ordersList').innerHTML='<div class="order"><h3>Deine Flotte ist noch leer</h3><p>Wähle in der Werft einen gebrauchten Frachter oder gib einen individuellen Neubau in Auftrag.</p><button class="primary" onclick="openShipyard()">Zur Werft</button></div>';return}if(s.inYard){$('ordersHelp').textContent='Dieses Schiff wird überholt und ist bis zur Fertigstellung nicht verfügbar.';$('ordersList').innerHTML='<div class="order"><h3>In der Werft</h3><p>Zustand '+s.condition+' %</p></div>';return}}
-const _oldEligible=eligibleContracts;
-function eligibleContracts(s){if(!s||s.trip||s.inYard)return[];return CONTRACTS.filter(c=>shipType(s.type).allowed.includes(c.cargo)&&!s.trip&&c.from!==c.to)}
-
 
 /* Binnenwasserstraßen: bewusst getrenntes Routennetz statt Luftlinien */
 const RIVER_LINKS=[
@@ -221,21 +176,12 @@ const RIVER_LINKS=[
 ];
 function riverRoute(from,to){const adj={};RIVER_LINKS.forEach(([a,b])=>{(adj[a]||(adj[a]=[])).push(b);(adj[b]||(adj[b]=[])).push(a)});const q=[[from]],seen=new Set([from]);let found=null;while(q.length){const path=q.shift(),last=path[path.length-1];if(last===to){found=path;break}(adj[last]||[]).forEach(n=>{if(!seen.has(n)){seen.add(n);q.push(path.concat(n))}})}if(!found)return null;return found.map(id=>{const p=port(id);return[p.lon,p.lat]})}
 function resolveWaterRoute(a,b){if(!a||!b)return null;if(a.river&&b.river){const r=riverRoute(a.id,b.id);if(r&&r.length>1)return r}return baseComputeWaterRoute(a,b)}
-const _oldAcceptOrder=acceptOrder;
-function acceptOrder(contractId){const s=selectedShip(),c=CONTRACTS.find(x=>x.id===contractId);if(s&&s.type==='river'&&c){const a=port(c.from),b=port(c.to);if(!a?.river||!b?.river){toast('Binnenschiffe können nur Aufträge zwischen Binnenhäfen übernehmen.');return}}_oldAcceptOrder(contractId)}
-
 
 /* Korrekturen für V1-Aufträge und Hafenklassen */
 function portLevel(p){if(p.type==='international'||p.level===3)return 3;if(p.type==='regional'||p.level===2)return 2;if(p.river||p.type==='inland')return 1;return p.level||2}
-function portTypeName(p){return portLevel(p)===3?'Internationaler Hafen':portLevel(p)===2?'Regionaler Seehafen':'Binnenhafen'}
+
 function portCanServeShip(p,s){const level=portLevel(p);if(s.type==='river')return !!p.river;if(s.type==='coastal')return level>=2;return level>=1}
 function currentPortId(s){return s.trip?s.trip.to:s.port}
-function eligibleContracts(s){
- if(!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>o.shipId===s.id))return[];
- const origin=currentPortId(s),st=shipType(s.type);
- return CONTRACTS.filter(c=>c.from===origin&&st.allowed.includes(c.cargo)&&c.to!==origin&&portCanServeShip(port(c.from),s)&&portCanServeShip(port(c.to),s)&&(s.type!=='river'||(port(c.from).river&&port(c.to).river)));
-}
-
 
 /* Jedes bestehende Hafenobjekt erhält ein explizites Level für die Kette
    Binnenhafen → Regionalhafen → internationaler Hafen. */
@@ -245,8 +191,6 @@ PORTS.forEach(p=>{
  else {p.type='regional';p.level=2}
 });
 function portTypeName(p){return p.level===3?'Internationaler Hafen':p.level===2?'Regionaler Seehafen':'Binnenhafen'}
-
-
 
 /* =========================================================
    ERWEITERUNGEN & KORREKTUREN
@@ -271,36 +215,6 @@ function routeForContract(c,s){
  if(a.river||b.river)return null;
  return resolveWaterRoute(a,b);
 }
-function eligibleContracts(s){
- if(!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>o.shipId===s.id))return[];
- const origin=s.port,st=shipType(s.type);
- return CONTRACTS.filter(c=>{
-  if(c.from!==origin||c.to===origin||!st.allowed.includes(c.cargo))return false;
-  const coords=routeForContract(c,s);if(!coords||coords.length<2)return false;
-  const distance=coords.reduce((sum,p,i)=>i?sum+haversine({lat:coords[i-1][1],lon:coords[i-1][0]},{lat:p[1],lon:p[0]}):0,0);
-  return distance<=st.range;
- });
-}
-function acceptOrder(contractId){
- const s=selectedShip(),c=CONTRACTS.find(x=>x.id===contractId);
- if(!s||!c||s.trip||s.inYard||(game.repairOrders||[]).some(o=>o.shipId===s.id)||!shipType(s.type).allowed.includes(c.cargo)){
-  toast('Dieser Auftrag passt nicht zum ausgewählten Schiff.');return;
- }
- if(c.from!==s.port){toast('Das Schiff muss sich im Start-Hafen des Auftrags befinden.');return;}
- const a=port(c.from),b=port(c.to),coords=routeForContract(c,s);
- if(!coords||coords.length<2){toast('Für diese Häfen ist keine passende Wasserroute verfügbar. Es wird keine Luftlinie als Ersatz benutzt.');return;}
- const t=cargo(c.cargo),st=shipType(s.type),diff=DIFFICULTIES[game.difficulty];
- const distance=coords.reduce((sum,p,i)=>i?sum+haversine({lat:coords[i-1][1],lon:coords[i-1][0]},{lat:p[1],lon:p[0]}):0,0);
- if(distance>st.range){toast('Diese Route überschreitet die Reichweite dieses Schiffstyps.');return;}
- const units=Math.floor(st.capacity*t.capacity);
- const revenue=Math.round(units*t.fee*((a.demand+b.demand)/2)*diff.revenue+c.bonus*diff.revenue);
- const days=Math.max(1,Math.ceil(distance/(st.speed*24*t.speed)+t.handling+1));
- s.trip={contractId:c.id,from:c.from,to:c.to,cargo:c.cargo,coords,progress:0,distance,days,daysElapsed:0,revenue,units,cost:Math.round((distance*22+days*st.upkeep/7)*diff.cost)};
- s.status='sailing';selectedShipId=s.id;
- addLog(s.name+' übernimmt Auftrag von '+c.company+': '+a.name+' → '+b.name+'.');
- saveGame();renderUI();renderShips();toast('Auftrag angenommen · '+days+' Spieltage geschätzt');
-}
-
 
 /* Startvorgang: Formular, Spielzustand und UI sicher initialisieren.
    Wichtig: Dieser Code muss innerhalb des Script-Blocks bleiben. */
@@ -337,7 +251,6 @@ function startNewGame(){
  }
 }
 
-
 /* V1.2: individuelle Schiffsangebote, Reichweite, Hauptsitzbonus und Flottenfenster */
 const SHIP_RANGE_BANDS={
  coastal:[800,1800], medium:[2500,5000], long:[10000,30000], ultra:[15000,30000],
@@ -360,43 +273,7 @@ function makeGame(name,difficulty,hq){
  g.nextShipId=2;
  return g;
 }
-function renderShipyard(){
- if(!game)return;
- const d=DIFFICULTIES[game.difficulty];
- if(!game.usedStock)game.usedStock=generateStock();
- if(!game.buildOrders)game.buildOrders=[];
- if(!game.repairOrders)game.repairOrders=[];
- const intro='<p class="notice">Wähle einen Schiffstyp. Jedes angebotene Schiff hat eine eigene Reichweite und liegt an einem Hafen der passenden Klasse.</p>';
- const back='<button style="width:100%;margin-top:10px" onclick="yardMode=\'home\';renderShipyard()">← Zur Werft-Auswahl</button>';
- if(yardMode==='home'){
-  $('yardContent').innerHTML=intro+
-   '<div class="order"><h3>🚢 Gebrauchte Schiffe</h3><p>Schiffstyp wählen, Werte prüfen und ein einzelnes Schiff kaufen.</p><button class="primary" style="width:100%" onclick="yardMode=\'used\';renderShipyard()">Schiffe anzeigen</button></div>'+
-   '<div class="order"><h3>🏗️ Individueller Schiffsbau</h3><p>Eigene Schiffe konfigurieren.</p><button style="width:100%" disabled>Coming soon</button></div>'+
-   '<div class="order"><h3>🛠️ Reparaturen</h3><p>Überholung vorhandener Schiffe.</p><button style="width:100%" onclick="yardMode=\'used\';renderShipyard()">Flotte und Reparaturen öffnen</button></div>';
-  return;
- }
- const typeId=$('yardType')?.value||SHIP_TYPES[0].id,selected=shipType(typeId),band=SHIP_RANGE_BANDS[typeId]||[0,selected.range],stock=game.usedStock[typeId]||0;
- const opts=SHIP_TYPES.map(t=>'<option value="'+t.id+'" '+(t.id===typeId?'selected':'')+'>'+t.name+' · '+(game.usedStock[t.id]||0)+' verfügbar</option>').join('');
- const purchase=stock?'<button class="primary" style="width:100%" onclick="buyUsedShip(\''+typeId+'\')">Dieses Schiff kaufen</button>':'<button style="width:100%" disabled>Derzeit ausverkauft</button>';
- const repairOptions=game.ships.map(sh=>'<option value="'+sh.id+'">'+escapeHtml(sh.name)+' · '+sh.condition+' %</option>').join('');
- $('yardContent').innerHTML=intro+back+
- '<div class="field" style="margin-top:14px"><label for="yardType">Schiffstyp auswählen</label><select id="yardType" onchange="renderShipyard()">'+opts+'</select></div>'+
- '<div class="order"><h3>'+selected.name+'</h3><p>'+selected.desc+'<br>Frachtvolumen: '+selected.capacity+' Einheiten<br>Geschwindigkeit: '+selected.speed+' kn<br>Reichweite: '+band[0].toLocaleString('de-DE')+'–'+band[1].toLocaleString('de-DE')+' km (jedes Schiff erhält einen individuellen Wert)<br>Preis: '+money(Math.round(selected.price*.48*d.cost))+'–'+money(Math.round(selected.price*.88*d.cost))+'<br>Unterhalt: '+money(Math.round(selected.upkeep*d.upkeep))+'/Tag</p><div class="bonus">'+stock+' verfügbar</div><button class="primary" style="width:100%" onclick="buyUsedShip(\''+typeId+'\')" '+(!stock?'disabled':'')+'>Gebraucht kaufen</button></div>'+
- '<div class="order"><h3>🛠️ Schiffe reparieren</h3>'+(game.ships.length?'<div class="field"><label for="repairShip">Schiff auswählen</label><select id="repairShip">'+repairOptions+'</select></div><p>Das Schiff ist während der Reparatur außer Betrieb.</p><button style="width:100%" onclick="repairSelectedShip()">Ausgewähltes Schiff überholen</button>':'<p class="notice">Keine Schiffe vorhanden.</p>')+'</div>'+
- '<div class="order"><h3>⏳ Bestellungen in Arbeit</h3>'+((game.buildOrders.length?game.buildOrders.map(o=>'<p>'+escapeHtml(o.name)+' — '+shipType(o.type).name+' · noch '+o.remaining+' Tage</p>').join(''):'<p class="notice">Keine Neubauten in Arbeit.</p>')+(game.repairOrders.length?game.repairOrders.map(o=>'<p>Überholung '+escapeHtml(o.name)+' · noch '+o.remaining+' Tage</p>').join(''):''))+'</div>';
-}
-function buyUsedShip(typeId){
- const t=shipType(typeId),d=DIFFICULTIES[game.difficulty];
- if(!game.usedStock)game.usedStock=generateStock();
- if((game.usedStock[typeId]||0)<=0){toast('Dieser Typ ist ausverkauft.');return}
- const condition=10+Math.floor(Math.random()*81),price=Math.round(t.price*(.48+(.9-condition/100)*.4)*d.cost);
- if(game.cash<price){toast('Nicht genug Kapital.');return}
- game.cash-=price;game.usedStock[typeId]--;
- const id='s'+game.nextShipId++,name=t.name+' '+id,range=randomShipRange(typeId),home=randomShipPort(typeId);
- game.ships.push({id,name,type:typeId,port:home,trip:null,condition,range,deliveryRemaining:0});
- selectedShipId=id;addLog('Gebrauchtes Schiff gekauft: '+name+' ('+condition+' % Zustand), Reichweite '+range.toLocaleString('de-DE')+' km, Hafen '+port(home).name+'.');
- saveGame();renderUI();renderShips();openShipyard();toast('Schiff gekauft · '+port(home).name+' · Reichweite '+range.toLocaleString('de-DE')+' km');
-}
+
 function eligibleContracts(s){
  if(!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>o.shipId===s.id))return[];
  ensureShipStats(s);const st=shipType(s.type),origin=s.port;
@@ -426,12 +303,7 @@ function acceptOrder(contractId){
  saveGame();renderUI();renderShips();toast('Auftrag angenommen · '+days+' Spieltage · '+(hqBonus?'10 % Hauptsitzbonus':'kein Hauptsitzbonus'));
 }
 const _renderUIBeforeFleetModal=baseRenderUI;
-function toggleFleetWindow(){const w=$('fleetWindow');if(w)w.classList.toggle('hidden')}
-function renderFleetWindow(){
- let w=$('fleetWindow');if(!w){w=document.createElement('div');w.id='fleetWindow';w.className='overlay hidden';w.style.zIndex='2100';w.innerHTML='<div class="menu-card" style="max-height:85vh;overflow:auto"><div class="panel-head" style="padding:0 0 12px;margin-bottom:10px">🚢 Deine Flotte <button onclick="toggleFleetWindow()">Schließen ✕</button></div><div id="fleetWindowList"></div><p class="notice">Schiffe befinden sich an unterschiedlichen Häfen. Wähle ein Schiff, um seine Aufträge rechts anzuzeigen.</p></div>';document.body.appendChild(w)}
- const list=$('fleetWindowList');
- list.innerHTML=game.ships.length?game.ships.map(s=>{ensureShipStats(s);return '<button type="button" class="ship-row '+(String(s.id)===String(selectedShipId)?'selected':'')+'" data-ship-id="'+escapeHtml(s.id)+'" onclick="selectShip(\''+String(s.id).replace(/'/g,'&#39;')+'\')" style="width:100%;text-align:left;display:flex;cursor:pointer;pointer-events:auto;position:relative;z-index:1"><span class="ship-dot" style="background:'+shipType(s.type).color+'"></span><span><b>'+escapeHtml(s.name)+'</b><small>'+shipType(s.type).name+' · '+shipType(s.type).capacity+' Einheiten · '+s.range.toLocaleString('de-DE')+' km Reichweite · '+(s.trip?'Unterwegs nach '+port(s.trip.to).name:s.inYard?'In der Werft':'Hafen: '+port(s.port).name)+'</small></span></button>'}).join(''):'<p class="notice">Noch keine Schiffe.</p>';
-}
+
 function renderUI(){
  if(!game)return;
  game.ships.forEach(ensureShipStats);
@@ -446,7 +318,6 @@ function renderUI(){
  const modal=$('fleetWindowList');
  if(modal)modal.querySelectorAll('[data-ship-id]').forEach(row=>row.classList.toggle('selected',String(row.dataset.shipId)===String(selectedShipId)));
 }
-
 
 /* Roadmap: geplante Funktionen sichtbar halten */
 function showRoadmap(){
@@ -563,7 +434,6 @@ function renderFleetWindow(){
 function closeFleetWindow(){const w=$('fleetWindow');if(w)w.classList.add('hidden')}
 
 // Schiffsauswahl erfolgt direkt über Leaflet-Marker und die onclick-Handler der Flottenlisten.
-
 
 </script>
 <script type="module">
