@@ -12,14 +12,14 @@
 
 
 /* Startup loader: lightweight, accessible and fully hidden outside game creation. */
-.loading-screen{position:fixed;inset:0;z-index:4000;display:grid;place-items:center;padding:20px;overflow:auto;background-color:#061522;background-image:linear-gradient(90deg,rgba(3,13,22,.36),rgba(3,13,22,.12) 55%,rgba(3,13,22,.38)),linear-gradient(0deg,rgba(3,13,22,.68),rgba(3,13,22,.14) 60%,rgba(3,13,22,.28)),url("./assets/loading-harbor.svg?v=d7207004");background-position:center;background-size:cover;background-repeat:no-repeat;color:var(--text)}
+.loading-screen{position:fixed;inset:0;z-index:4000;display:grid;place-items:center;padding:20px;overflow:auto;isolation:isolate;background-color:#061522;background-image:linear-gradient(90deg,rgba(3,13,22,.36),rgba(3,13,22,.12) 55%,rgba(3,13,22,.38)),linear-gradient(0deg,rgba(3,13,22,.68),rgba(3,13,22,.14) 60%,rgba(3,13,22,.28)),url("./assets/loading-harbor.svg?v=loading-art-20261012");background-position:center;background-size:cover;background-repeat:no-repeat;color:var(--text)}
 .loading-card{width:min(510px,100%);max-height:calc(100vh - 40px);overflow:auto;padding:clamp(24px,5vw,38px);text-align:center;border:1px solid #5a8da0aa;border-radius:20px;background:rgba(5,20,34,.9);box-shadow:0 16px 48px #0008}
 .loading-anchor{display:grid;place-items:center;width:62px;height:62px;margin:0 auto 18px;border:1px solid #47d8d088;border-radius:18px;background:#47d8d012;color:var(--cyan);font-size:30px;animation:loading-glow 2.2s ease-in-out infinite}
 .loading-kicker{margin:0 0 8px;color:var(--cyan);font-size:10px;font-weight:800;letter-spacing:2.5px}
 .loading-card h2{margin:0;font-size:22px;letter-spacing:.3px}
 .loading-message{min-height:38px;margin:12px 0 20px;color:#abc4d2;font-size:12px;line-height:1.6}
 .loading-progress{height:8px;overflow:hidden;border:1px solid #2a5064;border-radius:999px;background:#06131e}
-.loading-progress-fill{width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#168c99,#47d8d0);transition:width .3s ease}
+.loading-progress-fill{width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#168c99,#47d8d0);transition:width .3s ease;will-change:width}
 .loading-footer{display:flex;justify-content:space-between;gap:12px;margin-top:10px;color:#7f9aa9;font-size:9px;font-weight:800;letter-spacing:1.2px}
 .loading-footer strong{color:#d7faff;font-size:10px;font-variant-numeric:tabular-nums}
 @keyframes loading-glow{0%,100%{box-shadow:0 0 0 #47d8d000;transform:translateY(0)}50%{box-shadow:0 0 28px #47d8d01a;transform:translateY(-2px)}}
