@@ -541,6 +541,7 @@ function selectShipSafely(id){
   renderUI();
   renderShips();
   saveGame();
+  toast('Schiff ausgewählt: '+ship.name);
  }catch(err){
   console.error('Fehler bei der Schiffsauswahl:',err);
   toast('Schiffsauswahl fehlgeschlagen: '+(err&&err.message?err.message:'Unbekannter Fehler'));
