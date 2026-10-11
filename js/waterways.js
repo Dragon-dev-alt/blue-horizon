@@ -10,7 +10,7 @@ function repairSelectedShip(){const id=$('repairShip')?.value,s=game.ships.find(
 /* Binnenwasserstraßen: bewusst getrenntes Routennetz statt Luftlinien */
 const RIVER_LINKS=[
  ['ham','dui'],['dui','cgn'],['cgn','fra'],['dui','rot'],['dui','ant'],['dui','str'],['str','bas'],
- ['fra','par'],['par','rou'],['sev','lis'],['vie','bra'],['bra','bud'],['bud','bel'],['bel','gal'],
+ ['fra','par'],['par','rou'],['vie','reg'],['reg','nue'],['nue','reg'],['vie','bra'],['bra','bud'],['bud','bel'],['bel','gal'],
  ['mem','stl'],['stl','pgh'],['wuh','chq']
 ];
 function riverRoute(from,to){const adj={};RIVER_LINKS.forEach(([a,b])=>{(adj[a]||(adj[a]=[])).push(b);(adj[b]||(adj[b]=[])).push(a)});const q=[[from]],seen=new Set([from]);let found=null;while(q.length){const path=q.shift(),last=path[path.length-1];if(last===to){found=path;break}(adj[last]||[]).forEach(n=>{if(!seen.has(n)){seen.add(n);q.push(path.concat(n))}})}if(!found)return null;return found.map(id=>{const p=port(id);return[p.lon,p.lat]})}
