@@ -2,7 +2,7 @@
 /* V1.2: individuelle Schiffsangebote, Reichweite, Hauptsitzbonus und Flottenfenster */
 const SHIP_RANGE_BANDS={
  coastal:[800,1800], medium:[2500,5000], long:[10000,30000], ultra:[15000,30000],
- tanker:[8000,30000], bulk:[4000,20000], 'ro-ro':[2500,7000], river:[200,800]
+ tanker:[8000,30000], bulk:[4000,20000], 'ro-ro':[2500,7000], river:[250,800]
 };
 function randomShipRange(typeId){const b=SHIP_RANGE_BANDS[typeId]||[500,shipType(typeId).range];return Math.round((b[0]+Math.random()*(b[1]-b[0]))/100)*100}
 function randomShipPort(typeId){let valid=PORTS.filter(p=>typeId==='river'?!!p.river:!p.river);if(!valid.length)valid=PORTS;return valid[Math.floor(Math.random()*valid.length)].id}
