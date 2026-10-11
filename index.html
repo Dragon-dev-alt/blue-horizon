@@ -182,7 +182,7 @@ function nextDay(){
 }
 function renderLog(){$('log').innerHTML=state.logs.map(x=>'<div class="log-entry">'+x+'</div>').join('')||'<span class="muted">Noch keine Ereignisse. Plane deine erste Route.</span>'}
 function renderAll(){$('cash').textContent=fmt(state.cash);$('dayCount').textContent='Tag '+state.day;$('dateLabel').textContent='Jahr '+(Math.floor((state.day-1)/365)+1)+' · Tag '+(((state.day-1)%365)+1);$('rep').textContent='⭐ '+state.rep;renderFleet();renderLog();updateEstimate();save()}
-const specialistTypes=
+const specialistTypes=[
  {id:'coastal',name:'Coastal Feeder',icon:'🚢',price:420000,speed:13,capacity:180,upkeep:4200,allowed:['containers','electronics','food','urgent'],desc:'Küstenschiff für kurze Strecken.'},
  {id:'medium',name:'Regionaler Frachter',icon:'🛳️',price:950000,speed:17,capacity:550,upkeep:9000,allowed:['containers','electronics','food','urgent'],desc:'Für mittlere Routen zwischen Nachbarregionen.'},
  {id:'long',name:'Interkontinental-Frachter',icon:'🚢',price:2350000,speed:21,capacity:1450,upkeep:22000,allowed:['containers','electronics','food','urgent'],desc:'Großes Schiff für Langstrecken.'},
