@@ -423,11 +423,10 @@ function renderUI(){
  if(!game)return;
  game.ships.forEach(ensureShipStats);
  _renderUIBeforeFleetModal();
- const head=document.querySelector('.side .panel .panel-head');
- if(head&&!$('fleetWindowButton')){const b=document.createElement('button');b.id='fleetWindowButton';b.textContent='Flotte öffnen ↗';b.style.padding='5px 8px';b.style.fontSize='10px';b.onclick=()=>{renderFleetWindow();toggleFleetWindow()};head.appendChild(b)}
- const list=$('fleetList');if(list)list.classList.add('hidden');
- const count=$('fleetCount');if(count)count.textContent=game.ships.length+' Schiffe';
- renderFleetWindow();
+ const list=$('fleetList');
+ if(list)list.classList.remove('hidden');
+ const count=$('fleetCount');
+ if(count)count.textContent=game.ships.length+' Schiffe';
 }
 
 
@@ -513,10 +512,13 @@ function buyUsedShip(typeId,offerId){
  saveGame();renderUI();renderShips();yardMode='used';openShipyard();toast('Schiff gekauft: '+ship.name);
 }
 function selectShip(id){
- const ship=game?.ships.find(s=>s.id===id);
+ if(!game)return;
+ const ship=game.ships.find(s=>String(s.id)===String(id));
  if(!ship){toast('Dieses Schiff wurde nicht gefunden.');return}
- selectedShipId=id;
- renderUI();renderShips();
+ selectedShipId=ship.id;
+ renderUI();
+ renderShips();
+ saveGame();
 }
 function openFleetWindow(){
  if(!game){toast('Starte zuerst eine Runde.');return}
