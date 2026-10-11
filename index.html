@@ -428,10 +428,7 @@ function renderUI(){
  const list=$('fleetList');
  if(list){
   list.classList.remove('hidden');
-  list.querySelectorAll('.ship-row').forEach(row=>{
-   const match=row.getAttribute('onclick')?.match(/selectShip\\(['\"]([^'\"]+)['\"]\\)/);
-   if(match)row.dataset.shipId=match[1];
-  });
+  list.innerHTML=game.ships.length?game.ships.map(s=>'<button type="button" class="ship-row '+(String(s.id)===String(selectedShipId)?'selected':'')+'" data-ship-id="'+escapeHtml(s.id)+'" style="width:100%;text-align:left;display:flex"><span class="ship-dot" style="background:'+shipType(s.type).color+'"></span><span><b>'+escapeHtml(s.name)+'</b><small>'+shipType(s.type).name+' · Zustand '+(s.condition??100)+' % · '+(s.inYard?'In der Werft':s.trip?'Unterwegs nach '+port(s.trip.to).name:'Hafen: '+port(s.port).name)+'</small></span></button>').join(''):'<div class="panel-body notice">Noch keine Schiffe. Öffne die Werft, um ein Schiff zu kaufen.</div>';
  }
  const count=$('fleetCount');
  if(count)count.textContent=game.ships.length+' Schiffe';
