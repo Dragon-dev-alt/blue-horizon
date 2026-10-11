@@ -6,7 +6,31 @@ const SHIP_RANGE_BANDS={
 };
 function randomShipRange(typeId){const b=SHIP_RANGE_BANDS[typeId]||[500,shipType(typeId).range];return Math.round((b[0]+Math.random()*(b[1]-b[0]))/100)*100}
 function randomShipPort(typeId){let valid=PORTS.filter(p=>typeId==='river'?!!p.river:!p.river);if(!valid.length)valid=PORTS;return valid[Math.floor(Math.random()*valid.length)].id}
-function ensureShipStats(s){if(!s)return s;if(!s.range)s.range=randomShipRange(s.type);if(!s.port)s.port=game?.hq||'ham';if(s.condition==null)s.condition=100;return s}
+function ensureShipStats(s){
+ if(!s)return s;
+ if(!s.range)s.range=randomShipRange(s.type);
+ let current=port(s.port);
+ if(!current){
+  const hq=port(game?.hq);
+  s.port=hq&&Boolean(hq.river)===(s.type==='river')?hq.id:randomShipPort(s.type);
+  current=port(s.port);
+ }
+ // Alte Speicherstände können Schiffe am falschen Hafentyp enthalten.
+ // Nur ruhende Schiffe verlegen; aktive Fahrten werden nie verschoben.
+ const needsRiver=s.type==='river';
+ if(!s.trip&&!s.inYard&&current&&Boolean(current.river)!==needsRiver){
+  const candidates=PORTS.filter(p=>Boolean(p.river)===needsRiver);
+  candidates.sort((a,b)=>haversine({lat:current.lat,lon:current.lon},{lat:a.lat,lon:a.lon})-haversine({lat:current.lat,lon:current.lon},{lat:b.lat,lon:b.lon}));
+  const nearest=candidates[0];
+  if(nearest){
+   s.port=nearest.id;
+   if(game&&Array.isArray(game.log))addLog(s.name+' wurde vom unpassenden Liegeplatz '+current.name+' nach '+nearest.name+' verlegt.');
+   current=nearest;
+  }
+ }
+ if(s.condition==null)s.condition=100;
+ return s;
+}
 function makeGame(name,difficulty,hq){
  /* Basisspielzustand erweitern, individuelle Gebrauchtangebote anlegen und Startschiff einsetzen. */
  const g=baseMakeGame(name,difficulty);
