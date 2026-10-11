@@ -1158,5 +1158,76 @@ eligibleContracts=function(ship){
 };
 </script>
 
+
+<style>
+/* V1.9: consistent speed buttons; active state only when selected */
+#playBtn{background:var(--button-bg,inherit)!important;color:inherit!important;border-color:var(--line)!important;box-shadow:none!important}
+#playBtn.active,#pauseBtn.active,#fastBtn.active{background:var(--accent)!important;color:#06242a!important;border-color:var(--accent)!important;box-shadow:0 0 0 2px rgba(37,198,183,.2)!important}
+#playBtn:not(.active){filter:none!important;opacity:1!important}
+/* Keep map markers interactive above tile layers */
+.leaflet-marker-pane{z-index:650!important;pointer-events:auto!important}
+.leaflet-marker-icon.ship-icon,.leaflet-marker-icon.ship-icon *,.leaflet-interactive{pointer-events:auto!important;cursor:pointer}
+</style>
+<script>
+/* V1.9: bind clicks at marker creation time; don't depend on delegated CSS selectors. */
+function selectShip(id){
+ const s=game&&game.ships.find(x=>String(x.id)===String(id));
+ if(!s)return;
+ selectedShipId=s.id;
+ renderSelectedShipDetails();
+ renderUI();
+ renderShips();
+ renderSelectedShipDetails();
+}
+const _initMapV19=initMap;
+initMap=function(){
+ _initMapV19();
+ if(!map)return;
+ portMarkers.forEach((marker,i)=>{
+  const p=PORTS[i];if(!p)return;
+  marker.off('click');
+  marker.on('click',function(e){
+   if(e&&e.originalEvent)L.DomEvent.stop(e.originalEvent);
+   openHarborWindow(p.id);
+  });
+  marker.bindTooltip(p.name+' · '+p.country,{direction:'top'});
+ });
+};
+/* Rebind all ship markers after every draw; Leaflet's native click is authoritative. */
+const _renderShipsV19=renderShips;
+renderShips=function(){
+ _renderShipsV19();
+ if(!map||!game)return;
+ game.ships.forEach(ship=>{
+  const marker=shipMarkers[ship.id];if(!marker)return;
+  marker.off('click');
+  marker.on('click',function(e){
+   if(e&&e.originalEvent)L.DomEvent.stop(e.originalEvent);
+   selectShip(ship.id);
+  });
+  const el=marker.getElement&&marker.getElement();
+  if(el){el.style.pointerEvents='auto';el.style.cursor='pointer';}
+ });
+};
+const _renderUIV19=renderUI;
+renderUI=function(){
+ _renderUIV19();
+ const bindRows=(selector)=>{
+  const list=$(selector);if(!list||!game)return;
+  [...list.querySelectorAll('.ship-row')].forEach((el,i)=>{
+   const ship=game.ships[i];if(!ship)return;
+   el.dataset.shipId=String(ship.id);
+   el.style.pointerEvents='auto';el.style.cursor='pointer';
+   el.onclick=function(e){e.preventDefault();e.stopPropagation();selectShip(ship.id)};
+  });
+ };
+ bindRows('fleetList');bindRows('fleetWindowList');
+ const speed=typeof simulationSpeed==='number'?simulationSpeed:1;
+ ['pauseBtn','playBtn','fastBtn'].forEach((id,i)=>{const el=$(id);if(el)el.classList.toggle('active',speed===[0,1,1.5][i])});
+};
+const _setSpeedV19=setSpeed;
+setSpeed=function(speed){_setSpeedV19(speed);['pauseBtn','playBtn','fastBtn'].forEach((id,i)=>{const el=$(id);if(el)el.classList.toggle('active',speed===[0,1,1.5][i])})};
+</script>
+
 </body>
 </html>
