@@ -1,296 +1,149 @@
 <!doctype html>
 <html lang="de">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#071827">
-<title>Blue Horizon — Reederei Manager</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#07131f"><title>Blue Horizon — Reederei-Manager</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-:root{--bg:#07131f;--panel:#0c2030ee;--panel2:#112a3c;--line:#24445a;--text:#e9f4fa;--muted:#8faaba;--cyan:#47d8d0;--gold:#f5bd59;--red:#ff7777;--green:#6de0a2}
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}button,select{font:inherit}button{border:1px solid #31566b;border-radius:9px;background:#16384b;color:var(--text);padding:9px 12px;cursor:pointer;transition:.15s}button:hover{background:#20516a;border-color:var(--cyan)}button:disabled{opacity:.4;cursor:not-allowed}.primary{background:#087f83;border-color:#26c6be;font-weight:750}.danger{color:#ffc1c1;border-color:#874a4a;background:#44262b}.small{font-size:12px;padding:6px 9px}.muted{color:var(--muted)}.money{color:var(--green);font-weight:800}.gold{color:var(--gold)}.app{height:100%;display:grid;grid-template-rows:auto 1fr;position:relative}.topbar{z-index:700;display:flex;align-items:center;gap:14px;min-height:62px;padding:9px 16px;background:#081724f2;border-bottom:1px solid var(--line);box-shadow:0 4px 22px #0005}.brand{display:flex;align-items:center;gap:10px;min-width:210px}.logo{width:36px;height:36px;border-radius:11px;background:linear-gradient(145deg,#5cf4de,#087c9a);display:grid;place-items:center;color:#03202b;font-size:21px;font-weight:900}.brand b{letter-spacing:1.4px;font-size:14px}.brand small{display:block;font-size:10px;color:var(--muted);letter-spacing:2px;margin-top:2px}.stats{display:flex;align-items:center;gap:8px;flex:1;overflow:auto}.stat{min-width:102px;padding:7px 10px;border:1px solid #203e52;border-radius:9px;background:#0c2232}.stat label{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px}.stat strong{display:block;font-size:15px;margin-top:3px;white-space:nowrap}.top-actions{display:flex;gap:7px}.main{position:relative;min-height:0}.map-wrap{position:absolute;inset:0}#map{height:100%;width:100%;background:#102d3b}.leaflet-container{font:inherit}.leaflet-control-zoom a{background:#0c2030!important;color:white!important;border-color:#335369!important}.leaflet-control-attribution{background:#07131fbd!important;color:#b8ccd6!important}.leaflet-control-attribution a{color:#65ddd5!important}.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#0c2030;color:var(--text)}.leaflet-popup-content{margin:11px 14px;line-height:1.5}.map-head{position:absolute;z-index:500;left:16px;top:15px;display:flex;gap:8px;align-items:flex-start;pointer-events:none}.map-title{pointer-events:auto;background:#071724e8;border:1px solid #29495b;border-radius:12px;padding:12px 15px;box-shadow:0 8px 24px #0004}.map-title strong{font-size:13px;letter-spacing:1.5px}.map-title p{margin:4px 0 0;color:var(--muted);font-size:11px}.map-actions{pointer-events:auto;display:flex;gap:6px;flex-wrap:wrap}.map-actions button{background:#081c2be8}.side{position:absolute;z-index:600;top:15px;right:15px;bottom:15px;width:320px;display:flex;flex-direction:column;gap:10px;pointer-events:none}.panel{pointer-events:auto;border:1px solid #2b4a5c;border-radius:13px;background:var(--panel);backdrop-filter:blur(14px);box-shadow:0 10px 32px #0004;overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #244154}.panel-head h2{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;margin:0}.panel-body{padding:12px 14px;overflow:auto}.ship-list{display:grid;gap:7px}.ship-card{border:1px solid #29485a;border-radius:9px;background:#102a3be8;padding:9px 10px;cursor:pointer}.ship-card.selected{border-color:var(--cyan);box-shadow:inset 3px 0 var(--cyan);background:#123b4b}.ship-top{display:flex;justify-content:space-between;gap:8px;font-size:12px;font-weight:800}.ship-meta{font-size:11px;color:var(--muted);margin-top:5px;display:flex;justify-content:space-between;gap:5px}.pill{display:inline-block;border-radius:20px;padding:3px 7px;font-size:10px;background:#1a3d4d;color:#a8e7e3}.pill.sailing{background:#174b4a;color:#85f1db}.pill.idle{background:#3d3740;color:#e4c6ed}.route-panel{flex:1;min-height:230px;display:flex;flex-direction:column}.route-panel .panel-body{flex:1}.field{display:grid;gap:5px;margin-bottom:10px}.field label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.9px}.field select{width:100%;background:#0a1a28;color:var(--text);border:1px solid #315267;border-radius:8px;padding:10px}.route-info{border:1px solid #294a5d;border-radius:9px;background:#0b1a27;padding:10px;margin:9px 0;font-size:12px;line-height:1.6}.route-info b{color:var(--cyan)}.full{width:100%}.bottom-left{position:absolute;z-index:500;bottom:15px;left:15px;width:min(420px,calc(100% - 365px));max-height:190px;display:flex;flex-direction:column}.log{font-size:11px;line-height:1.55;color:#bed0da;display:grid;gap:4px}.log-entry{border-bottom:1px solid #203b4c;padding-bottom:4px}.log-entry:last-child{border:0}.daybar{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.daybar strong{color:var(--gold)}.ship-icon{background:transparent;border:0}.ship-marker{width:20px;height:11px;clip-path:polygon(0 0,72% 0,100% 50%,72% 100%,0 100%);border:1px solid #ffffffaa;box-shadow:0 1px 5px #000a;display:block;transform-origin:center center}.ship-marker span{display:none}.speed-controls{display:flex;gap:5px}.speed-controls button.active{background:#087f83;border-color:#47d8d0;color:white}.port-dot{width:11px;height:11px;background:#ffe09a;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 4px #ffcc5550}.modal-bg{position:absolute;z-index:1200;inset:0;background:#020a11b8;display:none;align-items:center;justify-content:center;padding:18px}.modal-bg.open{display:flex}.modal{width:min(720px,100%);max-height:85%;overflow:auto;background:#0b1d2b;border:1px solid #315268;border-radius:16px;box-shadow:0 20px 80px #0009}.modal-head{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid var(--line)}.modal-head h2{margin:0;font-size:15px}.modal-body{padding:16px;display:grid;gap:12px}.market-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}.market-card{padding:13px;border:1px solid #294a5d;border-radius:11px;background:#102a3b}.market-card h3{font-size:13px;margin:0 0 7px}.market-card p{font-size:11px;color:var(--muted);line-height:1.5;min-height:45px}.market-card .price{font-weight:850;color:var(--gold);margin-bottom:9px}.toast{position:absolute;z-index:1500;left:50%;top:80px;transform:translateX(-50%);background:#123a45;border:1px solid var(--cyan);border-radius:10px;padding:11px 16px;box-shadow:0 6px 24px #0007;display:none;font-size:12px}.toast.show{display:block}.mobile-tabs{display:none}
-@media(max-width:900px){.topbar{gap:8px;padding:7px 9px;min-height:56px}.brand{min-width:0}.brand small{display:none}.brand b{font-size:11px}.logo{width:31px;height:31px}.stat{min-width:85px;padding:6px 8px}.stat label{font-size:9px}.stat strong{font-size:12px}.top-actions button{font-size:11px;padding:7px}.side{top:auto;right:8px;bottom:8px;left:8px;width:auto;height:46%;gap:6px}.side .fleet-panel{display:none}.route-panel{min-height:0}.panel-head{padding:9px 11px}.panel-body{padding:9px 11px}.route-panel .panel-body{display:grid;grid-template-columns:1fr 1fr;gap:0 9px}.route-panel .route-info{grid-column:1/-1;margin:3px 0 7px}.route-panel .field{margin-bottom:7px}.route-panel button.full{grid-column:1/-1}.map-head{left:8px;top:8px}.map-title{padding:9px 11px}.map-title p{display:none}.map-actions{max-width:130px}.map-actions button{font-size:10px;padding:7px}.bottom-left{left:8px;bottom:calc(46% + 18px);width:calc(100% - 16px);max-height:105px}.bottom-left .panel-body{padding:8px 10px}.bottom-left .panel-head{padding:8px 10px}.log{font-size:10px}.mobile-tabs{display:flex;gap:6px}.mobile-tabs button{padding:7px;font-size:10px}.side.show-fleet .fleet-panel{display:flex;position:absolute;inset:0}.side.show-fleet .route-panel{display:none}.side.show-fleet .fleet-panel .panel-body{display:block}.side.show-fleet{height:48%}.side.show-fleet~.bottom-left{display:none}}
-@media(max-width:500px){.stats .stat:nth-child(3),.stats .stat:nth-child(4){display:none}.brand b{letter-spacing:.4px}.top-actions .hide-mobile{display:none}.side{height:49%}.bottom-left{bottom:calc(49% + 18px)}.route-panel .panel-body{grid-template-columns:1fr 1fr}.route-panel .field label{font-size:9px}.route-panel .field select{padding:8px;font-size:11px}.route-panel .route-info{font-size:10px}.map-title strong{font-size:10px}.map-actions{max-width:95px}.map-actions button{padding:6px;font-size:9px}.stat{min-width:76px}}
-.ship-marker{clip-path:polygon(0 0,76% 0,100% 50%,76% 100%,0 100%);border:1px solid #ffffffcc;box-shadow:0 1px 5px #0009;transform-origin:center center}.ship-type-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}.ship-type-tabs button.active{background:#087f83;border-color:#47d8d0}.contract-card{padding:12px;border:1px solid #294a5d;border-radius:10px;background:#102a3b;margin:8px 0}.contract-card h3{font-size:13px;margin:0 0 5px}.contract-card p{font-size:11px;color:var(--muted);line-height:1.5}.contract-card .price{color:var(--gold);font-weight:800;margin:7px 0}.coming-soon{border:1px dashed #568097;background:#102638;border-radius:10px;padding:13px;color:#b4cad6;margin-top:12px}</style>
+:root{--bg:#07131f;--panel:#0c2030;--panel2:#112a3c;--line:#24445a;--text:#e9f4fa;--muted:#8faaba;--cyan:#47d8d0;--gold:#f5bd59;--green:#6de0a2;--red:#ff7777}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Segoe UI,Arial,sans-serif}body{overflow:hidden}button,input,select{font:inherit}button{border:1px solid #31566b;border-radius:9px;background:#16384b;color:var(--text);padding:9px 12px;cursor:pointer}button:hover{border-color:var(--cyan);background:#20516a}button:disabled{opacity:.45;cursor:not-allowed}.primary{background:#087f83;border-color:#26c6be;font-weight:750}.danger{background:#44262b;border-color:#874a4a}.muted{color:var(--muted)}.money{color:var(--green);font-weight:800}.gold{color:var(--gold)}.app{height:100dvh;display:grid;grid-template-rows:auto 1fr}.topbar{z-index:500;display:flex;align-items:center;gap:10px;min-height:62px;padding:8px 14px;background:#081724f2;border-bottom:1px solid var(--line);flex-wrap:wrap}.brand{display:flex;align-items:center;gap:9px;margin-right:8px}.logo{width:35px;height:35px;border-radius:11px;background:linear-gradient(145deg,#5cf4de,#087c9a);display:grid;place-items:center;font-size:20px;color:#03202b}.brand strong{letter-spacing:1px}.brand small{display:block;font-size:9px;letter-spacing:2px;color:var(--muted)}.stat{border:1px solid var(--line);border-radius:9px;padding:6px 10px;min-width:82px}.stat small{display:block;font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}.stat b{font-size:13px}.top-actions{display:flex;gap:6px;margin-left:auto}.workspace{min-height:0;position:relative}.map{position:absolute;inset:0;background:#102e3a}.map-tools{position:absolute;z-index:400;top:12px;left:12px;display:flex;gap:7px;flex-wrap:wrap}.map-label{border:1px solid var(--line);background:#071827ed;border-radius:10px;padding:10px 13px;box-shadow:0 4px 15px #0005}.map-label strong{display:block;font-size:12px;letter-spacing:1px}.map-label small{color:var(--muted);font-size:10px}.side{position:absolute;z-index:450;right:10px;top:12px;bottom:12px;width:300px;display:flex;flex-direction:column;gap:9px;pointer-events:none}.panel{pointer-events:auto;background:#0c2030f5;border:1px solid var(--line);border-radius:13px;overflow:hidden;box-shadow:0 5px 20px #0004}.panel-head{padding:12px;border-bottom:1px solid var(--line);font-size:11px;letter-spacing:1px;font-weight:800;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between}.panel-body{padding:12px}.fleet-list{max-height:180px;overflow:auto}.ship-row{display:flex;gap:8px;align-items:center;padding:9px;border-bottom:1px solid #24445a;cursor:pointer;font-size:12px}.ship-row:hover,.ship-row.selected{background:#153b4c}.ship-dot{width:20px;height:11px;clip-path:polygon(0 0,75% 0,100% 50%,75% 100%,0 100%);flex-shrink:0}.ship-row small{display:block;color:var(--muted);margin-top:3px}.field{margin-bottom:10px}.field label{display:block;font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:5px}.field select,.field input{width:100%;padding:10px;border:1px solid #31566b;background:#081a27;color:var(--text);border-radius:8px;min-width:0}.order-list{max-height:calc(100dvh - 340px);overflow:auto}.order{border:1px solid #294a5d;background:#102a3b;border-radius:9px;padding:10px;margin-bottom:8px}.order h3{font-size:12px;margin:0 0 6px}.order p{font-size:11px;line-height:1.5;color:var(--muted);margin:4px 0}.order .bonus{color:var(--gold);font-weight:800;margin:6px 0}.bottom-log{position:absolute;left:12px;bottom:12px;z-index:400;width:min(390px,calc(100% - 340px));max-height:100px;overflow:auto;background:#0c2030ee;border:1px solid var(--line);border-radius:12px}.log-head{padding:9px 12px;border-bottom:1px solid var(--line);font-size:10px;letter-spacing:1px;font-weight:800}.log-lines{font-size:10px;color:var(--muted);padding:8px 12px;line-height:1.6}.ship-icon{background:transparent;border:0}.ship-shape{border:1px solid #fff9;box-shadow:0 1px 5px #000a;clip-path:polygon(0 0,76% 0,100% 50%,76% 100%,0 100%);transform-origin:center center}.leaflet-container{font:inherit}.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#0c2030;color:var(--text)}.leaflet-popup-content{font-size:12px}.overlay{position:fixed;inset:0;z-index:2000;background:radial-gradient(ellipse at 50% 20%,#12384b 0%,#07131f 68%);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto}.menu-card{width:min(560px,100%);border:1px solid #31566b;background:#0a1b29f5;border-radius:20px;padding:clamp(20px,5vw,36px);box-shadow:0 20px 80px #0008}.menu-brand{display:flex;gap:13px;align-items:center;margin-bottom:24px}.menu-brand .logo{width:54px;height:54px;font-size:28px}.menu-brand h1{font-size:25px;letter-spacing:2px;margin:0}.menu-brand p{font-size:10px;letter-spacing:2px;color:var(--muted);margin:4px 0}.menu-card h2{font-size:17px;margin:0 0 7px}.menu-card>p{font-size:12px;color:var(--muted);line-height:1.6}.menu-actions{display:grid;gap:9px;margin:20px 0}.menu-actions button{padding:13px;text-align:left}.menu-actions button strong{display:block}.menu-actions button small{display:block;color:#a8c2d0;margin-top:3px}.setup{display:none;border-top:1px solid var(--line);padding-top:18px;margin-top:14px}.setup.visible{display:block}.difficulty{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0 14px}.difficulty button{padding:9px 4px;font-size:11px}.difficulty button.active{border-color:var(--cyan);background:#075e67;box-shadow:inset 0 0 0 1px var(--cyan)}.save-row{display:flex;align-items:center;gap:8px;margin:8px 0;padding:10px;border:1px solid var(--line);border-radius:9px}.save-row span{flex:1;font-size:12px}.save-row small{display:block;color:var(--muted);margin-top:4px}.notice{font-size:11px;color:var(--muted);line-height:1.5}.soon{border:1px dashed #568097;border-radius:9px;padding:10px;color:#b4cad6;font-size:11px;margin-top:10px}.hidden{display:none!important}@media(max-width:760px){.topbar{gap:5px;padding:7px}.brand{min-width:auto}.brand small{display:none}.stat{min-width:auto;padding:5px 7px}.stat small{font-size:8px}.stat b{font-size:11px}.top-actions{gap:4px}.top-actions button{padding:8px;font-size:11px}.side{top:auto;left:8px;right:8px;bottom:8px;width:auto;max-height:48%;gap:6px}.panel-head{padding:9px}.panel-body{padding:9px}.fleet-list{max-height:80px}.order-list{max-height:190px}.bottom-log{display:none}.map-tools{top:8px;left:8px}.map-label{padding:7px 9px}.map-label small{display:none}.difficulty{grid-template-columns:repeat(2,1fr)}} 
+</style>
 </head>
 <body>
-<div class="app">
+<div class="app" id="gameApp">
 <header class="topbar">
-  <div class="brand"><div class="logo">⚓</div><div><b>BLUE HORIZON</b><small>SHIPPING COMPANY SIMULATOR</small></div></div>
-  <div class="stats">
-    <div class="stat"><label>Kontostand</label><strong class="money" id="cash">€ 2.500.000</strong></div>
-    <div class="stat"><label>Flotte</label><strong id="fleetCount">3 Schiffe</strong></div>
-    <div class="stat"><label>Spieltag</label><strong id="dayCount">Tag 1</strong></div>
-    <div class="stat"><label>Reputation</label><strong id="rep">⭐ 50</strong></div>
-  </div>
-  <div class="top-actions"><button class="hide-mobile" onclick="openMarket()">⚓ Werft</button><div class="speed-controls"><button id="pauseBtn" onclick="setSpeed(0)">Ⅱ Pause</button><button id="playBtn" class="active" onclick="setSpeed(1)">▶ Play</button><button id="fastBtn" title="1,5-fache Geschwindigkeit" aria-label="1,5-fache Geschwindigkeit" onclick="setSpeed(1.5)">⏩</button></div></div>
+ <div class="brand"><div class="logo">⚓</div><div><strong id="companyLabel">BLUE HORIZON</strong><small>SHIPPING COMPANY SIMULATOR</small></div></div>
+ <div class="stat"><small>Kontostand</small><b class="money" id="cashStat">€ 0</b></div><div class="stat"><small>Flotte</small><b id="fleetStat">0 Schiffe</b></div><div class="stat"><small>Spieltag</small><b id="dayStat">Tag 1</b></div><div class="stat"><small>Reputation</small><b id="repStat">★ 50</b></div>
+ <div class="top-actions"><button onclick="openShipyard()">⚓ Werft</button><button id="pauseBtn" onclick="setSpeed(0)">Ⅱ Pause</button><button id="playBtn" class="primary" onclick="setSpeed(1)">▶ Play</button><button id="fastBtn" onclick="setSpeed(1.5)" title="Simulationszeit 1,5-fach">⏩</button><button onclick="openMainMenu()">☰ Menü</button></div>
 </header>
-<main class="main">
- <div class="map-wrap"><div id="map"></div></div>
- <div class="map-head"><div class="map-title"><strong>🌍 WELTWEITER BETRIEB</strong><p>Satellitenansicht · zoomen & Karte ziehen</p></div><div class="map-actions"><button onclick="map.setView([20,5],2)">🌐 Welt</button><button onclick="map.setView([53.5,5],5)">🇪🇺 Europa</button><button onclick="toggleLabels()">⚑ Häfen</button></div></div>
- <section class="side" id="side">
-  <div class="panel fleet-panel">
-   <div class="panel-head"><h2>🚢 Deine Flotte</h2><span class="pill" id="fleetBadge">3 Schiffe</span></div>
-   <div class="panel-body"><div class="ship-list" id="shipList"></div></div>
-  </div>
-  <div class="panel route-panel">
-   <div class="panel-head"><h2>🧭 Route planen</h2><div class="mobile-tabs"><button onclick="showFleet()">Flotte</button><button onclick="showRoutes()">Route</button></div></div>
-   <div class="panel-body">
-    <div class="field"><label>Schiff auswählen</label><select id="shipSelect" onchange="selectShip(this.value)"></select></div>
-    <div class="field"><label>Firmenauftrag</label><select id="contractSelect" onchange="chooseContract()"></select></div><div class="field"><label>Frachtart (passend zum Schiff)</label><select id="cargoSelect" onchange="updateEstimate()"></select></div>
-    <div class="field"><label>Abfahrtshafen</label><select id="fromSelect" onchange="updateEstimate()"></select></div>
-    <div class="field"><label>Zielhafen</label><select id="toSelect" onchange="updateEstimate()"></select></div>
-    <div class="route-info" id="routeInfo">Wähle Schiff, Fracht und zwei Häfen.</div>
-    <button class="primary full" id="startRoute" onclick="startRoute()">Route beauftragen</button>
-   </div>
-  </div>
- </section>
- <div class="bottom-left panel">
-  <div class="panel-head"><h2>📡 Leitstand</h2><div class="daybar"><span class="muted" id="dateLabel">Jahr 1 · Tag 1</span><button class="small" onclick="openFinance()">€ Finanzen</button></div></div>
-  <div class="panel-body"><div class="log" id="log"></div></div>
- </div>
- <div class="toast" id="toast"></div>
- <div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()"><div class="modal"><div class="modal-head"><h2 id="modalTitle">Werft</h2><button onclick="closeModal()">✕</button></div><div class="modal-body" id="modalBody"></div></div></div>
+<main class="workspace"><div id="map" class="map"></div>
+ <div class="map-tools"><div class="map-label"><strong>🌐 WELTWEITER BETRIEB</strong><small>Satellitenansicht · zoomen & Karte ziehen</small></div><button onclick="map.setView([22,8],2)">🌐 Welt</button><button onclick="map.setView([49,12],4)">🇪🇺 Europa</button><button onclick="togglePorts()">⚑ Häfen</button></div>
+ <aside class="side">
+  <section class="panel"><div class="panel-head">🚢 Deine Flotte <span id="fleetCount" class="muted"></span></div><div id="fleetList" class="fleet-list"></div></section>
+  <section class="panel" style="min-height:0;display:flex;flex-direction:column;flex:1"><div class="panel-head">🏢 Firmenaufträge <span class="muted" id="selectedShipLabel"></span></div><div class="panel-body" style="min-height:0;overflow:auto"><div id="ordersHelp" class="notice">Wähle ein Schiff und übernimm einen Auftrag eines Unternehmens. Nur passende Frachtarten werden angezeigt.</div><div id="ordersList" class="order-list"></div><div class="soon"><b>🚢 Passagierbeförderung — COMING SOON</b><br>Personenverkehr wird später ergänzt.</div></div></section>
+ </aside>
+ <section class="bottom-log"><div class="log-head">📜 LEITSTAND <span id="dateLabel" class="muted" style="float:right">Jahr 1 · Tag 1</span></div><div id="logLines" class="log-lines">Willkommen bei Blue Horizon.</div></section>
 </main>
 </div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<style>
-.ship-marker{clip-path:polygon(0 0,76% 0,100% 50%,76% 100%,0 100%);border:1px solid #ffffffcc;box-shadow:0 1px 5px #0009;transform-origin:center center}
-.ship-type-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}.ship-type-tabs button.active{background:#087f83;border-color:#47d8d0}
-.contract-card{padding:12px;border:1px solid #294a5d;border-radius:10px;background:#102a3b;margin:8px 0}.contract-card h3{font-size:13px;margin:0 0 5px}.contract-card p{font-size:11px;color:var(--muted);line-height:1.5}.contract-card .price{color:var(--gold);font-weight:800;margin:7px 0}.coming-soon{border:1px dashed #568097;background:#102638;border-radius:10px;padding:13px;color:#b4cad6;margin-top:12px}
-</style>
-
+<div class="overlay" id="mainMenu"><div class="menu-card">
+ <div class="menu-brand"><div class="logo">⚓</div><div><h1>BLUE HORIZON</h1><p>SHIPPING COMPANY SIMULATOR</p></div></div>
+ <h2 id="menuHeading">Deine Reederei beginnt hier</h2><p id="menuDescription">Baue ein internationales Schifffahrtsunternehmen auf, übernimm Firmenaufträge und erweitere deine Flotte.</p>
+ <div class="menu-actions" id="menuActions">
+  <button class="primary" onclick="showNewGame()"><strong>＋ Neue Runde starten</strong><small>Firma benennen und Schwierigkeitsgrad wählen</small></button>
+  <button onclick="continueGame()"><strong>▶ Fortsetzen</strong><small id="continueHint">Automatischen Spielstand laden</small></button>
+  <button onclick="showSaves()"><strong>▤ Spielstände laden</strong><small>Gespeicherte Runden auswählen</small></button>
+  <button disabled title="Kommt später"><strong>⚙ Einstellungen</strong><small>Coming soon</small></button>
+ </div>
+ <div class="setup" id="newGameSetup"><div class="field"><label for="companyInput">Name deiner Reederei</label><input id="companyInput" maxlength="36" placeholder="z. B. Nordstern Shipping"></div>
+  <label class="muted" style="font-size:10px;letter-spacing:1px">SCHWIERIGKEIT WÄHLEN</label><div class="difficulty" id="difficultyChoices">
+  <button class="active" data-difficulty="easy" onclick="chooseDifficulty('easy')">Leicht</button><button data-difficulty="medium" onclick="chooseDifficulty('medium')">Mittel</button><button data-difficulty="hard" onclick="chooseDifficulty('hard')">Schwer</button><button data-difficulty="realistic" onclick="chooseDifficulty('realistic')">Realistisch</button></div>
+  <p class="notice" id="difficultyInfo">Mehr Startkapital, geringere Kosten und bessere Auftragsvergütung.</p><button class="primary" style="width:100%" onclick="startNewGame()">Firma gründen & starten</button><button style="width:100%;margin-top:7px" onclick="showMenuHome()">Zurück</button>
+ </div>
+ <div class="setup" id="savesSetup"><h2>Gespeicherte Spielstände</h2><div id="saveList"></div><button style="width:100%;margin-top:10px" onclick="showMenuHome()">Zurück zum Hauptmenü</button></div>
+ <p class="notice" style="margin-top:22px">Der Spielstand wird in diesem Browser gespeichert. Für Satellitenkarte und maritime Routen ist eine Internetverbindung nötig.</p>
+</div></div>
+<div class="overlay hidden" id="shipyard"><div class="menu-card"><div class="menu-brand"><div class="logo">⚓</div><div><h1>WERFT</h1><p>SCHIFFSKAUF & FLOTTE</p></div></div><div id="yardContent"></div><button style="width:100%;margin-top:12px" onclick="closeShipyard()">Zurück zum Spiel</button></div></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/@neilorange/searoute@1.0.0/dist/searoute.js"></script>
 <script>
-const ports=[
-{id:'ham',name:'Hamburg',country:'Deutschland',lat:53.5461,lon:9.9661,demand:1.12},
-{id:'rot',name:'Rotterdam',country:'Niederlande',lat:51.9244,lon:4.4777,demand:1.16},
-{id:'lon',name:'London',country:'Vereinigtes Königreich',lat:51.5072,lon:-0.1276,demand:1.05},
-{id:'nyc',name:'New York',country:'USA',lat:40.6892,lon:-74.0445,demand:1.25},
-{id:'mia',name:'Miami',country:'USA',lat:25.7617,lon:-80.1918,demand:1.10},
-{id:'van',name:'Vancouver',country:'Kanada',lat:49.2827,lon:-123.1207,demand:1.08},
-{id:'sao',name:'Santos',country:'Brasilien',lat:-23.9608,lon:-46.3336,demand:1.18},
-{id:'dur',name:'Durban',country:'Südafrika',lat:-29.8587,lon:31.0218,demand:1.08},
-{id:'dub',name:'Dubai',country:'VAE',lat:25.2048,lon:55.2708,demand:1.22},
-{id:'sin',name:'Singapur',country:'Singapur',lat:1.2644,lon:103.8222,demand:1.30},
-{id:'sha',name:'Shanghai',country:'China',lat:31.2304,lon:121.4737,demand:1.32},
-{id:'tok',name:'Tokio',country:'Japan',lat:35.6762,lon:139.6503,demand:1.20},
-{id:'syd',name:'Sydney',country:'Australien',lat:-33.8688,lon:151.2093,demand:1.12},
-{id:'ist',name:'Istanbul',country:'Türkei',lat:41.0082,lon:28.9784,demand:1.02},
-{id:'los',name:'Los Angeles',country:'USA',lat:33.7405,lon:-118.2720,demand:1.20},
-{id:'mnl',name:'Manila',country:'Philippinen',lat:14.5995,lon:120.9842,demand:1.07},
-{id:'mum',name:'Mumbai',country:'Indien',lat:18.9388,lon:72.8354,demand:1.14},
-{id:'ant',name:'Antwerpen',country:'Belgien',lat:51.2194,lon:4.4025,demand:1.04},
-{id:'val',name:'Valencia',country:'Spanien',lat:39.4699,lon:-0.3763,demand:1.03},
-{id:'cpt',name:'Kapstadt',country:'Südafrika',lat:-33.9249,lon:18.4241,demand:1.04}
-];
-const cargoes=[
-{id:'containers',name:'Standardcontainer',icon:'📦',fee:1550,speed:1,handling:1,capacity:1,desc:'Universalfracht, zuverlässig und breit nachgefragt.'},
-{id:'electronics',name:'Elektronik',icon:'💻',fee:2450,speed:1.05,handling:1.12,capacity:.78,desc:'Hoher Erlös, begrenztes Volumen und höhere Anforderungen.'},
-{id:'food',name:'Kühlfracht',icon:'🧊',fee:2100,speed:1.03,handling:1.18,capacity:.82,desc:'Verderbliche Ware, gute Nachfrage und Kühlkosten.'},
-{id:'cars',name:'Fahrzeuge',icon:'🚗',fee:1850,speed:.92,handling:1.12,capacity:.9,desc:'Spezialladung; Verladung dauert länger.'},
-{id:'bulk',name:'Schüttgut',icon:'🪨',fee:980,speed:.88,handling:1.2,capacity:1.3,desc:'Große Mengen, niedriger Preis pro Einheit.'},
-{id:'oil',name:'Flüssigladung',icon:'🛢️',fee:1750,speed:.9,handling:1.24,capacity:1.08,desc:'Tankerfracht mit speziellen Betriebskosten.'},
-{id:'urgent',name:'Expressfracht',icon:'⚡',fee:3100,speed:1.18,handling:.82,capacity:.52,desc:'Zeitkritische Güter mit Premiumpreis.'}
-];
-const contracts=[
-{id:'c1',company:'Nordlicht Elektronik',from:'ham',to:'nyc',cargo:'electronics',bonus:85000,deadline:28,desc:'Elektronikkomponenten für ein Verteilzentrum in New York.'},
-{id:'c2',company:'FreshWave Foods',from:'rot',to:'lon',cargo:'food',bonus:24000,deadline:5,desc:'Gekühlte Lebensmittel für britische Supermärkte.'},
-{id:'c3',company:'AutoNova Europe',from:'ham',to:'rot',cargo:'cars',bonus:46000,deadline:6,desc:'Neuwagen zur Auslieferung an einen Fahrzeughändler.'},
-{id:'c4',company:'Global Grain Co.',from:'sin',to:'mum',cargo:'bulk',bonus:39000,deadline:12,desc:'Getreide und Rohstoffe für einen Industriekunden.'},
-{id:'c5',company:'PetroLink Trading',from:'dub',to:'sin',cargo:'oil',bonus:71000,deadline:14,desc:'Flüssigladung für ein Tanklager in Singapur.'},
-{id:'c6',company:'TechBridge Asia',from:'sha',to:'tok',cargo:'urgent',bonus:55000,deadline:8,desc:'Zeitkritische Hightech-Lieferung nach Japan.'},
-{id:'c7',company:'Pacific Retail',from:'los',to:'van',cargo:'containers',bonus:34000,deadline:7,desc:'Handelswaren für die Westküste Nordamerikas.'},
-{id:'c8',company:'South Atlantic Imports',from:'sao',to:'dur',cargo:'containers',bonus:63000,deadline:18,desc:'Containerladung für einen Importeur in Durban.'}
-];
-const shipTypes=[
-{id:'feeder',name:'Feeder-Containerschiff',icon:'🚢',price:650000,speed:17,capacity:420,upkeep:7200,allowed:['containers','electronics','food','urgent'],desc:'Klein, günstig und ideal für kurze Routen.'},
-{id:'panamax',name:'Panamax-Container',icon:'🛳️',price:1350000,speed:20,capacity:900,upkeep:12800,allowed:['containers','electronics','food','urgent'],desc:'Solider Allrounder für internationale Linien.'},
-{id:'tanker',name:'Produkttanker',icon:'🛢️',price:1120000,speed:15,capacity:820,upkeep:14300,allowed:['oil'],desc:'Spezialschiff für Flüssigladung.'},
-{id:'bulk',name:'Bulk Carrier',icon:'⛴️',price:890000,speed:14,capacity:1100,upkeep:10900,allowed:['bulk'],desc:'Große Kapazität für Schüttgut.'},
-{id:'ro-ro',name:'Ro-Ro-Frachter',icon:'🚚',price:1480000,speed:18,capacity:660,upkeep:15100,allowed:['cars'],desc:'Auf Fahrzeuge und rollende Ladung spezialisiert.'},
-{id:'ultra',name:'Ultra-Containerklasse',icon:'🚢',price:2850000,speed:22,capacity:1800,upkeep:25500,allowed:['containers','electronics','food','urgent'],desc:'Sehr hohe Kapazität und schnell auf Fernrouten.'}
-];
-let state={cash:2500000,day:1,rep:50,selected:'s1',nextId:4,ships:[
-{id:'s1',name:'Nordstern',type:'panamax',status:'idle',port:'ham',trip:null,health:100},
-{id:'s2',name:'Elbwind',type:'feeder',status:'idle',port:'rot',trip:null,health:100},
-{id:'s3',name:'Atlas Trader',type:'bulk',status:'idle',port:'sin',trip:null,health:100}
-],logs:[],labels:true};
-let map,portMarkers={},shipMarkers={},routeLayers=[],routeVisible=true,simulationSpeed=1,simulationProgress=0,lastTick=Date.now(),timerId=null,seaRouteFn=null,seaRouteReady=false;
-const $=id=>document.getElementById(id);
-const fmt=n=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
-const port=id=>ports.find(p=>p.id===id);
-const cargo=id=>cargoes.find(c=>c.id===id);
-const type=id=>shipTypes.find(s=>s.id===id);
-function log(msg){state.logs.unshift('Tag '+state.day+' · '+msg);state.logs=state.logs.slice(0,7);renderLog()}
-function toast(msg){$('toast').textContent=msg;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),2400)}
-function haversine(a,b){const R=3440.065,rad=x=>x*Math.PI/180;const dLat=rad(b.lat-a.lat),dLon=rad(b.lon-a.lon);const q=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(q))}
-function getTripDays(ship,from,to,c){return Math.max(1,Math.ceil(haversine(from,to)/(type(ship.type).speed*24*c.speed)+c.handling+1))}
-function initMap(){
- map=L.map('map',{zoomControl:true,worldCopyJump:true}).setView([22,8],2);
- L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,attribution:'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'}).addTo(map);
- ports.forEach(p=>{const marker=L.marker([p.lat,p.lon],{icon:L.divIcon({className:'',html:'<div class="port-dot"></div>',iconSize:[14,14],iconAnchor:[7,7]})}).addTo(map);marker.bindPopup('<b>'+p.name+'</b><br>'+p.country+'<br><span style="color:#7de3d9">Nachfrageindex '+p.demand.toFixed(2)+'</span>');portMarkers[p.id]=marker;});
- map.on('click',e=>{if(window.pickFrom){const nearest=ports.reduce((a,b)=>haversine({lat:e.latlng.lat,lon:e.latlng.lng},{lat:b.lat,lon:b.lon})<haversine({lat:e.latlng.lat,lon:e.latlng.lng},{lat:a.lat,lon:a.lon})?b:a,ports[0]);$('fromSelect').value=nearest.id;window.pickFrom=false;updateEstimate();toast('Abfahrtshafen: '+nearest.name)}});
- renderMapShips();
-}
-function renderMapShips(){
- if(!map)return;Object.values(shipMarkers).forEach(m=>map.removeLayer(m));shipMarkers={};routeLayers.forEach(l=>map.removeLayer(l));routeLayers=[];
- state.ships.forEach(s=>{
-  let pos=port(s.port);
-  let bearing=0;if(s.trip){const coords=s.trip.routeCoords&&s.trip.routeCoords.length>1?s.trip.routeCoords:[[port(s.trip.from).lon,port(s.trip.from).lat],[port(s.trip.to).lon,port(s.trip.to).lat]];const t=Math.min(.9999,Math.max(0,((state.day-s.trip.startDay)+simulationProgress)/s.trip.days));const p=pointAlong(coords,t),p2=pointAlong(coords,Math.min(1,t+.002));pos={lat:p[1],lon:p[0]};bearing=Math.atan2((p2[0]-p[0])*Math.cos(p[1]*Math.PI/180),p2[1]-p[1])*180/Math.PI;const line=L.polyline(coords.map(q=>[q[1],q[0]]),{color:'#43e3d6',weight:2,opacity:.8,dashArray:'6 7'}).addTo(map);routeLayers.push(line);}
-  const colors={feeder:'#53d6c7',panamax:'#6cb6ff',tanker:'#ffb45e',bulk:'#d7c4a1','ro-ro':'#f18bc8',ultra:'#b69cff',coastal:'#5bd1b2',medium:'#6cb6ff',long:'#b69cff',river:'#d7c4a1'};const sz=Math.max(7,Math.min(20,20-(map.getZoom()-2)*1.35)),h=Math.max(4,sz*.55);const mk=L.marker([pos.lat,pos.lon],{icon:L.divIcon({className:'ship-icon',html:'<div class="ship-marker" style="width:'+sz+'px;height:'+h+'px;background:'+colors[s.type]+';transform:rotate('+(bearing-90)+'deg)"></div>',iconSize:[sz,h],iconAnchor:[sz/2,h/2]})}).addTo(map);
-  mk.bindPopup('<b>'+s.name+'</b><br>'+type(s.type).name+'<br>'+(s.trip?'Unterwegs nach '+port(s.trip.to).name:'Liegt in '+port(s.port).name));mk.on('click',()=>{selectShip(s.id);openContracts(s.id);});shipMarkers[s.id]=mk;
- });
-}
-function pointAlong(coords,t){if(!coords||coords.length<2)return coords&&coords[0]||[0,0];const lens=[];let total=0;for(let i=1;i<coords.length;i++){const d=haversine({lat:coords[i-1][1],lon:coords[i-1][0]},{lat:coords[i][1],lon:coords[i][0]});lens.push(d);total+=d}let target=total*t;for(let i=0;i<lens.length;i++){if(target<=lens[i]){const f=lens[i]?target/lens[i]:0;let dx=coords[i+1][0]-coords[i][0];if(dx>180)dx-=360;if(dx< -180)dx+=360;let lon=coords[i][0]+dx*f;if(lon>180)lon-=360;if(lon< -180)lon+=360;return [lon,coords[i][1]+(coords[i+1][1]-coords[i][1])*f]}target-=lens[i]}return coords[coords.length-1]}
-async function initSeaRouting(){try{const mod=await import('https://esm.sh/searoute-ts@2.0.1');seaRouteFn=mod.seaRoute;seaRouteReady=typeof seaRouteFn==='function';}catch(e){seaRouteReady=false;log('Maritime Routennetz nicht verfügbar; die Route kann vereinfacht sein.')}}
-const portAccess={ham:[[9.9661,53.5461],[9.82,53.58],[9.35,53.72],[8.75,53.88],[8.25,54.02]],rot:[[4.4777,51.9244],[4.12,51.95],[3.75,51.98],[3.45,52.02]],ant:[[4.4025,51.2194],[4.25,51.30],[4.10,51.40],[3.85,51.48],[3.55,51.52]],sha:[[121.4737,31.2304],[121.2,31.25],[120.9,31.20],[120.65,31.15]]};
-function computeSeaRoute(fromId,toId){if(!seaRouteReady||!seaRouteFn)return null;const a=port(fromId),b=port(toId),start=portAccess[fromId]||[[a.lon,a.lat]],end=portAccess[toId]||[[b.lon,b.lat]],seaA=start[start.length-1],seaB=end[end.length-1];let coords=null;try{const r=seaRouteFn(seaA,seaB,{path:true});coords=r&&r.geometry&&r.geometry.coordinates;if(coords&&coords.length&&Array.isArray(coords[0][0]))coords=coords.flat()}catch(e){}if(!coords||coords.length<2)return null;const out=[...start];for(const p of coords)if(Math.abs(out[out.length-1][0]-p[0])>.01||Math.abs(out[out.length-1][1]-p[1])>.01)out.push(p);for(const p of end.slice().reverse())if(Math.abs(out[out.length-1][0]-p[0])>.01||Math.abs(out[out.length-1][1]-p[1])>.01)out.push(p);return out}
-function fillSelects(){
- $('contractSelect').innerHTML='<option value="">Freie Fahrt (eigene Route)</option>'+contracts.map(c=>'<option value="'+c.id+'">'+c.company+' · '+port(c.from).name+' → '+port(c.to).name+'</option>').join('');
- $('cargoSelect').innerHTML=cargoes.map(c=>'<option value="'+c.id+'">'+c.icon+' '+c.name+'</option>').join('');
- const opts=ports.map(p=>'<option value="'+p.id+'">'+p.name+' · '+p.country+'</option>').join('');
- $('fromSelect').innerHTML=opts;$('toSelect').innerHTML=opts;$('fromSelect').value='ham';$('toSelect').value='nyc';renderShipSelect();
-}
-function renderShipSelect(){$('shipSelect').innerHTML=state.ships.map(s=>'<option value="'+s.id+'">'+type(s.type).icon+' '+s.name+(s.trip?' (unterwegs)':'')+'</option>').join('');if(!state.ships.some(s=>s.id===state.selected)&&state.ships.length)state.selected=state.ships[0].id;$('shipSelect').value=state.selected}
-function selectShip(id){state.selected=id;$('shipSelect').value=id;refreshCargoOptions();renderFleet();updateEstimate()}
-function chooseContract(){const c=contracts.find(x=>x.id===$('contractSelect').value);if(!c){updateEstimate();return}const s=state.ships.find(x=>x.id===state.selected);if(s&&!type(s.type).allowed.includes(c.cargo)){const fit=state.ships.find(x=>type(x.type).allowed.includes(c.cargo)&&!x.trip);if(fit){state.selected=fit.id;$('shipSelect').value=fit.id;toast('Passendes Schiff ausgewählt: '+fit.name)}else{toast('Kein freies Schiff für diesen Auftrag.')}}$('fromSelect').value=c.from;$('toSelect').value=c.to;refreshCargoOptions();$('cargoSelect').value=c.cargo;updateEstimate();$('routeInfo').innerHTML+='<div style="color:#ffd17b;margin-top:5px">🏢 Auftrag: <b>'+c.company+'</b> · Bonus '+fmt(c.bonus)+' · Frist '+c.deadline+' Tage</div>';}
-function renderFleet(){
- $('shipList').innerHTML=state.ships.map(s=>{const t=type(s.type);let st=s.trip?'<span class="pill sailing">Unterwegs</span>':'<span class="pill idle">Im Hafen</span>';let detail=s.trip?'→ '+port(s.trip.to).name+' · '+Math.max(0,s.trip.days-(state.day-s.trip.startDay))+' Tg.':'📍 '+port(s.port).name;return '<div class="ship-card '+(s.id===state.selected?'selected':'')+'" onclick="selectShip(\''+s.id+'\')"><div class="ship-top"><span>'+t.icon+' '+s.name+'</span>'+st+'</div><div class="ship-meta"><span>'+t.name+'</span><span>'+s.health+'% Zustand</span></div><div class="ship-meta"><span>'+detail+'</span><span>'+t.capacity.toLocaleString('de-DE')+' TE</span></div></div>'}).join('');
- $('fleetCount').textContent=state.ships.length+' Schiffe';$('fleetBadge').textContent=state.ships.length+' Schiffe';renderShipSelect();
-}
-function refreshCargoOptions(){const s=state.ships.find(x=>x.id===state.selected);const allowed=s?type(s.type).allowed:[];const current=$('cargoSelect').value;const available=cargoes.filter(c=>allowed.includes(c.id));$('cargoSelect').innerHTML=available.map(c=>'<option value="'+c.id+'">'+c.icon+' '+c.name+'</option>').join('');if(available.some(c=>c.id===current))$('cargoSelect').value=current;}
-function updateEstimate(){
- refreshCargoOptions();const s=state.ships.find(x=>x.id===state.selected),c=cargo($('cargoSelect').value),a=port($('fromSelect').value),b=port($('toSelect').value);
- if(!s||!c||!a||!b)return;
- const t=type(s.type),distance=haversine(a,b),days=getTripDays(s,a,b,c),compatible=t.allowed.includes(c.id);
- const units=Math.floor(t.capacity*c.capacity),revenue=units*c.fee*((a.demand+b.demand)/2),fuel=distance*(t.upkeep/24/Math.max(t.speed,1))*0.9,upkeep=days*t.upkeep/7;
- $('routeInfo').innerHTML='<div>📏 Distanz: <b>'+Math.round(distance).toLocaleString('de-DE')+' sm</b></div><div>⏱️ Dauer: <b>'+days+' Spieltag'+(days===1?'':'e')+'</b></div><div>📦 Ladung: <b>'+units.toLocaleString('de-DE')+' Einheiten</b></div><div>💰 Voraussichtlicher Erlös: <b>'+fmt(revenue)+'</b></div><div>⛽ Geschätzte Kosten: <b>'+fmt(fuel+upkeep)+'</b></div><div>🧾 Geschätzter Überschuss: <b style="color:'+(revenue-fuel-upkeep>0?'#6de0a2':'#ff7777')+'">'+fmt(revenue-fuel-upkeep)+'</b></div>'+(compatible?'':'<div style="color:#ff8e8e;margin-top:5px">⚠️ Dieses Schiff kann diese Frachtart nicht transportieren.</div>')+(s.trip?'<div style="color:#ffcc77;margin-top:5px">⚠️ Schiff ist noch unterwegs.</div>':'');
- $('startRoute').disabled=!!s.trip||!compatible||a.id===b.id;
-}
-function startRoute(contractOverride){
- const s=state.ships.find(x=>x.id===state.selected),c=cargo($('cargoSelect').value),a=port($('fromSelect').value),b=port($('toSelect').value);
- if(!s||s.trip||a.id===b.id||!type(s.type).allowed.includes(c.id)){toast('Bitte prüfe Schiff, Fracht und Häfen.');return}
- const rawDistance=haversine(a,b);if(s.type==='coastal'&&rawDistance>700){toast('Coastal-Schiffe sind auf kurze Küstenrouten begrenzt.');return}if(s.type==='medium'&&rawDistance>3500){toast('Dieses Schiff ist für mittlere Distanzen ausgelegt.');return}if(s.type==='river'&&(rawDistance>250||!['ham','rot','ant','sha'].includes(a.id)||!['ham','rot','ant','sha'].includes(b.id))){toast('Binnenschiffe benötigen eine kurze Route zwischen unterstützten Flusshäfen.');return}
- const days=getTripDays(s,a,b,c),distance=haversine(a,b),units=Math.floor(type(s.type).capacity*c.capacity),revenue=Math.round(units*c.fee*((a.demand+b.demand)/2)),fuel=Math.round(distance*(type(s.type).upkeep/24/type(s.type).speed)*.9),cost=Math.round(days*type(s.type).upkeep/7+fuel);
- const routeCoords=computeSeaRoute(a.id,b.id);if(!routeCoords){toast('Das maritime Routennetz ist noch nicht geladen. Bitte kurz warten und erneut versuchen.');return}
- if(state.cash<Math.min(cost,5000)){toast('Zu wenig Liquidität für den Start.');return}
- s.port=a.id;const routeDistance=routeCoords.reduce((sum,p,i)=>i?sum+haversine({lat:routeCoords[i-1][1],lon:routeCoords[i-1][0]},{lat:p[1],lon:p[0]}):0,0);const tripDays=Math.max(days,Math.ceil(routeDistance/(type(s.type).speed*24*c.speed)+c.handling+1));s.trip={from:a.id,to:b.id,cargo:c.id,days:tripDays,startDay:state.day,revenue:revenue,cost:cost,units:units,routeCoords:routeCoords,contract:null};s.status='sailing';state.cash-=Math.round(cost*.25);
- log(s.name+' startet '+c.name+' von '+a.name+' nach '+b.name+'. Erwartete Ankunft in '+tripDays+' Tagen.');renderAll();renderMapShips();toast('Route gestartet · '+days+' Spieltage');
-}
-function nextDay(){
- state.day++;simulationProgress=0;
- let daily=0;
- state.ships.forEach(s=>{
-  if(s.trip && state.day-s.trip.startDay>=s.trip.days){const tr=s.trip;const profit=tr.revenue-tr.cost;state.cash+=tr.revenue-Math.round(tr.cost*.75);state.rep=Math.min(100,state.rep+(profit>0?1:0));log(s.name+' erreicht '+port(tr.to).name+'. Erlös '+fmt(tr.revenue)+', Betriebskosten '+fmt(tr.cost)+'.');s.port=tr.to;s.trip=null;s.status='idle';s.health=Math.max(35,s.health-1);}
-  else if(!s.trip){const fee=Math.round(type(s.type).upkeep/7);state.cash-=fee;daily+=fee;}
- });
- if(state.day%7===0){const admin=12500;state.cash-=admin;log('Wöchentliche Verwaltungskosten: '+fmt(admin)+'.')}
- if(state.cash<0){state.rep=Math.max(0,state.rep-2);log('Liquiditätswarnung: Kontostand negativ. Kredit oder rentable Route prüfen.')}
- renderAll();renderMapShips();updateEstimate();toast('Neuer Spieltag · Flottenkosten '+fmt(daily));
-}
-function renderLog(){$('log').innerHTML=state.logs.map(x=>'<div class="log-entry">'+x+'</div>').join('')||'<span class="muted">Noch keine Ereignisse. Plane deine erste Route.</span>'}
-function renderAll(){$('cash').textContent=fmt(state.cash);$('dayCount').textContent='Tag '+state.day;$('dateLabel').textContent='Jahr '+(Math.floor((state.day-1)/365)+1)+' · Tag '+(((state.day-1)%365)+1);$('rep').textContent='⭐ '+state.rep;renderFleet();renderLog();updateEstimate();save()}
-const specialistTypes=[
- {id:'coastal',name:'Coastal Feeder',icon:'🚢',price:420000,speed:13,capacity:180,upkeep:4200,allowed:['containers','electronics','food','urgent'],desc:'Küstenschiff für kurze Strecken.'},
- {id:'medium',name:'Regionaler Frachter',icon:'🛳️',price:950000,speed:17,capacity:550,upkeep:9000,allowed:['containers','electronics','food','urgent'],desc:'Für mittlere Routen zwischen Nachbarregionen.'},
- {id:'long',name:'Interkontinental-Frachter',icon:'🚢',price:2350000,speed:21,capacity:1450,upkeep:22000,allowed:['containers','electronics','food','urgent'],desc:'Großes Schiff für Langstrecken.'},
- {id:'river',name:'Binnenschiff',icon:'⛴️',price:280000,speed:8,capacity:260,upkeep:2500,allowed:['bulk','containers'],desc:'Für Flüsse und Binnenwasserstraßen; Binnenrouten sind noch in Entwicklung.'}];
-shipTypes.push(...specialistTypes);
-let selectedYardType='panamax';
-function openMarket(){renderYard()}
-function renderYard(){
- const categories=[['coastal','Coastal'],['medium','Mitteldistanz'],['long','Langstrecke'],['river','Binnenschiff']];
- const extras=specialistTypes;
- window.yardTypes=shipTypes;const chosen=window.yardTypes.find(t=>t.id===selectedYardType)||shipTypes[0];
- $('modalTitle').textContent='⚓ Werft — Schiffsklassen';
- $('modalBody').innerHTML='<p class="muted" style="margin:0;font-size:12px">Wähle eine Klasse aus, um die verfügbaren Schiffe dieser Kategorie anzuzeigen.</p><div class="ship-type-tabs">'+categories.map(x=>'<button class="'+(selectedYardType===x[0]?'active':'')+'" onclick="selectedYardType=\''+x[0]+'\';renderYard()">'+x[1]+'</button>').join('')+shipTypes.map(t=>'<button class="'+(selectedYardType===t.id?'active':'')+'" onclick="selectedYardType=\''+t.id+'\';renderYard()">'+t.name+'</button>').join('')+'</div><div class="market-grid">'+window.yardTypes.filter(t=>t.id===selectedYardType).map(t=>'<div class="market-card"><h3>'+t.icon+' '+t.name+'</h3><p>'+t.desc+'<br>Geschwindigkeit: '+t.speed+' kn · Kapazität: '+t.capacity.toLocaleString('de-DE')+' Einheiten<br>Unterhalt: '+fmt(t.upkeep)+'/Woche</p><div class="price">'+fmt(t.price)+'</div><button class="primary full" onclick="buyShip(\''+t.id+'\')">Schiff kaufen</button></div>').join('')+'</div><div class="coming-soon"><b>🧍 Passagierbeförderung — Coming soon</b><div style="font-size:11px;margin-top:5px">Personenbeförderung ist geplant, aber noch nicht spielbar.</div></div>';
- $('modalBg').classList.add('open');
-}
-function openContracts(shipId){const s=state.ships.find(x=>x.id===shipId);if(!s)return;$('modalTitle').textContent='🏢 Firmenaufträge — '+s.name;const available=contracts.filter(c=>type(s.type).allowed.includes(c.cargo));$('modalBody').innerHTML='<p class="muted" style="margin:0;font-size:12px">Unternehmen legen Abfahrt, Ziel und Fracht fest. Wähle einen Auftrag, um ihn für dieses Schiff zu übernehmen.</p><div class="contract-list">'+(available.length?available.map(c=>'<div class="contract-item"><div><h3>'+c.company+'</h3><p>'+c.desc+'<br>🚢 '+port(c.from).name+' → '+port(c.to).name+'<br>📦 '+cargo(c.cargo).name+' · Bonus '+fmt(c.bonus)+' · Richtfrist '+c.deadline+' Tage</p></div><button class="primary" '+(s.trip?'disabled':'')+' onclick="acceptContract(\''+shipId+'\',\''+c.id+'\')">Annehmen</button></div>').join(''):'<div class="coming-soon">Für diesen Schiffstyp gibt es momentan keine passenden Aufträge.</div>')+'</div><div class="coming-soon"><b>🧍 Passagierbeförderung — Coming soon</b><div style="font-size:11px;margin-top:5px">Noch nicht verfügbar.</div></div>';$('modalBg').classList.add('open')}
-function acceptContract(shipId,contractId){const s=state.ships.find(x=>x.id===shipId),c=contracts.find(x=>x.id===contractId);if(!s||!c||s.trip)return;state.selected=s.id;$('shipSelect').value=s.id;$('fromSelect').value=c.from;$('toSelect').value=c.to;refreshCargoOptions();$('cargoSelect').value=c.cargo;closeModal();startRoute(c);if(s.trip){s.trip.revenue+=c.bonus;s.trip.contract=c.id;log('Auftrag von '+c.company+' angenommen; Bonus '+fmt(c.bonus)+'.');renderAll();renderMapShips()}}
-function buyShip(id){const t=(window.yardTypes||shipTypes).find(x=>x.id===id)||type(id);if(!t){toast('Schiffstyp nicht gefunden.');return}if(state.cash<t.price){toast('Nicht genug Geld für dieses Schiff.');return}if(!shipTypes.some(x=>x.id===id))shipTypes.push(t);state.cash-=t.price;const n=state.nextId++;const s={id:'s'+n,name:['Seewolf','Polarstern','Hanseatic','Blue Comet','Morgenrot','Ocean Crown'][n%6]+' '+n,type:id,status:'idle',port:'ham',trip:null,health:100};state.ships.push(s);state.selected=s.id;log(t.name+' für '+fmt(t.price)+' gekauft.');renderAll();renderMapShips();openMarket();toast('Neues Schiff in der Flotte!')}
-function openFinance(){
- $('modalTitle').textContent='€ Finanzen & Kredit';
- $('modalBody').innerHTML='<div class="market-card"><h3>Unternehmensübersicht</h3><p>Liquidität: <b class="money">'+fmt(state.cash)+'</b><br>Flottengröße: '+state.ships.length+' Schiffe<br>Reputation: '+state.rep+'/100<br>Geschätzter Wochenunterhalt: '+fmt(state.ships.reduce((n,s)=>n+type(s.type).upkeep,0)+12500)+'</p><button class="primary" onclick="takeLoan(250000)">Kredit aufnehmen: 250.000 €</button> <button onclick="takeLoan(750000)">Kredit aufnehmen: 750.000 €</button><p style="min-height:0">Kredit kostet 8 % Zinsen je 30 Spieltage. Rückzahlung wird in einer späteren Version ergänzt.</p></div><div class="market-card"><h3>Speicherstand</h3><p>Der Spielstand wird automatisch in diesem Browser gespeichert. Andere Geräte haben einen eigenen Speicherstand.</p><button onclick="save();toast(\'Spielstand lokal gespeichert.\')">Jetzt speichern</button> <button class="danger" onclick="resetGame()">Spiel neu starten</button></div>';
- $('modalBg').classList.add('open');
-}
-function takeLoan(n){state.cash+=n;log('Bankkredit über '+fmt(n)+' aufgenommen.');renderAll();openFinance();toast('Kredit gutgeschrieben.')}
-function closeModal(){$('modalBg').classList.remove('open')}
-function toggleLabels(){state.labels=!state.labels;Object.values(portMarkers).forEach(m=>{if(state.labels)m.addTo(map);else map.removeLayer(m)});toast(state.labels?'Häfen eingeblendet':'Häfen ausgeblendet')}
-function showFleet(){$('side').classList.add('show-fleet')}
-function showRoutes(){$('side').classList.remove('show-fleet')}
-function save(){try{localStorage.setItem('blueHorizonSave',JSON.stringify(state))}catch(e){}}
-function load(){try{const x=localStorage.getItem('blueHorizonSave');if(x){const s=JSON.parse(x);if(s&&s.ships&&s.day)state=s}}catch(e){}}
-function resetGame(){if(!confirm('Spielstand wirklich löschen und neu beginnen?'))return;localStorage.removeItem('blueHorizonSave');location.reload()}
-function setSpeed(speed){simulationSpeed=speed;$('pauseBtn').classList.toggle('active',speed===0);$('playBtn').classList.toggle('active',speed===1);$('fastBtn').classList.toggle('active',speed===1.5);toast(speed===0?'Simulation pausiert':speed===1.5?'Schiffe fahren mit 1,5× Tempo':'Simulation läuft');}
-function simulationTick(){if(simulationSpeed===0)return;simulationProgress+=0.025*simulationSpeed;if(simulationProgress>=1){nextDay();simulationProgress=0}else{renderMapShips();}}
-setInterval(simulationTick,1000);
-load();fillSelects();initMap();map.on('zoomend',renderMapShips);renderAll();refreshCargoOptions();updateEstimate();initSeaRouting();
-
-/* UX and simulation corrections */
-let selectedYardType='coastal';
-const _oldSetSpeed=setSpeed;
-setSpeed=function(speed){simulationSpeed=speed;$('pauseBtn').classList.toggle('active',speed===0);$('playBtn').classList.toggle('active',speed===1);$('fastBtn').classList.toggle('active',speed===1.5);toast(speed===0?'Simulation pausiert':speed===1.5?'Simulationszeit läuft mit 1,5×':'Simulation läuft');};
-simulationTick=function(){if(simulationSpeed===0)return;simulationProgress+=0.025*simulationSpeed;if(simulationProgress>=1){nextDay();simulationProgress=0}else renderMapShips();};
-const _oldOpenMarket=openMarket;
-openMarket=function(){selectedYardType='coastal';renderYard();};
-const _oldRenderMapShips=renderMapShips;
-renderMapShips=function(){_oldRenderMapShips();if(!map)return;const z=map.getZoom();const size=Math.max(13,Math.min(24,24-(z-2)*.7));document.querySelectorAll('.ship-icon').forEach(el=>{el.style.width=size+'px';el.style.height=(size*.55)+'px';el.style.marginLeft=(-size/2)+'px';el.style.marginTop=(-size*.275)+'px';});};
-const _oldStartRoute=startRoute;
-startRoute=function(contractId){if(contractId){const s=state.ships.find(x=>x.id===state.selected),contract=contracts.find(c=>c.id===contractId);if(!s||!contract||s.trip||!type(s.type).allowed.includes(contract.cargo)){toast('Auftrag passt nicht zu diesem Schiff oder Schiff ist unterwegs.');return} $('fromSelect').value=contract.from;$('toSelect').value=contract.to;refreshCargoOptions();$('cargoSelect').value=contract.cargo;updateEstimate();}return _oldStartRoute();};
-openContracts=function(shipId){
- const s=state.ships.find(x=>x.id===shipId);if(!s)return;
- const available=contracts.filter(c=>type(s.type).allowed.includes(c.cargo)&&c.from!==c.to);
- const panel=document.querySelector('.route-panel')||document.querySelector('.route-planner')||document.querySelector('#routeInfo')?.closest('.panel');
- const target=panel||document.querySelector('#side');
- if(!target)return;
- target.dataset.originalHtml=target.dataset.originalHtml||target.innerHTML;
- target.innerHTML='<div class="panel-head"><h2>🏢 Firmenaufträge</h2><button class="small" onclick="restoreRoutePlanner()">↩ Routenplanung</button></div><div class="panel-body"><p class="muted">Aufträge für '+s.name+' · '+type(s.type).name+'</p>'+(s.trip?'<div class="contract-card">Dieses Schiff ist unterwegs. Nach der Ankunft kannst du einen neuen Auftrag wählen.</div>':available.map(c=>'<div class="contract-card"><h3>'+c.company+'</h3><p>'+c.desc+'</p><p>🧭 '+port(c.from).name+' → '+port(c.to).name+'<br>📦 '+cargo(c.cargo).icon+' '+cargo(c.cargo).name+'<br>⏳ '+c.deadline+' Spieltage</p><div class="price">Bonus '+fmt(c.bonus)+'</div><button class="primary full" onclick="acceptInlineOrder(\''+s.id+'\',\''+c.id+'\')">Auftrag übernehmen</button></div>').join(''))+'<div class="coming-soon"><strong>🚢 Passagierbeförderung — COMING SOON</strong></div></div>';
- window.activeOrdersPanel=target;
+'use strict';
+/* =========================================================
+   BLUE HORIZON — Spielkern
+   Struktur: Daten → Zustand/Speichern → Karte/Routing → UI
+   → Aufträge/Flotte → Simulation → Menüs/Initialisierung
+   ========================================================= */
+const CONFIG={savePrefix:'blueHorizon.slot.',activeKey:'blueHorizon.activeSlot',version:3,daySeconds:40};
+const DIFFICULTIES={
+ easy:{label:'Leicht',cash:3500000,cost:0.72,revenue:1.28,upkeep:0.72,desc:'3,5 Mio. € Startkapital · 28 % geringere laufende Kosten · 28 % höhere Auftragsvergütung.'},
+ medium:{label:'Mittel',cash:2500000,cost:1,revenue:1,upkeep:1,desc:'2,5 Mio. € Startkapital · normale Kosten und Auftragsvergütung.'},
+ hard:{label:'Schwer',cash:1800000,cost:1.25,revenue:0.88,upkeep:1.25,desc:'1,8 Mio. € Startkapital · 25 % höhere Kosten · 12 % geringere Auftragsvergütung.'},
+ realistic:{label:'Realistisch',cash:1250000,cost:1.55,revenue:0.76,upkeep:1.5,desc:'1,25 Mio. € Startkapital · sehr hohe Betriebskosten und geringere Auftragsvergütung.'}
 };
-function restoreRoutePlanner(){const p=window.activeOrdersPanel;if(p&&p.dataset.originalHtml){p.innerHTML=p.dataset.originalHtml;delete p.dataset.originalHtml;window.activeOrdersPanel=null;fillSelects();updateEstimate();}}
-function acceptInlineOrder(shipId,contractId){const s=state.ships.find(x=>x.id===shipId),c=contracts.find(x=>x.id===contractId);if(!s||!c||s.trip||!type(s.type).allowed.includes(c.cargo)){toast('Auftrag ist nicht verfügbar.');return}state.selected=s.id;$('shipSelect').value=s.id;$('fromSelect').value=c.from;$('toSelect').value=c.to;refreshCargoOptions();$('cargoSelect').value=c.cargo;restoreRoutePlanner();updateEstimate();startRoute(c.id);}
-
-
-/* Routing and simulation hotfix */
-computeSeaRoute=function(fromId,toId){
- if(!seaRouteReady||!seaRouteFn)return null;
- const a=port(fromId),b=port(toId);if(!a||!b)return null;
- let coords=null;
- try{const r=seaRouteFn([a.lon,a.lat],[b.lon,b.lat],{path:true});coords=r&&r.geometry&&r.geometry.coordinates;if(coords&&coords.length&&Array.isArray(coords[0][0]))coords=coords.flat()}catch(e){return null}
- if(!coords||coords.length<2)return null;
- // The searoute geometry is the sea route itself; do not append straight-line port access segments that could cross land.
- const first=coords[0],last=coords[coords.length-1];
- if(Math.abs(first[0]-a.lon)>0.8||Math.abs(first[1]-a.lat)>0.8||Math.abs(last[0]-b.lon)>0.8||Math.abs(last[1]-b.lat)>0.8)return null;
- return coords;
-};
-function updateSmoothShipPositions(){
- if(!map)return;
- state.ships.forEach(s=>{
-  const marker=shipMarkers[s.id];if(!marker)return;
-  let p=port(s.port),angle=0;
-  if(s.trip&&s.trip.routeCoords&&s.trip.routeCoords.length>1){
-   const coords=s.trip.routeCoords,t=Math.max(0,Math.min(.99999,((state.day-s.trip.startDay)+simulationProgress)/s.trip.days));
-   const q=pointAlong(coords,t),q2=pointAlong(coords,Math.min(1,t+.001));
-   p={lat:q[1],lon:q[0]};let dx=q2[0]-q[0];if(dx>180)dx-=360;if(dx< -180)dx+=360;
-   angle=Math.atan2(dx*Math.cos(q[1]*Math.PI/180),q2[1]-q[1])*180/Math.PI;
-  }
-  marker.setLatLng([p.lat,p.lon]);
-  const el=marker.getElement()?.querySelector('.ship-marker');if(el)el.style.transform='rotate('+(angle-90)+'deg)';
- });
-}
-simulationTick=function(){
- if(simulationSpeed===0)return;
- const now=Date.now(),dt=Math.min(100,now-(lastTick||now));lastTick=now;
- simulationProgress+=(dt/40000)*simulationSpeed;
- if(simulationProgress>=1){const days=Math.floor(simulationProgress);simulationProgress-=days;for(let i=0;i<days;i++)nextDay();}
- updateSmoothShipPositions();
-};
-setSpeed=function(speed){simulationSpeed=speed;lastTick=Date.now();$('pauseBtn').classList.toggle('active',speed===0);$('playBtn').classList.toggle('active',speed===1);$('fastBtn').classList.toggle('active',speed===1.5);toast(speed===0?'Simulation pausiert':speed===1.5?'Simulationszeit läuft mit 1,5×':'Simulation läuft');};
-resetGame=function(){
- const doReset=()=>{try{localStorage.removeItem('blueHorizonSave');localStorage.removeItem('blueHorizonSaveV2');}catch(e){}const u=new URL(location.href);u.searchParams.set('restart',String(Date.now()));location.replace(u.toString())};
- if(typeof confirm==='function'){if(confirm('Spielstand löschen und Blue Horizon neu starten?'))doReset()}else doReset();
-};
-
+const PORTS=[
+{id:'ham',name:'Hamburg',country:'Deutschland',lat:53.5461,lon:9.9661,demand:1.12},{id:'rot',name:'Rotterdam',country:'Niederlande',lat:51.95,lon:4.14,demand:1.2},{id:'lon',name:'London Gateway',country:'Vereinigtes Königreich',lat:51.5,lon:0.5,demand:1.05},{id:'ant',name:'Antwerpen',country:'Belgien',lat:51.3,lon:4.25,demand:1.08},{id:'osl',name:'Oslo',country:'Norwegen',lat:59.9,lon:10.7,demand:.88},{id:'nyc',name:'New York',country:'USA',lat:40.67,lon:-74.05,demand:1.3},{id:'mia',name:'Miami',country:'USA',lat:25.78,lon:-80.18,demand:1.05},{id:'hou',name:'Houston',country:'USA',lat:29.73,lon:-95.0,demand:1.1},{id:'van',name:'Vancouver',country:'Kanada',lat:49.29,lon:-123.1,demand:.94},{id:'sao',name:'Santos',country:'Brasilien',lat:-23.96,lon:-46.3,demand:1.04},{id:'dur',name:'Durban',country:'Südafrika',lat:-29.87,lon:31.05,demand:.9},{id:'dub',name:'Dubai',country:'VAE',lat:25.0,lon:55.06,demand:1.1},{id:'mum',name:'Mumbai',country:'Indien',lat:18.95,lon:72.84,demand:1.2},{id:'sin',name:'Singapur',country:'Singapur',lat:1.26,lon:103.84,demand:1.4},{id:'sha',name:'Shanghai',country:'China',lat:31.23,lon:121.5,demand:1.5},{id:'tyo',name:'Tokyo',country:'Japan',lat:35.62,lon:139.8,demand:1.15},{id:'syd',name:'Sydney',country:'Australien',lat:-33.86,lon:151.2,demand:1.1},{id:'ist',name:'Istanbul',country:'Türkei',lat:40.98,lon:28.95,demand:.95},{id:'mar',name:'Marseille',country:'Frankreich',lat:43.3,lon:5.37,demand:.93},{id:'lis',name:'Lissabon',country:'Portugal',lat:38.72,lon:-9.13,demand:.96}
+];
+const CARGO=[
+{id:'containers',name:'Standardcontainer',icon:'📦',fee:170,capacity:1,speed:1,handling:1,types:['coastal','medium','long','ultra']},
+{id:'electronics',name:'Elektronik',icon:'💻',fee:260,capacity:.75,speed:1,handling:1,types:['coastal','medium','long','ultra']},
+{id:'food',name:'Kühlfracht',icon:'🧊',fee:230,capacity:.72,speed:1.08,handling:2,types:['coastal','medium','long','ultra']},
+{id:'cars',name:'Fahrzeuge',icon:'🚗',fee:205,capacity:.78,speed:.94,handling:2,types:['ro-ro','medium']},
+{id:'bulk',name:'Schüttgut',icon:'🌾',fee:105,capacity:1.18,speed:.88,handling:2,types:['bulk','river']},
+{id:'oil',name:'Flüssigladung',icon:'🛢️',fee:195,capacity:1,speed:.92,handling:2,types:['tanker']},
+{id:'urgent',name:'Expressfracht',icon:'⚡',fee:390,capacity:.42,speed:1.2,handling:1,types:['coastal','medium','long','ultra']}
+];
+const SHIP_TYPES=[
+{id:'coastal',name:'Coastal-Frachter',className:'Coastal',price:420000,speed:13,capacity:180,upkeep:4900,color:'#5bd1b2',allowed:['containers','electronics','food','urgent'],range:1800,desc:'Kurze Küstenverbindungen.'},
+{id:'medium',name:'Mitteldistanz-Frachter',className:'Mitteldistanz',price:760000,speed:17,capacity:480,upkeep:7900,color:'#6cb6ff',allowed:['containers','electronics','food','cars','urgent'],range:5000,desc:'Regionale und mittlere Routen.'},
+{id:'long',name:'Langstrecken-Containerschiff',className:'Langstrecke',price:1450000,speed:20,capacity:920,upkeep:13900,color:'#b69cff',allowed:['containers','electronics','food','urgent'],range:30000,desc:'Für internationale Fernrouten.'},
+{id:'ultra',name:'Ultra-Containerklasse',className:'Langstrecke',price:2850000,speed:22,capacity:1800,upkeep:25500,color:'#e7a5ff',allowed:['containers','electronics','food','urgent'],range:30000,desc:'Sehr große Kapazität für globale Linien.'},
+{id:'tanker',name:'Produkttanker',className:'Spezialschiff',price:1120000,speed:15,capacity:820,upkeep:14300,color:'#ffb45e',allowed:['oil'],range:30000,desc:'Spezialisiert auf Flüssigladung.'},
+{id:'bulk',name:'Bulk Carrier',className:'Spezialschiff',price:890000,speed:14,capacity:1100,upkeep:10900,color:'#d7c4a1',allowed:['bulk'],range:30000,desc:'Für Schüttgut und Rohstoffe.'},
+{id:'ro-ro',name:'Ro-Ro-Frachter',className:'Spezialschiff',price:1480000,speed:18,capacity:660,upkeep:15100,color:'#f18bc8',allowed:['cars'],range:7000,desc:'Für Fahrzeuge und rollende Ladung.'},
+{id:'river',name:'Binnenschiff',className:'Binnenschiff',price:280000,speed:9,capacity:260,upkeep:3100,color:'#85c98d',allowed:['bulk','containers'],range:800,desc:'Binnenschifffahrt ist vorbereitet; echte Flussrouten kommen später.'}
+];
+const CONTRACTS=[
+{id:'c1',company:'Nordlicht Elektronik',from:'ham',to:'nyc',cargo:'electronics',bonus:85000,deadline:28,desc:'Hochwertige Elektronik muss sicher über den Atlantik.'},
+{id:'c2',company:'EuroFresh Foods',from:'rot',to:'sin',cargo:'food',bonus:110000,deadline:32,desc:'Zeitkritische Kühlware mit lückenloser Kühlkette.'},
+{id:'c3',company:'AutoWerk Europe',from:'ant',to:'mia',cargo:'cars',bonus:72000,deadline:30,desc:'Fahrzeuge für einen wichtigen Händlertermin.'},
+{id:'c4',company:'AgriGlobal',from:'hou',to:'rot',cargo:'bulk',bonus:64000,deadline:25,desc:'Schüttgut in großer Menge.'},
+{id:'c5',company:'PetroWorld',from:'dub',to:'mum',cargo:'oil',bonus:68000,deadline:14,desc:'Flüssigladung für eine Raffinerie.'},
+{id:'c6',company:'ExpressLink',from:'sin',to:'sha',cargo:'urgent',bonus:52000,deadline:10,desc:'Expresssendung mit engem Zeitfenster.'},
+{id:'c7',company:'Baltic Trade',from:'osl',to:'ham',cargo:'containers',bonus:28000,deadline:12,desc:'Containerladung für einen regionalen Partner.'},
+{id:'c8',company:'Pacific Components',from:'tyo',to:'van',cargo:'electronics',bonus:120000,deadline:34,desc:'Elektronikkomponenten für die nordamerikanische Produktion.'},
+{id:'c9',company:'South Atlantic Cargo',from:'lis',to:'sao',cargo:'containers',bonus:76000,deadline:27,desc:'Containertransport zwischen Europa und Brasilien.'},
+{id:'c10',company:'Mediterranean Grain',from:'mar',to:'ist',cargo:'bulk',bonus:41000,deadline:16,desc:'Getreidelieferung für einen regionalen Abnehmer.'},
+{id:'c11',company:'Ocean Auto Logistics',from:'sha',to:'syd',cargo:'cars',bonus:93000,deadline:30,desc:'Fahrzeugtransport über den westlichen Pazifik.'},
+{id:'c12',company:'Arctic Electronics',from:'nyc',to:'ham',cargo:'urgent',bonus:90000,deadline:20,desc:'Dringende Ersatzteile für einen europäischen Kunden.'}
+];
+/* Zustand und Speicherung */
+let game=null,activeSlot=0,map=null,portMarkers=[],shipMarkers={},routeLayers=[],simulationSpeed=1,simulationProgress=0,lastFrame=0,animationId=0,portsVisible=true,seaRoutingAvailable=false;
+const $=id=>document.getElementById(id),money=n=>'€ '+Math.round(n).toLocaleString('de-DE'),port=id=>PORTS.find(p=>p.id===id),shipType=id=>SHIP_TYPES.find(t=>t.id===id),cargo=id=>CARGO.find(c=>c.id===id);
+function makeGame(name,difficulty){const d=DIFFICULTIES[difficulty];return{company:name.trim()||'Blue Horizon Shipping',difficulty,cash:d.cash,day:1,rep:50,ships:[{id:'s1',name:'Nordstern',type:'long',port:'ham',trip:null},{id:'s2',name:'Elbe Star',type:'medium',port:'rot',trip:null},{id:'s3',name:'Baltic Wind',type:'coastal',port:'osl',trip:null}],nextShipId:4,log:['Willkommen bei '+(name.trim()||'Blue Horizon Shipping')+'. Deine erste Runde beginnt.'],completed:0,loans:0,created:Date.now()}}
+function saveGame(){if(!game)return;try{localStorage.setItem(CONFIG.savePrefix+activeSlot,JSON.stringify(game));localStorage.setItem(CONFIG.activeKey,String(activeSlot))}catch(e){toast('Speichern nicht möglich: Browser-Speicher voll.')}}
+function loadSlot(slot){try{const raw=localStorage.getItem(CONFIG.savePrefix+slot);if(!raw)return null;const g=JSON.parse(raw);if(!g||!Array.isArray(g.ships)||!g.company)return null;return g}catch(e){return null}}
+function slotExists(slot){return !!loadSlot(slot)}
+function toast(msg){let el=$('toast');if(!el){el=document.createElement('div');el.id='toast';el.style.cssText='position:fixed;z-index:3000;left:50%;bottom:22px;transform:translateX(-50%);background:#071827;border:1px solid #47d8d0;padding:11px 15px;border-radius:10px;box-shadow:0 5px 22px #0008;font-size:12px;max-width:90vw';document.body.appendChild(el)}el.textContent=msg;el.style.display='block';clearTimeout(el._timer);el._timer=setTimeout(()=>el.style.display='none',2800)}
+function addLog(msg){game.log.unshift('Tag '+game.day+' · '+msg);game.log=game.log.slice(0,30)}
+function haversine(a,b){const r=6371,rad=x=>x*Math.PI/180,d1=rad(b.lat-a.lat),d2=rad(b.lon-a.lon),q=Math.sin(d1/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(d2/2)**2;return 2*r*Math.asin(Math.sqrt(q))*0.539957}
+/* Karte und Häfen */
+function initMap(){map=L.map('map',{zoomControl:true,worldCopyJump:true}).setView([22,8],2);L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,attribution:'Tiles © Esri'}).addTo(map);PORTS.forEach(p=>{const marker=L.circleMarker([p.lat,p.lon],{radius:4,color:'#f5bd59',weight:1,fillColor:'#f5bd59',fillOpacity:.9}).bindTooltip(p.name+' · '+p.country,{direction:'top'});marker.addTo(map);portMarkers.push(marker)});map.on('zoomend',()=>{renderShips();renderPorts()});}
+function renderPorts(){portMarkers.forEach(m=>{if(portsVisible){if(!map.hasLayer(m))m.addTo(map)}else if(map.hasLayer(m))map.removeLayer(m)})}
+function togglePorts(){portsVisible=!portsVisible;renderPorts()}
+function iconForShip(s,angle=0){const t=shipType(s.type),z=map.getZoom(),size=Math.max(16,Math.min(25,22-(z-2)*.35));return L.divIcon({className:'ship-icon',html:'<div class="ship-shape" style="width:'+size+'px;height:'+Math.max(8,size*.48)+'px;background:'+t.color+';transform:rotate('+(angle-90)+'deg)"></div>',iconSize:[size,Math.max(8,size*.48)],iconAnchor:[size/2,Math.max(8,size*.48)/2]})}
+function renderShips(){if(!map||!game)return;const alive=new Set(game.ships.map(s=>s.id));Object.keys(shipMarkers).forEach(id=>{if(!alive.has(id)){map.removeLayer(shipMarkers[id]);delete shipMarkers[id]}});game.ships.forEach(s=>{let pos=port(s.port);if(s.trip&&s.trip.coords){const p=pointAlong(s.trip.coords,s.trip.progress);pos={lat:p[1],lon:p[0]}}let m=shipMarkers[s.id];if(!m){m=L.marker([pos.lat,pos.lon],{icon:iconForShip(s)}).addTo(map);m.on('click',()=>selectShip(s.id));shipMarkers[s.id]=m}else{m.setLatLng([pos.lat,pos.lon]);m.setIcon(iconForShip(s,s.trip?s.trip.angle||0:0))}m.bindTooltip(s.name+' · '+shipType(s.type).name,{direction:'top'})})}
+function pointAlong(coords,t){let lengths=[],total=0;for(let i=1;i<coords.length;i++){const d=haversine({lat:coords[i-1][1],lon:coords[i-1][0]},{lat:coords[i][1],lon:coords[i][0]});lengths.push(d);total+=d}if(!total)return coords[0];let target=Math.max(0,Math.min(1,t))*total;for(let i=1;i<coords.length;i++){if(target<=lengths[i-1]){const f=lengths[i-1]?target/lengths[i-1]:0;return[coords[i-1][0]+(coords[i][0]-coords[i-1][0])*f,coords[i-1][1]+(coords[i][1]-coords[i-1][1])*f]}target-=lengths[i-1]}return coords[coords.length-1]}
+function computeWaterRoute(a,b){if(!seaRoutingAvailable||typeof searoute!=='function')return null;try{const r=searoute([a.lon,a.lat],[b.lon,b.lat]);const coords=r&&r.geometry&&r.geometry.coordinates;if(!coords||coords.length<2)return null;const first=coords[0],last=coords[coords.length-1];if(Math.abs(first[0]-a.lon)>1.2||Math.abs(first[1]-a.lat)>1.2||Math.abs(last[0]-b.lon)>1.2||Math.abs(last[1]-b.lat)>1.2)return null;return coords}catch(e){return null}}
+/* Flotte, Aufträge und Fahrten */
+function selectedShip(){return game.ships.find(s=>s.id===selectedShipId)||game.ships[0]}
+let selectedShipId='s1';
+function selectShip(id){selectedShipId=id;renderUI();renderShips()}
+function eligibleContracts(s){if(!s)return[];return CONTRACTS.filter(c=>shipType(s.type).allowed.includes(c.cargo)&&!s.trip&&c.from!==c.to)}
+function acceptOrder(contractId){const s=selectedShip(),c=CONTRACTS.find(x=>x.id===contractId);if(!s||!c||s.trip||!shipType(s.type).allowed.includes(c.cargo)){toast('Dieser Auftrag passt nicht zum ausgewählten Schiff.');return}if(s.type==='river'){toast('Flussrouting ist noch nicht verfügbar.');return}const a=port(c.from),b=port(c.to),coords=computeWaterRoute(a,b);if(!coords){toast('Für diese Häfen ist keine bestätigte Wasserroute verfügbar. Es wird keine Luftlinie als Ersatz benutzt.');return}const distance=coords.reduce((sum,p,i)=>i?sum+haversine({lat:coords[i-1][1],lon:coords[i-1][0]},{lat:p[1],lon:p[0]}):0,0);if(distance>shipType(s.type).range){toast('Diese Route überschreitet die Reichweite dieses Schiffstyps.');return}const t=cargo(c.cargo),diff=DIFFICULTIES[game.difficulty],units=Math.floor(shipType(s.type).capacity*t.capacity),revenue=Math.round(units*t.fee*((a.demand+b.demand)/2)*diff.revenue+c.bonus*diff.revenue),days=Math.max(1,Math.ceil(distance/(shipType(s.type).speed*24*t.speed)+t.handling+1));s.trip={contractId:c.id,from:c.from,to:c.to,cargo:c.cargo,coords,progress:0,distance,days,daysElapsed:0,revenue,units,cost:Math.round((distance*22+days*shipType(s.type).upkeep/7)*diff.cost)};s.status='sailing';selectedShipId=s.id;addLog(s.name+' übernimmt Auftrag von '+c.company+': '+a.name+' → '+b.name+'.');saveGame();renderUI();renderShips();toast('Auftrag angenommen · '+days+' Spieltage geschätzt')}
+function buyShip(typeId){const t=shipType(typeId),d=DIFFICULTIES[game.difficulty];if(!t)return;if(game.cash<t.price*d.cost){toast('Nicht genug Geld für dieses Schiff.');return}game.cash-=Math.round(t.price*d.cost);const id='s'+game.nextShipId++;const home=PORTS[(game.nextShipId*3)%PORTS.length];game.ships.push({id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null});selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'.');saveGame();renderUI();renderShips();openShipyard();toast('Schiff zur Flotte hinzugefügt')}
+function openShipyard(){if(!game)return;$('shipyard').classList.remove('hidden');renderShipyard()}
+function closeShipyard(){$('shipyard').classList.add('hidden')}
+function renderShipyard(){const d=DIFFICULTIES[game.difficulty];$('yardContent').innerHTML='<p class="notice">Schwierigkeitsgrad: '+d.label+' · Kaufpreise × '+d.cost.toFixed(2).replace('.',',')+'</p><div class="field"><label>Schiffsklasse</label><select id="yardType" onchange="renderShipyard()">'+SHIP_TYPES.map(t=>'<option value="'+t.id+'" '+(t.id===$('yardType')?.value?'selected':'')+'>'+t.className+' — '+t.name+'</option>').join('')+'</select></div>'+SHIP_TYPES.filter(t=>t.id===($('yardType')?.value||'coastal')).map(t=>'<div class="order"><h3>'+t.name+'</h3><p>'+t.desc+'<br>Geschwindigkeit '+t.speed+' kn · Kapazität '+t.capacity+' Einheiten<br>Unterhalt '+money(t.upkeep*d.upkeep)+'/Woche</p><div class="bonus">'+money(t.price*d.cost)+'</div><button class="primary" onclick="buyShip(\''+t.id+'\')">Schiff kaufen</button></div>').join('')}
+function nextDay(){if(!game)return;game.day++;const d=DIFFICULTIES[game.difficulty];let expenses=0;game.ships.forEach(s=>{expenses+=shipType(s.type).upkeep*d.upkeep/7;if(s.trip){const tr=s.trip;tr.daysElapsed++;tr.progress=Math.min(1,tr.daysElapsed/tr.days);if(tr.progress>=1){const c=CONTRACTS.find(x=>x.id===tr.contractId);game.cash+=tr.revenue-tr.cost;game.rep=Math.min(100,game.rep+1);game.completed++;addLog(s.name+' erreicht '+port(tr.to).name+'. Nettoerlös: '+money(tr.revenue-tr.cost)+'.');s.port=tr.to;s.trip=null;s.status='idle'}}});game.cash-=expenses;game.cash-=1800*d.cost;if(game.day%7===0){game.cash-=12500*d.upkeep;addLog('Wöchentliche Verwaltungskosten: '+money(12500*d.upkeep)+'.')}if(game.cash<0)game.rep=Math.max(0,game.rep-2);if(game.day%3===0)saveGame();renderUI();renderShips()}
+function renderUI(){if(!game)return;$('companyLabel').textContent=game.company.toUpperCase();$('cashStat').textContent=money(game.cash);$('fleetStat').textContent=game.ships.length+' Schiffe';$('fleetCount').textContent=game.ships.length+' Schiffe';$('dayStat').textContent='Tag '+game.day;$('repStat').textContent='★ '+game.rep;$('dateLabel').textContent='Jahr '+(Math.floor((game.day-1)/360)+1)+' · Tag '+game.day;$('logLines').innerHTML=game.log.slice(0,6).map(x=>'<div>'+escapeHtml(x)+'</div>').join('');$('fleetList').innerHTML=game.ships.map(s=>'<div class="ship-row '+(s.id===selectedShipId?'selected':'')+'" onclick="selectShip(\''+s.id+'\')"><span class="ship-dot" style="background:'+shipType(s.type).color+'"></span><div><b>'+escapeHtml(s.name)+'</b><small>'+shipType(s.type).className+' · '+(s.trip?'Unterwegs nach '+port(s.trip.to).name:'Im Hafen: '+port(s.port).name)+'</small></div></div>').join('');const s=selectedShip();$('selectedShipLabel').textContent=s?s.name:'';const orders=eligibleContracts(s);$('ordersHelp').textContent=s?(s.trip?'Dieses Schiff ist unterwegs. Neue Aufträge sind nach der Ankunft verfügbar.':'Verfügbare Aufträge für '+s.name+'. Frachtarten passen zum Schiff.'):'Wähle ein Schiff aus.';$('ordersList').innerHTML=s&&s.trip?'<div class="order"><h3>Schiff auf Fahrt</h3><p>Ziel: '+port(s.trip.to).name+'<br>Fortschritt: '+Math.round(s.trip.progress*100)+' %</p></div>':orders.map(c=>'<div class="order"><h3>'+escapeHtml(c.company)+'</h3><p>'+port(c.from).name+' → '+port(c.to).name+'<br>'+cargo(c.cargo).icon+' '+cargo(c.cargo).name+'<br>Frist: '+c.deadline+' Spieltage</p><p>'+escapeHtml(c.desc)+'</p><div class="bonus">Bonus '+money(c.bonus*DIFFICULTIES[game.difficulty].revenue)+'</div><button class="primary" style="width:100%" onclick="acceptOrder(\''+c.id+'\')">Auftrag übernehmen</button></div>').join('')||'<p class="notice">Für diesen Schiffstyp gibt es aktuell keine freien Aufträge.</p>';saveGame()}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
+/* Menüs und Speicherstände */
+let selectedDifficulty='easy';
+function hideSetups(){$('newGameSetup').classList.remove('visible');$('savesSetup').classList.remove('visible')}
+function showMenuHome(){hideSetups();$('menuActions').classList.remove('hidden');$('menuHeading').textContent='Deine Reederei beginnt hier';$('menuDescription').textContent='Baue ein internationales Schifffahrtsunternehmen auf, übernimm Firmenaufträge und erweitere deine Flotte.'}
+function showNewGame(){hideSetups();$('menuActions').classList.add('hidden');$('newGameSetup').classList.add('visible');$('menuHeading').textContent='Neue Runde';$('menuDescription').textContent='Gib deiner Reederei einen Namen und wähle die gewünschte Herausforderung.';$('companyInput').value='';chooseDifficulty('easy')}
+function chooseDifficulty(id){selectedDifficulty=id;document.querySelectorAll('[data-difficulty]').forEach(b=>b.classList.toggle('active',b.dataset.difficulty===id));$('difficultyInfo').textContent=DIFFICULTIES[id].desc}
+function startNewGame(){const name=$('companyInput').value.trim()||'Blue Horizon Shipping';if(!confirm('Neue Runde für „'+name+'“ starten? Ein vorhandener Spielstand wird nicht gelöscht.'))return;game=makeGame(name,selectedDifficulty);activeSlot=firstFreeSlot();if(activeSlot<0){activeSlot=0;toast('Alle 5 Speicherplätze belegt; Speicherplatz 1 wird ersetzt.')}selectedShipId='s1';saveGame();$('mainMenu').classList.add('hidden');renderUI();renderShips();map.invalidateSize();toast('Willkommen bei '+name+'!')}
+function firstFreeSlot(){for(let i=0;i<5;i++)if(!slotExists(i))return i;return -1}
+function showSaves(){hideSetups();$('menuActions').classList.add('hidden');$('savesSetup').classList.add('visible');$('menuHeading').textContent='Spielstände laden';$('menuDescription').textContent='Wähle eine gespeicherte Runde aus diesem Browser.';renderSaveList()}
+function renderSaveList(){$('saveList').innerHTML=Array.from({length:5},(_,i)=>{const g=loadSlot(i);return g?'<div class="save-row"><span><b>'+escapeHtml(g.company)+'</b><small>'+DIFFICULTIES[g.difficulty]?.label+' · Tag '+g.day+' · '+money(g.cash)+'</small></span><button onclick="loadGameSlot('+i+')">Laden</button></div>':'<div class="save-row"><span>Speicherplatz '+(i+1)+'<small>Leer</small></span><button disabled>Laden</button></div>'}).join('')}
+function loadGameSlot(slot){const g=loadSlot(slot);if(!g){toast('Spielstand konnte nicht geladen werden.');return}game=g;activeSlot=slot;selectedShipId=game.ships[0]?.id||null;if(!DIFFICULTIES[game.difficulty])game.difficulty='medium';$('mainMenu').classList.add('hidden');renderUI();renderShips();map.invalidateSize();setSpeed(1);toast('Spielstand geladen: '+game.company)}
+function continueGame(){let slot=Number(localStorage.getItem(CONFIG.activeKey));if(!Number.isInteger(slot)||!slotExists(slot)){for(let i=0;i<5;i++)if(slotExists(i)){slot=i;break}}if(!slotExists(slot)){toast('Noch kein Spielstand vorhanden. Starte eine neue Runde.');showNewGame();return}loadGameSlot(slot)}
+function openMainMenu(){setSpeed(0);$('mainMenu').classList.remove('hidden');showMenuHome();$('continueHint').textContent=slotExists(Number(localStorage.getItem(CONFIG.activeKey)))?'Letzten Spielstand fortsetzen':'Noch kein Spielstand vorhanden'}
+/* Simulationszeit läuft unabhängig von der Bewegungsgeschwindigkeit im Routenmodell. */
+function setSpeed(speed){simulationSpeed=speed;lastFrame=performance.now();$('pauseBtn').classList.toggle('active',speed===0);$('playBtn').classList.toggle('active',speed===1);$('fastBtn').classList.toggle('active',speed===1.5);if(speed===0)toast('Simulation pausiert');else toast(speed===1.5?'Simulationszeit: 1,5×':'Simulation läuft')}
+function frame(now){if(!lastFrame)lastFrame=now;const dt=Math.min(100,now-lastFrame);lastFrame=now;if(game&&simulationSpeed>0&&!$('mainMenu').classList.contains('hidden')){}else if(game&&simulationSpeed>0){simulationProgress+=dt/CONFIG.daySeconds/1000*simulationSpeed;game.ships.forEach(s=>{if(s.trip){const tr=s.trip;tr.progress=Math.min(1,(tr.daysElapsed+simulationProgress)/tr.days);const p=pointAlong(tr.coords,tr.progress);const marker=shipMarkers[s.id];if(marker){marker.setLatLng([p[1],p[0]]);const p2=pointAlong(tr.coords,Math.min(1,tr.progress+.002));let dx=p2[0]-p[0];if(dx>180)dx-=360;if(dx< -180)dx+=360;tr.angle=Math.atan2(dx*Math.cos(p[1]*Math.PI/180),p2[1]-p[1])*180/Math.PI;const el=marker.getElement()?.querySelector('.ship-shape');if(el)el.style.transform='rotate('+(tr.angle-90)+'deg)'}}});while(simulationProgress>=1){simulationProgress-=1;nextDay()}if(Math.floor(now/500)!==Math.floor((now-dt)/500))renderUI()}animationId=requestAnimationFrame(frame)}
+/* Initialisierung */
+function init(){initMap();seaRoutingAvailable=typeof searoute==='function';if(!seaRoutingAvailable)console.warn('Maritime routing library unavailable; routes are disabled rather than drawn across land.');const active=Number(localStorage.getItem(CONFIG.activeKey));$('continueHint').textContent=Number.isInteger(active)&&slotExists(active)?'Letzten Spielstand fortsetzen':'Noch kein Spielstand vorhanden';requestAnimationFrame(frame)}
+window.addEventListener('load',init);
 </script>
-</body>
-</html>
+</body></html>
