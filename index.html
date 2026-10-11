@@ -250,6 +250,47 @@ openContracts=function(shipId){
 function restoreRoutePlanner(){const p=window.activeOrdersPanel;if(p&&p.dataset.originalHtml){p.innerHTML=p.dataset.originalHtml;delete p.dataset.originalHtml;window.activeOrdersPanel=null;fillSelects();updateEstimate();}}
 function acceptInlineOrder(shipId,contractId){const s=state.ships.find(x=>x.id===shipId),c=contracts.find(x=>x.id===contractId);if(!s||!c||s.trip||!type(s.type).allowed.includes(c.cargo)){toast('Auftrag ist nicht verfügbar.');return}state.selected=s.id;$('shipSelect').value=s.id;$('fromSelect').value=c.from;$('toSelect').value=c.to;refreshCargoOptions();$('cargoSelect').value=c.cargo;restoreRoutePlanner();updateEstimate();startRoute(c.id);}
 
+
+/* Routing and simulation hotfix */
+computeSeaRoute=function(fromId,toId){
+ if(!seaRouteReady||!seaRouteFn)return null;
+ const a=port(fromId),b=port(toId);if(!a||!b)return null;
+ let coords=null;
+ try{const r=seaRouteFn([a.lon,a.lat],[b.lon,b.lat],{path:true});coords=r&&r.geometry&&r.geometry.coordinates;if(coords&&coords.length&&Array.isArray(coords[0][0]))coords=coords.flat()}catch(e){return null}
+ if(!coords||coords.length<2)return null;
+ // The searoute geometry is the sea route itself; do not append straight-line port access segments that could cross land.
+ const first=coords[0],last=coords[coords.length-1];
+ if(Math.abs(first[0]-a.lon)>0.8||Math.abs(first[1]-a.lat)>0.8||Math.abs(last[0]-b.lon)>0.8||Math.abs(last[1]-b.lat)>0.8)return null;
+ return coords;
+};
+function updateSmoothShipPositions(){
+ if(!map)return;
+ state.ships.forEach(s=>{
+  const marker=shipMarkers[s.id];if(!marker)return;
+  let p=port(s.port),angle=0;
+  if(s.trip&&s.trip.routeCoords&&s.trip.routeCoords.length>1){
+   const coords=s.trip.routeCoords,t=Math.max(0,Math.min(.99999,((state.day-s.trip.startDay)+simulationProgress)/s.trip.days));
+   const q=pointAlong(coords,t),q2=pointAlong(coords,Math.min(1,t+.001));
+   p={lat:q[1],lon:q[0]};let dx=q2[0]-q[0];if(dx>180)dx-=360;if(dx< -180)dx+=360;
+   angle=Math.atan2(dx*Math.cos(q[1]*Math.PI/180),q2[1]-q[1])*180/Math.PI;
+  }
+  marker.setLatLng([p.lat,p.lon]);
+  const el=marker.getElement()?.querySelector('.ship-marker');if(el)el.style.transform='rotate('+(angle-90)+'deg)';
+ });
+}
+simulationTick=function(){
+ if(simulationSpeed===0)return;
+ const now=Date.now(),dt=Math.min(100,now-(lastTick||now));lastTick=now;
+ simulationProgress+=(dt/40000)*simulationSpeed;
+ if(simulationProgress>=1){const days=Math.floor(simulationProgress);simulationProgress-=days;for(let i=0;i<days;i++)nextDay();}
+ updateSmoothShipPositions();
+};
+setSpeed=function(speed){simulationSpeed=speed;lastTick=Date.now();$('pauseBtn').classList.toggle('active',speed===0);$('playBtn').classList.toggle('active',speed===1);$('fastBtn').classList.toggle('active',speed===1.5);toast(speed===0?'Simulation pausiert':speed===1.5?'Simulationszeit läuft mit 1,5×':'Simulation läuft');};
+resetGame=function(){
+ const doReset=()=>{try{localStorage.removeItem('blueHorizonSave');localStorage.removeItem('blueHorizonSaveV2');}catch(e){}const u=new URL(location.href);u.searchParams.set('restart',String(Date.now()));location.replace(u.toString())};
+ if(typeof confirm==='function'){if(confirm('Spielstand löschen und Blue Horizon neu starten?'))doReset()}else doReset();
+};
+
 </script>
 </body>
 </html>
