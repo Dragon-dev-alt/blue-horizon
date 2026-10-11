@@ -32,7 +32,7 @@ function ensureShipStats(s){
  return s;
 }
 function makeGame(name,difficulty,hq){
- /* Basisspielzustand erweitern, individuelle Gebrauchtangebote anlegen und Startschiff einsetzen. */
+ /* Neues Unternehmen startet ohne Schiff; das erste Schiff muss in der Werft gekauft werden. */
  const g=baseMakeGame(name,difficulty);
  g.ships=[];
  g.nextShipId=1;
@@ -42,11 +42,6 @@ function makeGame(name,difficulty,hq){
  g.buildOrders=[];
  g.repairOrders=[];
  g.hq=hq||'ham';
- const homePort=port(g.hq);
- const starterType=homePort&&homePort.river?'river':'coastal';
- const starterName=shipType(starterType).name+' s1';
- g.ships=[{id:'s1',name:starterName,type:starterType,port:g.hq,trip:null,condition:100,range:randomShipRange(starterType),deliveryRemaining:0}];
- g.nextShipId=2;
  return g;
 }
 
