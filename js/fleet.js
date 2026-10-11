@@ -18,7 +18,10 @@ function makeGame(name,difficulty,hq){
  g.buildOrders=[];
  g.repairOrders=[];
  g.hq=hq||'ham';
- g.ships=[{id:'s1',name:'Coastal-Frachter s1',type:'coastal',port:g.hq,trip:null,condition:100,range:randomShipRange('coastal'),deliveryRemaining:0}];
+ const homePort=port(g.hq);
+ const starterType=homePort&&homePort.river?'river':'coastal';
+ const starterName=shipType(starterType).name+' s1';
+ g.ships=[{id:'s1',name:starterName,type:starterType,port:g.hq,trip:null,condition:100,range:randomShipRange(starterType),deliveryRemaining:0}];
  g.nextShipId=2;
  return g;
 }
