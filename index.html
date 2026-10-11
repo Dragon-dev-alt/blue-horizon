@@ -124,7 +124,7 @@ function selectShipAtPort(portId){
  selectShip(ship.id);
 }
 function iconForShip(s,angle=0){const t=shipType(s.type),z=map.getZoom(),size=Math.max(16,Math.min(25,22-(z-2)*.35));return L.divIcon({className:'ship-icon',html:'<div class="ship-shape" style="width:'+size+'px;height:'+Math.max(8,size*.48)+'px;background:'+t.color+';transform:rotate('+(angle-90)+'deg)"></div>',iconSize:[size,Math.max(8,size*.48)],iconAnchor:[size/2,Math.max(8,size*.48)/2]})}
-function renderShips(){if(!map||!game)return;const alive=new Set(game.ships.map(s=>String(s.id)));Object.keys(shipMarkers).forEach(id=>{if(!alive.has(String(id))){map.removeLayer(shipMarkers[id]);delete shipMarkers[id]}});game.ships.forEach(s=>{ensureShipStats(s);let pos=port(s.port);if(s.trip&&s.trip.coords){const p=pointAlong(s.trip.coords,s.trip.progress);pos={lat:p[1],lon:p[0]}}let m=shipMarkers[s.id];if(!m){m=L.marker([pos.lat,pos.lon],{icon:iconForShip(s,s.trip?s.trip.angle||0:0),interactive:true,keyboard:true,riseOnHover:true,zIndexOffset:2000,autoPanOnFocus:false}).addTo(map);shipMarkers[s.id]=m}else{m.setLatLng([pos.lat,pos.lon]);m.setIcon(iconForShip(s,s.trip?s.trip.angle||0:0));m.setZIndexOffset(2000)}m.off('click');m.on('click',function(e){if(e&&e.originalEvent)L.DomEvent.stop(e.originalEvent);selectShip(s.id)});m.bindTooltip(s.name+' · '+shipType(s.type).name,{direction:'top'});const el=m.getElement();if(el){el.style.pointerEvents='auto';el.style.cursor='pointer';el.dataset.shipId=String(s.id);el.setAttribute('role','button');el.setAttribute('tabindex','0');el.setAttribute('aria-label','Schiff auswählen: '+s.name);el.onkeydown=function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();selectShip(s.id)}}}})}
+function renderShips(){if(!map||!game)return;const alive=new Set(game.ships.map(s=>String(s.id)));Object.keys(shipMarkers).forEach(id=>{if(!alive.has(String(id))){map.removeLayer(shipMarkers[id]);delete shipMarkers[id]}});game.ships.forEach(s=>{ensureShipStats(s);let pos=port(s.port);if(s.trip&&s.trip.coords){const p=pointAlong(s.trip.coords,s.trip.progress);pos={lat:p[1],lon:p[0]}}let m=shipMarkers[s.id];if(!m){m=L.marker([pos.lat,pos.lon],{icon:iconForShip(s,s.trip?s.trip.angle||0:0),interactive:true,keyboard:true,riseOnHover:true,zIndexOffset:2000,autoPanOnFocus:false}).addTo(map);shipMarkers[s.id]=m}else{m.setLatLng([pos.lat,pos.lon]);m.setIcon(iconForShip(s,s.trip?s.trip.angle||0:0));m.setZIndexOffset(2000)}m.off('click');m.on('click',function(e){L.DomEvent.stop(e);selectShip(s.id)});m.bindTooltip(s.name+' · '+shipType(s.type).name,{direction:'top'});const el=m.getElement();if(el){el.style.pointerEvents='auto';el.style.cursor='pointer';el.dataset.shipId=String(s.id);el.setAttribute('role','button');el.setAttribute('tabindex','0');el.setAttribute('aria-label','Schiff auswählen: '+s.name);el.onkeydown=function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();selectShip(s.id)}}}})}
 function pointAlong(coords,t){let lengths=[],total=0;for(let i=1;i<coords.length;i++){const d=haversine({lat:coords[i-1][1],lon:coords[i-1][0]},{lat:coords[i][1],lon:coords[i][0]});lengths.push(d);total+=d}if(!total)return coords[0];let target=Math.max(0,Math.min(1,t))*total;for(let i=1;i<coords.length;i++){if(target<=lengths[i-1]){const f=lengths[i-1]?target/lengths[i-1]:0;return[coords[i-1][0]+(coords[i][0]-coords[i-1][0])*f,coords[i-1][1]+(coords[i][1]-coords[i-1][1])*f]}target-=lengths[i-1]}return coords[coords.length-1]}
 function baseComputeWaterRoute(a,b){const routeFn=window.searoute;if(!seaRoutingAvailable||typeof routeFn!=='function')return null;try{const r=routeFn([a.lon,a.lat],[b.lon,b.lat]);const coords=r&&r.geometry&&r.geometry.coordinates;if(!coords||coords.length<2)return null;const first=coords[0],last=coords[coords.length-1];if(Math.abs(first[0]-a.lon)>1.2||Math.abs(first[1]-a.lat)>1.2||Math.abs(last[0]-b.lon)>1.2||Math.abs(last[1]-b.lat)>1.2)return null;return coords}catch(e){console.warn('Wasserroute konnte nicht berechnet werden:',e);return null}}
 /* Flotte, Aufträge und Fahrten */
@@ -552,18 +552,8 @@ function renderFleetWindow(){
 }
 function closeFleetWindow(){const w=$('fleetWindow');if(w)w.classList.add('hidden')}
 
-// Ein zentraler Klick-Handler bleibt auch nach dem Neuzeichnen der Flottenlisten erhalten.
-if(!document.documentElement.dataset.blueHorizonShipClicks){
- document.documentElement.dataset.blueHorizonShipClicks='yes';
- document.addEventListener('click',event=>{
-  const target=event.target instanceof Element?event.target:null;
-  if(!target)return;
-  const row=target.closest('#fleetList [data-ship-id],#fleetWindowList [data-ship-id]');
-  if(row){event.preventDefault();event.stopPropagation();selectShip(row.dataset.shipId);if(row.closest('#fleetWindowList'))closeFleetWindow();return;}
-  const marker=target.closest('.leaflet-marker-icon[data-ship-id]');
-  if(marker){event.preventDefault();event.stopPropagation();selectShip(marker.dataset.shipId);}
- },true);
-}
+// Schiffsauswahl erfolgt direkt über Leaflet-Marker und die onclick-Handler der Flottenlisten.
+
 
 </script>
 <script type="module">
