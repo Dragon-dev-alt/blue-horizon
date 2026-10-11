@@ -937,7 +937,7 @@ acceptOrder=function(contractId){
  if(c.from!==s.port){toast('Das Schiff muss sich im Start-Hafen des Auftrags befinden.');return}
  const route=routeForContract(c,s);
  if(!route||route.length<2){toast('Diese Route ist für diesen Schiffstyp nicht schiffbar.');return}
- const km=route.reduce((sum,pt,i)=>i?sum+haversine({lat:route[i-1][1],lon:route[i-1][0]},{lat:pt[1],lon:pt[1]}):0,0);
+ const km=route.reduce((sum,pt,i)=>i?sum+haversine({lat:route[i-1][1],lon:route[i-1][0]},{lat:route[i][1],lon:route[i][0]}):0,0);
  if(km>s.range){toast('Die Route überschreitet die Reichweite dieses Schiffs.');return}
  if(!CONTRACTS.some(x=>x.id===c.id))CONTRACTS.push(c);
  _acceptV16(contractId);
