@@ -1,4 +1,4 @@
-import { seaRoute } from 'https://esm.sh/searoute-ts@2.3.0';
+import { seaRoute, seaRouteAlternatives } from 'https://esm.sh/searoute-ts@2.3.0';
 import { DEFAULT_MARNET } from 'https://esm.sh/searoute-ts@2.3.0/marnet-20km';
 import { feature } from 'https://esm.sh/topojson-client@3.1.0';
 
@@ -10,12 +10,16 @@ import { feature } from 'https://esm.sh/topojson-client@3.1.0';
  */
 window.waterRouteDataReady = false;
 window.waterRouteDataError = null;
-window.searoute = (origin, destination) => seaRoute(origin, destination, {
+const SEA_ROUTE_OPTIONS = {
   units: 'kilometers',
   network: DEFAULT_MARNET,
   antimeridian: 'unwrap',
   maxSnapDistanceKm: 100
-});
+};
+window.searoute = (origin, destination) => seaRoute(origin, destination, SEA_ROUTE_OPTIONS);
+// Bei einer Landkollision weitere Netzwerkpfade versuchen, statt sofort aufzugeben.
+window.searouteAlternatives = (origin, destination, options = {}) =>
+  seaRouteAlternatives(origin, destination, { ...SEA_ROUTE_OPTIONS, ...options, k: 8 });
 
 let landPolygons = [];
 let landGrid = new Map();
@@ -23,7 +27,8 @@ const routeSafetyCache = new WeakMap();
 const CELL_DEGREES = 5;
 const GRID_X = 360 / CELL_DEGREES;
 const GRID_Y = 180 / CELL_DEGREES;
-const MAX_SAMPLE_KM = 1.5;
+// Häufige Stützpunkte verhindern, dass schmale Landzungen oder kleine Inseln übersprungen werden.
+const MAX_SAMPLE_KM = 0.25;
 
 function normalizeLongitude(lon) {
   while (lon > 180) lon -= 360;
