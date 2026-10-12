@@ -63,7 +63,8 @@
  .loading-card{width:78vw}
 }
 
-/* Show the live percentage directly beneath the loading bar. */
-.loading-card .loading-footer{display:block!important;margin-top:9px;text-align:center}
+/* Show the live percentage directly above the loading bar. */
+.loading-card .loading-footer{display:block!important;margin:0 0 9px;text-align:center}
 .loading-card .loading-footer span{display:none!important}
 .loading-card .loading-footer strong{display:block!important;color:#fff;font-size:13px;font-weight:800;letter-spacing:.4px;text-shadow:0 1px 5px #000}
+.loading-card .loading-progress{display:flex!important;flex-direction:column}
