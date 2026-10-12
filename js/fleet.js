@@ -131,6 +131,7 @@ async function generateGuaranteedContractAsync(s,key){
   const target=item.p;
   const contract={
    id:'auto_'+String(s.id).replace(/[^a-zA-Z0-9_-]/g,'')+'_'+game.day+'_'+(game.nextContractId||1),
+   type:Math.random()<0.22?'urgent':(Math.random()<0.45?'large':'normal'),
    company:target.name+' Hafenlogistik',
    from:origin.id,to:target.id,cargo:cargoId,
    bonus:Math.round(Math.max(5000,item.directKm*15)),
@@ -143,7 +144,7 @@ async function generateGuaranteedContractAsync(s,key){
   const distanceNm=routeDistanceNauticalMiles(coords);
   if(distanceNm*1.852>s.range)continue;
   const freight=cargo(cargoId);
-  contract.deadline=Math.max(5,Math.ceil(distanceNm/(st.speed*24*freight.speed)+freight.handling+3));
+  contract.deadline=contract.type==='urgent'?Math.max(5,Math.ceil(distanceNm/(st.speed*24*freight.speed)+freight.handling+3)):null;
   game.nextContractId=(game.nextContractId||1)+1;
   game.generatedContracts.push(contract);
   saveGame();
@@ -228,11 +229,12 @@ function acceptOrder(contractId){
   toast('Diese Route überschreitet die Reichweite dieses Schiffs ('+s.range.toLocaleString('de-DE')+' km).');return;
  }
  const t=cargo(c.cargo),st=shipType(s.type),diff=DIFFICULTIES[game.difficulty],units=Math.floor(st.capacity*t.capacity);
- let revenue=Math.round(units*t.fee*((a.demand+b.demand)/2)*diff.revenue+c.bonus*diff.revenue);
+ const contractScale=c.type==='large'?1.3:1;
+ let revenue=Math.round((units*t.fee*((a.demand+b.demand)/2)*diff.revenue+c.bonus*diff.revenue)*contractScale);
  const hq=game.hq||'ham',hqBonus=(c.from===hq||c.to===hq)?0.10:0;
  revenue=Math.round(revenue*(1+hqBonus));
  const days=Math.max(1,Math.ceil(distance/(st.speed*24*t.speed)+t.handling+1));
- s.trip={contractId:c.id,from:c.from,to:c.to,cargo:c.cargo,coords,routeSmoothed:s.type!=='river',progress:0,distance,days,daysElapsed:0,revenue,baseRevenue:Math.round(units*t.fee*((a.demand+b.demand)/2)*diff.revenue+c.bonus*diff.revenue),hqBonus,units,cost:Math.round((distance*22+days*st.upkeep/7)*diff.cost)};
+ s.trip={contractId:c.id,contractType:c.type||'normal',deadline:(c.type==='urgent'?Number(c.deadline)||days: null),from:c.from,to:c.to,cargo:c.cargo,coords,routeSmoothed:s.type!=='river',progress:0,distance,days,daysElapsed:0,revenue,baseRevenue:Math.round((units*t.fee*((a.demand+b.demand)/2)*diff.revenue+c.bonus*diff.revenue)*contractScale),hqBonus,units,cost:Math.round((distance*22+days*st.upkeep/7)*diff.cost)};
  s.status='sailing';selectedShipId=s.id;previewedRouteShipId=null;previewedRouteContractId=null;
  addLog(s.name+' übernimmt Auftrag von '+c.company+': '+a.name+' → '+b.name+(hqBonus?' · 10 % Hauptsitzbonus':'')+'.');
  saveGame();renderUI();renderShips();showSelectedShipRoute(true);
