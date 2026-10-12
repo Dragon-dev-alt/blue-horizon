@@ -143,7 +143,7 @@ async function generateGuaranteedContractAsync(s,key){
   });
  // Nicht dutzende globale Routen in einem Auswahlvorgang erzeugen. Die Ziele
  // sind bereits nach Schiffsprofil sortiert; sechs sichere Versuche reichen zunächst.
- for(const item of destinations.slice(0,6)){
+ for(const item of destinations.slice(0,24)){
   await yieldToBrowser();
   if(!eligibilityStateIsCurrent(s,nextKey))return null;
   const target=item.p;
