@@ -118,3 +118,7 @@
 .side>.panel:first-child{display:none!important}
 .side>.panel:nth-child(2){display:none!important}
 .side.orders-open{display:flex!important}.side.orders-open>.panel:nth-child(2){display:flex!important}
+
+/* Umschaltbare Wasserflächenkarte */
+.navigable-water-overlay{z-index:350;pointer-events:none}
+#waterViewToggle[aria-pressed="true"]{background:#155b43;border-color:#6de0a2;color:#d8ffea}
