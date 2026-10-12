@@ -86,7 +86,7 @@ function buyUsedShip(typeId,offerId){
   const ship={id,name:currentOffer.name,type:typeId,port:currentOffer.port,trip:null,condition:currentOffer.condition,range:currentOffer.range,deliveryRemaining:0,acquisitionPrice:currentOffer.price};
   game.ships.push(ship);selectedShipId=id;
   addLog('Gebrauchtes Schiff gekauft: '+ship.name+' · Zustand '+ship.condition+' % · Reichweite '+ship.range.toLocaleString('de-DE')+' km · Hafen '+port(ship.port).name+'.');
-  saveGame();renderUI();renderShips(id);yardMode='used';openShipyard();toast('Schiff gekauft: '+ship.name);
+  saveGame();renderUI();renderShips(id);yardMode='used';toast('Schiff gekauft: '+ship.name);
  });
 }
 function selectShip(id){selectShipSafely(id)}
