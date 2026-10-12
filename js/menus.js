@@ -152,10 +152,11 @@ async function startNewGameInChosenSlot(slot){
   window.setLoadingScreen('Lädt … Häfen und Spieloberfläche',68);
   await waitForPaint();
 
-  // Die Routenvorbereitung findet genau hier statt: Der bisherige Ladescreen
-  // bleibt zwischen Firmengründung und Spielansicht sichtbar.
-  if(routingReady&&typeof precomputeHarborRoutes==='function'){
-   await precomputeHarborRoutes();
+  // Der versionierte Hafenverbindungskatalog wird geladen; echte Routen werden
+  // erst für passende Aufträge berechnet, damit der Spielstart nicht unnötig blockiert.
+  if(routingReady){
+   window.setLoadingScreen('Lädt … Hafenverbindungen werden geladen',72);
+   try{await loadHarborConnectionCatalog()}catch(_){}
   }
 
   // Keep the loader visible long enough for the UI to settle. The base
