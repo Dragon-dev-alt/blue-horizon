@@ -103,7 +103,7 @@ function eligibilityStateIsCurrent(s,key){
 function loadHarborConnectionCatalog(){
  if(harborConnectionCatalog)return Promise.resolve(harborConnectionCatalog);
  if(harborCatalogLoadPromise)return harborCatalogLoadPromise;
- harborCatalogLoadPromise=fetch('./data/harbor-connections.json?v=connection-catalog-v2-20261012',{cache:'force-cache'})
+ harborCatalogLoadPromise=fetch('./data/harbor-connections.json?v=connection-catalog-v3-20261012',{cache:'force-cache'})
   .then(response=>{if(!response.ok)throw new Error('HTTP '+response.status);return response.json()})
   .then(data=>{
    if(!data||data.schemaVersion!==1||!Array.isArray(data.connections))throw new Error('Ungültiger Hafenverbindungskatalog.');
@@ -238,7 +238,7 @@ function acceptOrder(contractId){
  const units=Math.floor(st.capacity*t.capacity),contractScale=c.type==='large'?1.3:1;
  const distanceFactor=Math.max(.5,distance/1000);
  let revenue=Math.round((units*t.fee*distanceFactor*((a.demand+b.demand)/2)*diff.revenue+contractBonus(c)*diff.revenue)*contractScale*CONTRACT_REVENUE_MULTIPLIER);
- const hq=game.hq||'ham',hqBonus=(c.from===hq||c.to===hq)?.10:0;
+ const hq=game.hq||'ham',hqBonus=(c.from===hq||c.to===hq)?0.10:0;
  revenue=Math.round(revenue*(1+hqBonus));
  const days=Math.max(1,Math.ceil(distance/(st.speed*24*t.speed)+t.handling+1));
  s.trip={contractId:c.id,contractType:c.type||'normal',deadline:c.type==='urgent'?Number(c.deadline)||days:null,
