@@ -53,6 +53,17 @@ function allContracts(){
 function routeDistanceNauticalMiles(coords){
  return Array.isArray(coords)&&coords.length>1?getRouteMetrics(coords).total:0;
 }
+/* Lange Schiffe erhalten bevorzugt lange Fahrten; Reichweite bleibt eine harte Obergrenze. */
+function minimumUsefulRouteKm(s){
+ const range=Math.max(0,Number(s?.range)||0);
+ const ratio=({coastal:.08,medium:.28,long:.48,ultra:.55,tanker:.42,bulk:.3,'ro-ro':.25,river:.08})[s?.type]??.2;
+ return range*ratio;
+}
+function routeFitsShip(coords,s){
+ if(!coords||coords.length<2||!s)return false;
+ const km=routeDistanceNauticalMiles(coords)*1.852;
+ return km<=Number(s.range||0)+1&&km>=minimumUsefulRouteKm(s);
+}
 function contractBelongsToShip(c,s){
  return !!c&&!!s&&(!c.assignedShipId||String(c.assignedShipId)===String(s.id))&&
   String(c.from)===String(s.port)&&String(c.to)!==String(s.port)&&
@@ -111,7 +122,7 @@ async function generateGuaranteedContractAsync(s,key){
   await yieldToBrowser();
   if(!eligibilityStateIsCurrent(s,nextKey))return null;
   const existing=game.generatedContracts[existingIndex],coords=routeForContract(existing,s);
-  if(coords&&coords.length>1&&routeDistanceNauticalMiles(coords)*1.852<=s.range)return existing;
+  if(routeFitsShip(coords,s))return existing;
   game.generatedContracts.splice(existingIndex,1);
   nextKey=contractEligibilityKey(s);
  }
@@ -123,7 +134,7 @@ async function generateGuaranteedContractAsync(s,key){
  const destinations=PORTS.filter(p=>p.id!==origin.id&&portCanServeShip(p,s)&&
    (s.type==='river'?!!p.river:!p.river))
   .map(p=>({p,directKm:haversine({lat:origin.lat,lon:origin.lon},{lat:p.lat,lon:p.lon})*1.852}))
-  .filter(item=>item.directKm<=s.range)
+  .filter(item=>item.directKm<=s.range && item.directKm>=minimumUsefulRouteKm(s))
   .sort((a,b)=>{
    // Fernverkehrsschiffe sollen bevorzugt lange, aber noch reichweitenkonforme Aufträge erhalten.
    if(s.type==='ultra'||s.type==='long'||s.type==='tanker')return b.directKm-a.directKm;
@@ -147,7 +158,7 @@ async function generateGuaranteedContractAsync(s,key){
   const coords=routeForContract(contract,s);
   if(!coords||coords.length<2)continue;
   const distanceNm=routeDistanceNauticalMiles(coords);
-  if(distanceNm*1.852>s.range)continue;
+  if(!routeFitsShip(coords,s))continue;
   const freight=cargo(cargoId);
   contract.deadline=contract.type==='urgent'?Math.max(5,Math.ceil(distanceNm/(st.speed*24*freight.speed)+freight.handling+3)):null;
   game.nextContractId=(game.nextContractId||1)+1;
@@ -174,7 +185,7 @@ async function computeEligibleContractsAsync(s,key){
   if(!eligibilityStateIsCurrent(s,key))return null;
   const coords=routeForContract(c,s);
   if(!coords||coords.length<2)continue;
-  if(routeDistanceNauticalMiles(coords)*1.852>s.range)continue;
+  if(!routeFitsShip(coords,s))continue;
   eligible.push(c);
  }
  if(eligible.length)return eligible;
