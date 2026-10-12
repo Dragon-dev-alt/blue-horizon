@@ -191,8 +191,8 @@ async function computeEligibleContractsAsync(s,key){
   const target=({coastal:.45,medium:.68,long:.76,ultra:.82,tanker:.72,bulk:.62,'ro-ro':.65,river:.4})[s.type]||.6;
   return Math.abs(da*1.852-s.range*target)-Math.abs(db*1.852-s.range*target);
  });
- const ROUTE_CHECK_BUDGET=10;
- for(const c of candidates.slice(0,ROUTE_CHECK_BUDGET)){
+ // Prüfe alle kompatiblen Aufträge schrittweise; yieldToBrowser() hält die UI reaktionsfähig.
+ for(const c of candidates){
   await yieldToBrowser();
   if(!eligibilityStateIsCurrent(s,key))return null;
   const coords=routeForContract(c,s);
