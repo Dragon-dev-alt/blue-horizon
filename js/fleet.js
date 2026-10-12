@@ -313,6 +313,20 @@ function eligibleContracts(s){
  scheduleContractEligibility(s,key);
  return[];
 }
+function prepareContractsForAllShips(){
+ if(!game||!window.waterRouteDataReady)return;
+ // Nicht nur das gerade ausgewählte Schiff vorbereiten: gerade bei mehreren
+ // gleichzeitig gelieferten Schiffen muss jedes Schiff einen Queue-Platz erhalten.
+ game.ships.forEach(s=>{
+  if(!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)))return;
+  ensureShipStats(s);
+  const existing=(game.generatedContracts||[]).some(c=>contractBelongsToShip(c,s));
+  if(existing)return;
+  const key=contractEligibilityKey(s);
+  if(contractEligibilityCache.has(key)||contractEligibilityPending.has(key))return;
+  scheduleContractEligibility(s,key);
+ });
+}
 function acceptOrder(contractId){
  const s=selectedShip(),c=allContracts().find(x=>x.id===contractId);
  if(!s||!c||!contractBelongsToShip(c,s)||s.trip||s.inYard||
@@ -422,6 +436,7 @@ const _renderUIBeforeFleetModal=baseRenderUI;
 function renderUI(){
  if(!game)return;
  game.ships.forEach(ensureShipStats);
+ prepareContractsForAllShips();
  _renderUIBeforeFleetModal();
  const list=$('fleetList');
  if(list){
