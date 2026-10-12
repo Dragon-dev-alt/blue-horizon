@@ -103,16 +103,35 @@ function cacheContractEligibility(key,result){
  while(contractEligibilityCache.size>MAX_ELIGIBILITY_CACHE)contractEligibilityCache.delete(contractEligibilityCache.keys().next().value);
 }
 function isContractEligibilityPending(s){return !!s&&contractEligibilityPending.has(contractEligibilityKey(s))}
+// Alle Schiffe teilen sich eine langsame Auftragswarteschlange. So laufen nicht
+// mehrere teure Routenprüfungen gleichzeitig, wenn mehrere Schiffe geliefert werden.
+const CONTRACT_ROUTE_STEP_DELAY=280;
+const contractGenerationQueue=[];
+let contractGenerationWorkerRunning=false;
 function yieldToBrowser(){
  return new Promise(resolve=>{
-  if(typeof window.requestIdleCallback==='function')window.requestIdleCallback(()=>resolve(),{timeout:180});
-  else setTimeout(resolve,16);
+  const resume=()=>setTimeout(resolve,CONTRACT_ROUTE_STEP_DELAY);
+  if(typeof window.requestIdleCallback==='function')window.requestIdleCallback(resume,{timeout:250});
+  else resume();
  });
 }
 function eligibilityStateIsCurrent(s,key){
- if(!game||String(selectedShipId)!==String(s.id))return false;
+ if(!game)return false;
  const live=game.ships.find(item=>String(item.id)===String(s.id));
  return !!live&&contractEligibilityKey(live)===key;
+}
+async function processContractGenerationQueue(){
+ if(contractGenerationWorkerRunning)return;
+ contractGenerationWorkerRunning=true;
+ try{
+  while(contractGenerationQueue.length){
+   const job=contractGenerationQueue.shift();
+   try{await job.run()}catch(error){job.fail(error)}
+  }
+ }finally{
+  contractGenerationWorkerRunning=false;
+  if(contractGenerationQueue.length)processContractGenerationQueue();
+ }
 }
 function loadHarborConnectionCatalog(){
  if(harborConnectionCatalog)return Promise.resolve(harborConnectionCatalog);
@@ -211,24 +230,28 @@ async function computeEligibleContractsAsync(s,key){
 function scheduleContractEligibility(s,key){
  if(contractEligibilityPending.has(key))return;
  contractEligibilityPending.add(key);
- (async()=>{
-  try{
-   await yieldToBrowser();
-   if(!eligibilityStateIsCurrent(s,key))return;
-   const result=await computeEligibleContractsAsync(s,key);
-   if(result===null)return;
-   const live=game&&game.ships.find(item=>String(item.id)===String(s.id));
-   if(!live)return;
-   const finalKey=contractEligibilityKey(live);
-   cacheContractEligibility(finalKey,result);
-   if(finalKey!==key)cacheContractEligibility(key,result);
-   if(String(selectedShipId)===String(live.id)){renderUI();showSelectedShipRoute(false)}
-  }catch(error){
-   console.warn('Routenbasierte Aufträge konnten nicht erstellt werden:',error);
-   const live=game&&game.ships.find(item=>String(item.id)===String(s.id));
-   if(live)cacheContractEligibility(contractEligibilityKey(live),[]);
-  }finally{contractEligibilityPending.delete(key)}
- })();
+ contractGenerationQueue.push({
+  run:async()=>{
+   try{
+    await yieldToBrowser();
+    if(!eligibilityStateIsCurrent(s,key))return;
+    const result=await computeEligibleContractsAsync(s,key);
+    if(result===null)return;
+    const live=game&&game.ships.find(item=>String(item.id)===String(s.id));
+    if(!live)return;
+    const finalKey=contractEligibilityKey(live);
+    cacheContractEligibility(finalKey,result);
+    if(finalKey!==key)cacheContractEligibility(key,result);
+    if(String(selectedShipId)===String(live.id)){renderUI();showSelectedShipRoute(false)}
+   }catch(error){
+    console.warn('Routenbasierte Aufträge konnten nicht erstellt werden:',error);
+    const live=game&&game.ships.find(item=>String(item.id)===String(s.id));
+    if(live)cacheContractEligibility(contractEligibilityKey(live),[]);
+   }finally{contractEligibilityPending.delete(key)}
+  },
+  fail:error=>{console.warn('Auftragswarteschlange fehlgeschlagen:',error);contractEligibilityPending.delete(key)}
+ });
+ processContractGenerationQueue();
 }
 function eligibleContracts(s){
  if(!s||s.trip||s.inYard||(game?.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)))return[];
