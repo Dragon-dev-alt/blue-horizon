@@ -174,3 +174,10 @@
 .contract-window-footer{min-height:40px}
 @media(max-width:820px){.contract-window-body{padding:12px}.contract-table-head{display:none}#contractsPanel .order{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;padding:13px}#contractsPanel .order .contract-type{grid-column:1/-1}#contractsPanel .order h3{grid-column:1;grid-row:auto}#contractsPanel .order p:first-of-type{grid-column:2;grid-row:auto}#contractsPanel .order .bonus{grid-column:1;grid-row:auto}#contractsPanel .contract-actions{grid-column:2;grid-row:auto}#contractsPanel .contract-actions button{font-size:10px;padding:7px 6px}}
 @media(max-width:460px){#contractsPanel .order{grid-template-columns:1fr}#contractsPanel .order h3,#contractsPanel .order p:first-of-type,#contractsPanel .order .bonus,#contractsPanel .contract-actions{grid-column:1;grid-row:auto}}
+
+/* Keep route and cargo together when the contract data is rendered as one text cell. */
+.contract-table-head{grid-template-columns:minmax(140px,1.1fr) minmax(220px,1.6fr) minmax(110px,.8fr) minmax(170px,1fr)}
+#contractsPanel .order{grid-template-columns:minmax(140px,1.1fr) minmax(220px,1.6fr) minmax(110px,.8fr) minmax(170px,1fr)}
+#contractsPanel .order .bonus{grid-column:3}
+#contractsPanel .contract-actions{grid-column:4}
+@media(max-width:820px){#contractsPanel .order{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
