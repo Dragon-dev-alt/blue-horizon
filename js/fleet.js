@@ -247,6 +247,7 @@ async function computeEligibleContractsAsync(s,key){
    catch(error){console.warn('Hintergrund-Routenberechnung fehlgeschlagen:',error);route=null}
    if(route&&typeof window.cachePrecomputedContractRoute==='function'){
     window.cachePrecomputedContractRoute(connection.from,connection.to,s.type,route);
+    if(typeof window.markWaterRouteVerified==='function')window.markWaterRouteVerified(route);
    }
   }
   if(!routeFitsShip(route,s))continue;
