@@ -46,12 +46,16 @@ CONTRACTS.push(
 );
 function routeForContract(c,s){
  const a=port(c.from),b=port(c.to);
- if(!a||!b)return null;
+ if(!a||!b||!s||!window.waterRouteDataReady||typeof window.isWaterRouteSafe!=='function')return null;
+ let coords=null;
  if(s.type==='river'){
   if(!a.river||!b.river)return null;
-  return riverRoute(a.id,b.id);
+  coords=riverRoute(a.id,b.id);
+ }else{
+  if(a.river||b.river)return null;
+  coords=resolveWaterRoute(a,b);
  }
- if(a.river||b.river)return null;
- return resolveWaterRoute(a,b);
+ // Keine Auftragsroute wird akzeptiert oder gezeichnet, wenn auch nur ein Abschnitt Land schneidet.
+ return coords&&coords.length>1&&window.isWaterRouteSafe(coords)?coords:null;
 }
 
