@@ -176,8 +176,14 @@ function baseComputeWaterRoute(a,b){
   const primaryCoords=isUsableRoute(primary);
   if(primaryCoords&&window.isWaterRouteSafe(primaryCoords)){
    const smooth=smoothWaterRoute(primaryCoords);
-   cacheWaterRoute(key,smooth);
-   return smooth;
+   // Router-Snapping darf die Route nicht vor dem eigentlichen Hafen enden lassen.
+   const exact=smooth.map(point=>[point[0],point[1]]);
+   exact[0]=origin.slice();
+   exact[exact.length-1]=destination.slice();
+   if(window.isWaterRouteSafe(exact)){
+    cacheWaterRoute(key,exact);
+    return exact;
+   }
   }
 
   if(typeof window.searouteAlternatives==='function'){
@@ -195,8 +201,12 @@ function baseComputeWaterRoute(a,b){
        coords.every((p,i)=>p[0]===primaryCoords[i][0]&&p[1]===primaryCoords[i][1]))continue;
     if(!window.isWaterRouteSafe(coords))continue;
     const smooth=smoothWaterRoute(coords);
-    cacheWaterRoute(key,smooth);
-    return smooth;
+    const exact=smooth.map(point=>[point[0],point[1]]);
+    exact[0]=origin.slice();
+    exact[exact.length-1]=destination.slice();
+    if(!window.isWaterRouteSafe(exact))continue;
+    cacheWaterRoute(key,exact);
+    return exact;
    }
   }
   cacheWaterRoute(key,null);
