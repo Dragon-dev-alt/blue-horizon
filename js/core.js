@@ -247,7 +247,7 @@ function baseRenderUI(){
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 /* Menüs und Speicherstände */
 let selectedDifficulty='easy';
-function hideSetups(){$('newGameSetup').classList.remove('visible');$('savesSetup').classList.remove('visible')}
+function hideSetups(){$('newGameSetup').classList.remove('visible');$('newGameSaveSetup')?.classList.remove('visible');$('savesSetup').classList.remove('visible')}
 function showMenuHome(){hideSetups();$('menuActions').classList.remove('hidden');$('menuHeading').textContent='Deine Reederei beginnt hier';$('menuDescription').textContent='Baue ein internationales Schifffahrtsunternehmen auf, übernimm Firmenaufträge und erweitere deine Flotte.'}
 
 function chooseDifficulty(id){selectedDifficulty=id;document.querySelectorAll('[data-difficulty]').forEach(b=>b.classList.toggle('active',b.dataset.difficulty===id));$('difficultyInfo').textContent=DIFFICULTIES[id].desc}
