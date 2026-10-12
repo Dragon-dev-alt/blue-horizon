@@ -224,56 +224,6 @@ function baseComputeWaterRoute(a,b){
   return null;
  }
 }
-/* Beim allerersten Laden werden häufige Hafenverbindungen im Hintergrund vorgewärmt.
-   See- und Binnenschiffe teilen sich je ein Routennetz; dadurch müssen nicht dieselben
-   Geometrien für jeden einzelnen Schiffstyp mehrfach berechnet werden. */
-let routeWarmupStarted=false;
-let routeWarmupFinished=false;
-function routeWarmupYield(){return new Promise(resolve=>setTimeout(resolve,0))}
-async function precomputeHarborRoutes(){
- if(routeWarmupStarted)return routeWarmupFinished;
- routeWarmupStarted=true;
- try{
-  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-  const seaPorts=PORTS.filter(p=>!p.river);
-  const riverPorts=PORTS.filter(p=>p.river);
-  const groups=[{ports:seaPorts,kind:'sea'},{ports:riverPorts,kind:'river'}];
-  const tasks=[];
-  for(const group of groups){
-   for(const origin of group.ports){
-    const valid=group.ports.filter(p=>p.id!==origin.id&&portCanServeShip(p,{type:group.kind==='river'?'river':'medium'}));
-    if(!valid.length)continue;
-    const distances=valid.map(p=>({p,d:haversine({lat:origin.lat,lon:origin.lon},{lat:p.lat,lon:p.lon})}));
-    distances.sort((a,b)=>a.d-b.d);
-    const picks=[distances[0]?.p,distances[Math.floor(distances.length*.55)]?.p,distances[distances.length-1]?.p]
-      .filter((p,i,arr)=>p&&arr.findIndex(x=>x?.id===p.id)===i).slice(0,2);
-    for(const destination of picks)tasks.push({origin,destination,kind:group.kind});
-   }
-  }
-  let done=0;
-  for(const task of tasks){
-   if(task.kind==='river'){
-    if(typeof routeForContract==='function')routeForContract({from:task.origin.id,to:task.destination.id},{type:'river'});
-   }else baseComputeWaterRoute(task.origin,task.destination);
-   done++;
-   if(done%2===0){
-    const progress=tasks.length?Math.round(68+done/tasks.length*18):86;
-    window.setLoadingScreen('Lädt … Hafenrouten werden vorbereitet ('+done+' / '+tasks.length+')',progress);
-    await routeWarmupYield();
-   }
-  }
-  routeWarmupFinished=true;
-  window.dispatchEvent(new Event('harbor-routes-precomputed'));
-  console.info('Hafenrouten vorgewärmt:',tasks.length,'Verbindungen.');
-  return true;
- }catch(error){
-  routeWarmupFinished=true;
-  console.warn('Routenvorbereitung unvollständig; fehlende Routen werden bei Bedarf berechnet.',error);
-  window.dispatchEvent(new Event('harbor-routes-precomputed'));
-  return false;
- }
-}
-
 /* Flotte, Aufträge und Fahrten */
 function selectedShip(){if(!game)return null;if(selectedShipId==null)return null;return game.ships.find(s=>String(s.id)===String(selectedShipId))||null}
 let selectedShipId='s1';
