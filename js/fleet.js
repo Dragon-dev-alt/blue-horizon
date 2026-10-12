@@ -235,6 +235,10 @@ async function computeEligibleContractsAsync(s,key){
   });
  const valid=[];
  const seen=new Set();
+ // Bei jedem neuen Schiff werden 1 bis 3 Aufträge vollständig vorbereitet,
+ // bevor die Lieferzeit abläuft. Falls weniger passende sichere Routen existieren,
+ // werden alle verfügbaren passenden Routen genutzt.
+ const targetCount=1+Math.floor(Math.random()*3);
  for(let i=0;i<candidates.length;i++){
   await yieldToBrowser();
   if(!eligibilityStateIsCurrent(s,key))return null;
@@ -256,8 +260,7 @@ async function computeEligibleContractsAsync(s,key){
   seen.add(routeKey);
   const contract=createContractFromRoute(s,connection,route,i);
   if(contract)valid.push(contract);
-  // Eine geprüfte Route reicht zunächst. Weitere Aufträge werden erst bei späterer Auswahl ergänzt.
-  if(valid.length>=1)break;
+  if(valid.length>=targetCount)break;
  }
  if(!eligibilityStateIsCurrent(s,key))return null;
  if(!Array.isArray(game.generatedContracts))game.generatedContracts=[];
