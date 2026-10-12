@@ -5,7 +5,21 @@ const SHIP_RANGE_BANDS={
  tanker:[8000,30000], bulk:[4000,20000], 'ro-ro':[2500,7000], river:[250,800]
 };
 function randomShipRange(typeId){const b=SHIP_RANGE_BANDS[typeId]||[500,shipType(typeId).range];return Math.round((b[0]+Math.random()*(b[1]-b[0]))/100)*100}
-function randomShipPort(typeId){let valid=PORTS.filter(p=>typeId==='river'?!!p.river:!p.river);if(!valid.length)valid=PORTS;return valid[Math.floor(Math.random()*valid.length)].id}
+function randomShipPortHasOption(candidate,typeId,range){
+ const options=harborConnectionsByOrigin.get(String(candidate.id))||[];
+ return !harborConnectionCatalog||options.some(connection=>
+  connection.shipTypes.includes(typeId)&&port(connection.to)&&connection.to!==candidate.id&&
+  (!Number.isFinite(Number(range))||Number(connection.directKm)<=Number(range)));
+}
+function randomShipPort(typeId,range){
+ const catalogReady=!!harborConnectionCatalog&&harborConnectionsByOrigin.size>0;
+ const valid=PORTS.filter(p=>{
+  if(typeId==='river'?!p.river:!!p.river)return false;
+  return !catalogReady||randomShipPortHasOption(p,typeId,range);
+ });
+ const pool=valid.length?valid:PORTS.filter(p=>typeId==='river'?!!p.river:!p.river);
+ return pool.length?pool[Math.floor(Math.random()*pool.length)].id:(PORTS[0]?.id||'ham');
+}
 function ensureShipStats(s){
  if(!s)return s;
  if(!s.range)s.range=randomShipRange(s.type);
@@ -19,7 +33,7 @@ function ensureShipStats(s){
  // Nur ruhende Schiffe verlegen; aktive Fahrten werden nie verschoben.
  const needsRiver=s.type==='river';
  if(!s.trip&&!s.inYard&&current&&Boolean(current.river)!==needsRiver){
-  const candidates=PORTS.filter(p=>Boolean(p.river)===needsRiver);
+  const candidates=PORTS.filter(p=>Boolean(p.river)===needsRiver&&randomShipPortHasOption(p,s.type,s.range));
   candidates.sort((a,b)=>haversine({lat:current.lat,lon:current.lon},{lat:a.lat,lon:a.lon})-haversine({lat:current.lat,lon:current.lon},{lat:b.lat,lon:b.lon}));
   const nearest=candidates[0];
   if(nearest){
@@ -155,7 +169,7 @@ function createContractFromRoute(s,connection,coords,index){
 async function computeEligibleContractsAsync(s,key){
  if(!game||!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)))return[];
  if(!window.waterRouteDataReady||typeof routeForContract!=='function')return[];
- const catalog=await loadHarborConnectionCatalog();
+ await loadHarborConnectionCatalog();
  if(!eligibilityStateIsCurrent(s,key))return null;
  const candidates=(harborConnectionsByOrigin.get(String(s.port))||[])
   .filter(connection=>connection.shipTypes.includes(s.type)&&port(connection.to))
