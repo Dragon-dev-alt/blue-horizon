@@ -152,6 +152,12 @@ async function startNewGameInChosenSlot(slot){
   window.setLoadingScreen('Lädt … Häfen und Spieloberfläche',68);
   await waitForPaint();
 
+  // Die Routenvorbereitung findet genau hier statt: Der bisherige Ladescreen
+  // bleibt zwischen Firmengründung und Spielansicht sichtbar.
+  if(routingReady&&typeof precomputeHarborRoutes==='function'){
+   await precomputeHarborRoutes();
+  }
+
   // Keep the loader visible long enough for the UI to settle. The base
   // duration scales with the amount of world data, so adding ports/features
   // later automatically gives startup more time without hard-coding every task.
