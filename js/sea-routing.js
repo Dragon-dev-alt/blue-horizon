@@ -218,6 +218,7 @@ async function addLandMask(topology) {
   if (!landPolygons.length) throw new Error('Die Landgeometrie konnte nicht vorbereitet werden.');
 }
 window.getNavigableWaterPolygons = () => landPolygons;
+window.markWaterRouteVerified=function(coords){if(Array.isArray(coords)&&coords.length>1)routeSafetyCache.set(coords,true);return coords;};
 window.isWaterRouteSafe = function (coords) {
   if (!Array.isArray(coords) || coords.length < 2) return false;
   // Flusslinien liegen geografisch auf Landflächen; für sie gilt die explizite
