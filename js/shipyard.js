@@ -72,14 +72,22 @@ function buyUsedShip(typeId,offerId){
  normalizeUsedStock();
  const t=shipType(typeId),offers=game.usedStock[typeId]||[],index=offers.findIndex(o=>o.offerId===offerId);
  if(index<0){toast('Dieses Angebot ist nicht mehr verfügbar. Bitte die Werft aktualisieren.');renderShipyard();return}
- const offer=offers[index],d=DIFFICULTIES[game.difficulty];
+ const offer=offers[index];
  if(game.cash<offer.price){toast('Nicht genug Kapital. Dieses Schiff kostet '+money(offer.price)+'.');return}
- game.cash-=offer.price;offers.splice(index,1);
- const id='s'+game.nextShipId++;
- const ship={id,name:offer.name,type:typeId,port:offer.port,trip:null,condition:offer.condition,range:offer.range,deliveryRemaining:0,acquisitionPrice:offer.price};
- game.ships.push(ship);selectedShipId=id;
- addLog('Gebrauchtes Schiff gekauft: '+ship.name+' · Zustand '+ship.condition+' % · Reichweite '+ship.range.toLocaleString('de-DE')+' km · Hafen '+port(ship.port).name+'.');
- saveGame();renderUI();renderShips(id);yardMode='used';openShipyard();toast('Schiff gekauft: '+ship.name);
+ runShipPurchaseWithLoading(()=>{
+  if(!game)return;
+  normalizeUsedStock();
+  const currentOffers=game.usedStock[typeId]||[],currentIndex=currentOffers.findIndex(o=>o.offerId===offerId);
+  if(currentIndex<0){toast('Dieses Angebot ist nicht mehr verfügbar. Bitte die Werft aktualisieren.');renderShipyard();return}
+  const currentOffer=currentOffers[currentIndex];
+  if(game.cash<currentOffer.price){toast('Nicht genug Kapital. Dieses Schiff kostet '+money(currentOffer.price)+'.');return}
+  currentOffers.splice(currentIndex,1);game.cash-=currentOffer.price;
+  const id='s'+game.nextShipId++;
+  const ship={id,name:currentOffer.name,type:typeId,port:currentOffer.port,trip:null,condition:currentOffer.condition,range:currentOffer.range,deliveryRemaining:0,acquisitionPrice:currentOffer.price};
+  game.ships.push(ship);selectedShipId=id;
+  addLog('Gebrauchtes Schiff gekauft: '+ship.name+' · Zustand '+ship.condition+' % · Reichweite '+ship.range.toLocaleString('de-DE')+' km · Hafen '+port(ship.port).name+'.');
+  saveGame();renderUI();renderShips(id);yardMode='used';openShipyard();toast('Schiff gekauft: '+ship.name);
+ });
 }
 function selectShip(id){selectShipSafely(id)}
 let queuedShipSelectionId=null,shipSelectionFramePending=false;
