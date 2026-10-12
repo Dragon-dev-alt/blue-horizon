@@ -555,7 +555,14 @@ function init(){initMap();seaRoutingAvailable=typeof window.searoute==='function
  const overlay=$('loadingScreen');
  if(overlay){window.setLoadingScreen('Seekarten und Hafenverbindungen werden geladen …',3);requestAnimationFrame(()=>requestAnimationFrame(()=>{}));}
  if(window.waterRouteDataReady)precomputeHarborRoutes();
- else window.addEventListener('water-route-data-ready',()=>{seaRoutingAvailable=typeof window.searoute==='function'&&typeof window.isWaterRouteSafe==='function'&&window.waterRouteDataReady===true;precomputeHarborRoutes()},{once:true});
+ else{
+  window.addEventListener('water-route-data-ready',()=>{seaRoutingAvailable=typeof window.searoute==='function'&&typeof window.isWaterRouteSafe==='function'&&window.waterRouteDataReady===true;precomputeHarborRoutes()},{once:true});
+  window.addEventListener('water-route-data-error',()=>{
+   const screen=$('loadingScreen');
+   if(screen){screen.classList.add('hidden');screen.style.display='none';screen.style.visibility='hidden';screen.setAttribute('aria-hidden','true');}
+   console.warn('Erste Routen-Vorbereitung übersprungen, da die Routing-Daten nicht geladen wurden.');
+  },{once:true});
+ }
 }
 window.addEventListener('water-route-data-ready',()=>{seaRoutingAvailable=typeof window.searoute==='function'&&typeof window.isWaterRouteSafe==='function'&&window.waterRouteDataReady===true;waterRouteCache.clear();if(game){revalidateExistingTripRoutes();renderUI();renderShips();showSelectedShipRoute(true);saveGame()}console.info('Wasserwege und Landprüfung sind bereit.');if(!game)toast('Wasserwege geladen – Routen werden auf Land geprüft.')});
 window.addEventListener('water-route-data-error',()=>{seaRoutingAvailable=false;console.error('Routen bleiben deaktiviert, bis die Landprüfung verfügbar ist.');toast('Wasserprüfung nicht geladen. Bitte Internetverbindung prüfen.')});
