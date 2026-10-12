@@ -14,7 +14,7 @@
  <div class="top-actions"><button type="button" onclick="openShipyard()">⚓ Werft</button><div class="playback-controls" role="group" aria-label="Simulationssteuerung"><button type="button" id="pauseBtn" onclick="setSpeed(0)" aria-pressed="false" title="Simulation pausieren"><span class="control-icon" aria-hidden="true">Ⅱ</span><span>Pause</span></button><button type="button" id="playBtn" class="active" onclick="setSpeed(1)" aria-pressed="true" title="Simulation mit normaler Geschwindigkeit"><span class="control-icon" aria-hidden="true">▶</span><span>Play</span></button><button type="button" id="fastBtn" onclick="setSpeed(1.5)" aria-pressed="false" title="Simulation 1,5-fach beschleunigen"><span class="control-icon" aria-hidden="true">⏩</span><span>1,5×</span></button></div><button type="button" onclick="openFleetWindow()">🚢 Flotte</button><button type="button" onclick="openMainMenu()">☰ Menü</button></div>
 </header>
 <main class="workspace"><div id="map" class="map"></div>
- <div class="map-tools"><div class="map-label"><strong>🌐 WELTWEITER BETRIEB</strong><small>Satellitenansicht · zoomen & Karte ziehen</small></div><button onclick="map.setView([22,8],2)">🌐 Welt</button><button onclick="map.setView([49,12],4)">🇪🇺 Europa</button><button onclick="togglePorts()">⚑ Häfen</button><button id="waterViewToggle" type="button" onclick="toggleNavigableWater()" aria-pressed="false">🟢 Schifffahrtsrouten</button></div>
+ <div class="map-tools"><div class="map-label"><strong>🌐 WELTWEITER BETRIEB</strong><small>Satellit oder Wasserkarte · zoomen & Karte ziehen</small></div><button onclick="map.setView([22,8],2)">🌐 Welt</button><button onclick="map.setView([49,12],4)">🇪🇺 Europa</button><button onclick="togglePorts()">⚑ Häfen</button><button id="waterViewToggle" type="button" onclick="toggleNavigableWater()" aria-pressed="false">🌊 Wasserkarte</button></div>
  <aside class="side">
   <section class="panel"><div class="panel-head">🚢 Deine Flotte <span id="fleetCount" class="muted"></span></div><div id="fleetList" class="fleet-list"></div></section>
   <section id="contractsPanel" class="panel" style="min-height:0;display:flex;flex-direction:column;flex:1"><div class="panel-head">🏢 Firmenaufträge <span class="muted" id="selectedShipLabel"></span></div><div class="panel-body" style="min-height:0;overflow:auto"><div id="ordersHelp" class="notice">Wähle ein Schiff und übernimm einen Auftrag eines Unternehmens. Nur passende Frachtarten werden angezeigt.</div><div id="ordersList" class="order-list"></div><div class="soon"><b>🚢 Passagierbeförderung — COMING SOON</b><br>Personenverkehr wird später ergänzt.</div></div></section>
@@ -54,7 +54,7 @@
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="./js/data.js?v=orders-price-balance-v06-20261012"></script>
-<script src="./js/core.js?v=shipping-lanes-overlay-v1-20261012"></script>
+<script src="./js/core.js?v=water-basemap-toggle-v2-20261012"></script>
 <script src="./js/waterways.js?v=water-only-long-routes-v10-20261012"></script>
 <script src="./js/loading-screen.js?v=loader-20261012"></script>
 <script src="./js/menus.js?v=fix-shownewgame-20261012b"></script>
