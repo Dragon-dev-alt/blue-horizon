@@ -81,6 +81,48 @@ function distanceKm(a, b) {
     Math.cos(rad(a[1])) * Math.cos(rad(b[1])) * Math.sin(dLon / 2) ** 2;
   return 6371 * 2 * Math.asin(Math.min(1, Math.sqrt(q)));
 }
+/* Persistente Geodatenablage: Die vollständige Landgeometrie wird nach dem
+   ersten Download im IndexedDB-Cache gespeichert. So muss die mehrere MB große
+   Datei nicht bei jedem neuen Spielstart erneut heruntergeladen werden. */
+const LAND_DATA_DB='blue-horizon-geodata-v1';
+const LAND_DATA_STORE='datasets';
+const LAND_DATA_KEY='natural-earth-land-10m-v1';
+function openGeoDataDB(){
+ return new Promise((resolve,reject)=>{
+  if(!('indexedDB' in window)){reject(new Error('IndexedDB ist nicht verfügbar.'));return;}
+  const request=indexedDB.open(LAND_DATA_DB,1);
+  request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains(LAND_DATA_STORE))db.createObjectStore(LAND_DATA_STORE,{keyPath:'id'});};
+  request.onsuccess=()=>resolve(request.result);
+  request.onerror=()=>reject(request.error||new Error('Geodaten-Datenbank konnte nicht geöffnet werden.'));
+ });
+}
+async function readStoredLandTopology(){
+ const db=await openGeoDataDB();
+ try{return await new Promise((resolve,reject)=>{const req=db.transaction(LAND_DATA_STORE,'readonly').objectStore(LAND_DATA_STORE).get(LAND_DATA_KEY);req.onsuccess=()=>resolve(req.result?.topology||null);req.onerror=()=>reject(req.error);});}
+ finally{db.close();}
+}
+async function storeLandTopology(topology){
+ const db=await openGeoDataDB();
+ try{await new Promise((resolve,reject)=>{const tx=db.transaction(LAND_DATA_STORE,'readwrite');tx.objectStore(LAND_DATA_STORE).put({id:LAND_DATA_KEY,source:'Natural Earth / world-atlas land-10m',version:1,savedAt:Date.now(),topology});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Geodaten konnten nicht gespeichert werden.'));});}
+ finally{db.close();}
+}
+async function loadLandTopology(){
+ try{
+  const stored=await readStoredLandTopology();
+  if(stored){console.info('Landgeometrie aus lokalem Geodaten-Cache geladen.');return stored;}
+ }catch(error){console.warn('Lokaler Geodaten-Cache nicht verfügbar; lade Landgeometrie neu.',error);}
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),20000);
+ let topology;
+ try{
+  const response=await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/land-10m.json',{cache:'force-cache',signal:controller.signal});
+  if(!response.ok)throw new Error('Landkarten-Daten konnten nicht geladen werden (HTTP '+response.status+').');
+  topology=await response.json();
+ }finally{clearTimeout(timeout);}
+ try{await storeLandTopology(topology);console.info('Landgeometrie dauerhaft im lokalen Geodaten-Cache gespeichert.');}
+ catch(error){console.warn('Landgeometrie geladen, aber lokales Speichern fehlgeschlagen.',error);}
+ return topology;
+}
 async function addLandMask(topology) {
   const land = feature(topology, topology.objects.land);
   const polygons = [];
@@ -237,19 +279,8 @@ window.isWaterRouteSafe = function (coords) {
       throw new Error('Die Routing-Bibliotheken wurden unvollständig geladen.');
     }
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-    let response;
-    try {
-      response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/land-10m.json', {
-        cache: 'force-cache',
-        signal: controller.signal
-      });
-    } finally {
-      clearTimeout(timeout);
-    }
-    if (!response.ok) throw new Error('Landkarten-Daten konnten nicht geladen werden (HTTP ' + response.status + ').');
-    await addLandMask(await response.json());
+    const landTopology = await loadLandTopology();
+    await addLandMask(landTopology);
     window.waterRouteDataLoading = false;
     window.waterRouteDataReady = true;
     window.dispatchEvent(new Event('water-route-data-ready'));
