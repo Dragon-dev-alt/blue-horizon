@@ -250,22 +250,40 @@ function buyShip(typeId){
 }
 function openShipyard(){if(!game)return;$('shipyard').classList.remove('hidden');renderShipyard()}
 let shipyardExitLoading=false;
-async function waitForPurchasedShipReady(timeoutMs=25000){
- const started=performance.now();
+async function waitForPurchasedShipReady(){
  const ship=typeof selectedShip==='function'?selectedShip():game?.ships?.find(s=>String(s.id)===String(selectedShipId));
  if(!ship)return;
- // Auftragssuche startet im Hintergrund und gibt dem Browser zwischen den
- // Routenprüfungen Zeit zum Zeichnen. Den Loader erst danach ausblenden.
+ const started=performance.now();
+ // Den Ladebildschirm erst verlassen, wenn die Auftragssuche für das gekaufte
+ // Schiff wirklich abgeschlossen ist. Ein Timeout hat zuvor die Suche bei
+ // langsamen Routenprüfungen abgebrochen und den Rest ins laufende Spiel verlagert.
  if(typeof eligibleContracts==='function')eligibleContracts(ship);
- while(performance.now()-started<timeoutMs){
+ let lastMessageAt=0;
+ while(true){
   const live=game?.ships?.find(s=>String(s.id)===String(ship.id));
   if(!live||live.trip||live.inYard)break;
   const key=typeof contractEligibilityKey==='function'?contractEligibilityKey(live):null;
-  const pending=key&&contractEligibilityPending instanceof Set&&contractEligibilityPending.has(key);
-  const cached=key&&contractEligibilityCache instanceof Map&&contractEligibilityCache.has(key);
-  if(cached||(!pending&&typeof eligibleContracts==='function'&&eligibleContracts(live).length))break;
-  if(!pending&&!cached)eligibleContracts(live);
-  await new Promise(resolve=>setTimeout(resolve,100));
+  const pending=!!(key&&contractEligibilityPending instanceof Set&&contractEligibilityPending.has(key));
+  const cached=!!(key&&contractEligibilityCache instanceof Map&&contractEligibilityCache.has(key));
+  if(cached&&!pending)break;
+  if(!pending&&!cached&&typeof eligibleContracts==='function')eligibleContracts(live);
+  const now=performance.now();
+  if(now-lastMessageAt>1200){
+   lastMessageAt=now;
+   if(typeof window.setLoadingScreen==='function'){
+    const elapsed=Math.round((now-started)/1000);
+    window.setLoadingScreen('Lädt … geprüfte Routen und passende Aufträge werden fertiggestellt ('+elapsed+' s)',82);
+   }
+  }
+  await new Promise(resolve=>setTimeout(resolve,80));
+ }
+ // UI und Routenanzeige noch unter dem Loader aktualisieren, damit dieser
+ // Render-Aufwand nicht erst beim ersten sichtbaren Frame nach dem Kauf anfällt.
+ if(game&&selectedShipId!=null){
+  renderUI();
+  renderShips(String(selectedShipId));
+  showSelectedShipRoute(false);
+  saveGame();
  }
  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
 }
