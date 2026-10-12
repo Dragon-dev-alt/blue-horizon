@@ -12,34 +12,15 @@ function addLog(msg){game.log.unshift('Tag '+game.day+' · '+msg);game.log=game.
 function haversine(a,b){const r=6371,rad=x=>x*Math.PI/180,d1=rad(b.lat-a.lat),d2=rad(b.lon-a.lon),q=Math.sin(d1/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(d2/2)**2;return 2*r*Math.asin(Math.sqrt(q))*0.539957}
 /* Karte und Häfen */
 function bindShipDocumentFallback(){if(window.__blueHorizonShipFallbackBound)return;window.__blueHorizonShipFallbackBound=true;document.addEventListener('click',ev=>{const target=ev.target&&typeof ev.target.closest==='function'?ev.target.closest('.ship-icon[data-ship-id]'):null;if(target&&target.dataset.shipId)queueShipSelection(target.dataset.shipId)},true)}
-/* Basiskarten: Satellitenbild und thematische Wasserkarte.
-   Die Wasserkarte nutzt gerenderte Gewässerflächen und Flusslinien statt einer
-   selbst konstruierten Weltmaske. Dadurch werden Küsten, Seen und Flüsse nicht
-   anhand ungenauer Umrisse über Land gemalt. */
-let navigableWaterVisible=false;
-let satelliteBaseLayer=null,waterBaseLayer=null;
+/* Die Karte bleibt reine Spieloberfläche. Die Gewässer- und Landdaten werden
+   ausschließlich vom Routensystem verwendet und nicht grafisch überlagert. */
 function toggleNavigableWater(){
- navigableWaterVisible=!navigableWaterVisible;
- const toggle=$('waterViewToggle');
- if(toggle){
-  toggle.setAttribute('aria-pressed',String(navigableWaterVisible));
-  toggle.textContent=navigableWaterVisible?'🛰️ Satellitenansicht':'🌊 Wasserkarte';
- }
- if(!map)return;
- if(navigableWaterVisible){
-  if(satelliteBaseLayer&&map.hasLayer(satelliteBaseLayer))map.removeLayer(satelliteBaseLayer);
-  if(waterBaseLayer&&!map.hasLayer(waterBaseLayer))waterBaseLayer.addTo(map);
-  toast('Wasserkarte aktiviert: Meere, Küstengewässer und größere Flüsse sind blau dargestellt.');
- }else{
-  if(waterBaseLayer&&map.hasLayer(waterBaseLayer))map.removeLayer(waterBaseLayer);
-  if(satelliteBaseLayer&&!map.hasLayer(satelliteBaseLayer))satelliteBaseLayer.addTo(map);
- }
+ // Kompatibilitäts-Stub für ältere gespeicherte UI-Aufrufe.
+ return false;
 }
 function initMap(){
  map=L.map('map',{zoomControl:true,worldCopyJump:true}).setView([22,8],2);
- satelliteBaseLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,attribution:'Tiles © Esri'});
- waterBaseLayer=L.tileLayer('https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:19,attribution:'© OpenStreetMap-Mitwirkende · © CARTO'});
- satelliteBaseLayer.addTo(map);
+ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,attribution:'Tiles © Esri'}).addTo(map);
  PORTS.forEach(p=>{const marker=L.circleMarker([p.lat,p.lon],{radius:6,color:'#fff0b8',weight:2,fillColor:'#f5bd59',fillOpacity:.95,interactive:true,keyboard:true}).bindTooltip(p.name+' · '+p.country+' · Klicken für Hafeninfos',{direction:'top'});marker.on('click',()=>showPortInfo(p.id,marker));marker.addTo(map);portMarkers.push(marker)});
  map.on('zoomend',()=>{renderShips();renderPorts()});
  map.on('click',ev=>{if(ev.originalEvent&&ev.originalEvent.defaultPrevented)return;selectedShipId=null;previewedRouteShipId=null;previewedRouteContractId=null;renderUI();renderShips();showSelectedShipRoute(false)});
