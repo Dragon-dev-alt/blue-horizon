@@ -198,7 +198,7 @@ function baseComputeWaterRoute(a,b){
 function selectedShip(){return game.ships.find(s=>s.id===selectedShipId)||game.ships[0]}
 let selectedShipId='s1';
 
-function buyShip(typeId){const t=shipType(typeId),d=DIFFICULTIES[game.difficulty];if(!t)return;if(game.cash<t.price*d.cost){toast('Nicht genug Geld für dieses Schiff.');return}game.cash-=Math.round(t.price*d.cost);const id='s'+game.nextShipId++;const home=port(randomShipPort(typeId));game.ships.push({id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null,condition:100,range:randomShipRange(typeId)});selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'.');saveGame();renderUI();renderShips(id);showSelectedShipRoute(true);openShipyard();toast('Neues Schiff gekauft: '+t.name+'.')}
+function buyShip(typeId){const t=shipType(typeId),d=DIFFICULTIES[game.difficulty];if(!t)return;if(game.cash<t.price*d.cost){toast('Nicht genug Geld für dieses Schiff.');return}game.cash-=Math.round(t.price*d.cost);const id='s'+game.nextShipId++;const home=port(randomShipPort(typeId));game.ships.push({id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null,condition:100,range:randomShipRange(typeId)});selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'.');saveGame();renderUI();renderShips(id);openShipyard();toast('Neues Schiff gekauft: '+t.name+'.')}
 function openShipyard(){if(!game)return;$('shipyard').classList.remove('hidden');renderShipyard()}
 function closeShipyard(){$('shipyard').classList.add('hidden')}
 
@@ -214,7 +214,6 @@ function baseRenderUI(){
  $('repStat').textContent='★ '+game.rep;
  $('dateLabel').textContent='Jahr '+(Math.floor((game.day-1)/360)+1)+' · Tag '+game.day;
  $('logLines').innerHTML=game.log.slice(0,6).map(x=>'<div>'+escapeHtml(x)+'</div>').join('');
- $('fleetList').innerHTML=game.ships.map(s=>'<div class="ship-row '+(s.id===selectedShipId?'selected':'')+'" onclick="selectShip(\''+s.id+'\')"><span class="ship-dot" style="background:'+shipType(s.type).color+'"></span><div><b>'+escapeHtml(s.name)+'</b><small>'+shipType(s.type).className+' · '+(s.trip?'Unterwegs nach '+port(s.trip.to).name:'Im Hafen: '+port(s.port).name)+'</small></div></div>').join('');
  const s=selectedShip();
  $('selectedShipLabel').textContent=s?s.name:'';
  const orders=eligibleContracts(s);
@@ -380,9 +379,10 @@ function frame(now){
    simulationProgress-=1;
    nextDay();
   }
-  // Limit Leaflet marker repositioning and DOM rotation to 30 FPS. Simulation
-  // time itself still uses every animation frame, so the game clock stays smooth.
-  if(now-lastShipFrame>=1000/30){
+  // Limit costly Leaflet marker repositioning and DOM rotation to 15 FPS.
+  // The simulation clock still uses every animation frame, while fewer marker
+  // updates leave more main-thread time for purchases and other interactions.
+  if(now-lastShipFrame>=1000/15){
    lastShipFrame=now;
    game.ships.forEach(s=>{
     if(!s.trip)return;
