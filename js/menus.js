@@ -1,6 +1,20 @@
 'use strict';
 /* Startvorgang: Formular, Spielzustand und UI sicher initialisieren.
    Wichtig: Dieser Code muss innerhalb des Script-Blocks bleiben. */
+let confirmedOverwriteSlot=null;
+function handleSaveSlotChange(select){
+ const slot=select?.value;
+ if(slot==null||slot===''){confirmedOverwriteSlot=null;return;}
+ if(slotExists(Number(slot))){
+  if(window.confirm('Dieser Speicherplatz ist bereits belegt. Möchtest du den vorhandenen Spielstand wirklich überschreiben? Der alte Spielstand geht dabei verloren.')){
+   confirmedOverwriteSlot=Number(slot);
+  }else{
+   confirmedOverwriteSlot=null;
+   const freeOption=Array.from(select.options).find(option=>option.value!==''&&!slotExists(Number(option.value)));
+   select.value=freeOption?freeOption.value:'';
+  }
+ }else confirmedOverwriteSlot=null;
+}
 function showNewGame(){
  hideSetups();
  $('menuActions').classList.add('hidden');
@@ -82,13 +96,14 @@ function animateLoadingProgress(from,to,duration,message){
  });
 }
 
-async async function startNewGame(){
+async function startNewGame(){
  if(newGameStartupInProgress)return;
  const name=($('companyInput')?.value||'').trim()||'Blue Horizon Shipping';
  const hq=$('hqPort')?.value||'ham';
  const chosenSlot=$('saveSlotChoice')?.value;
  if(chosenSlot==null||chosenSlot===''||!Number.isInteger(Number(chosenSlot))||Number(chosenSlot)<0||Number(chosenSlot)>4){toast('Bitte wähle einen freien Speicherplatz aus.');return;}
- if(slotExists(Number(chosenSlot))){toast('Dieser Speicherplatz ist belegt. Bitte lösche den Spielstand zuerst oder wähle einen freien Slot.');return;}
+ if(slotExists(Number(chosenSlot))&&confirmedOverwriteSlot!==Number(chosenSlot)){toast('Bitte bestätige zuerst, dass du diesen Spielstand überschreiben möchtest.');return;}
+ confirmedOverwriteSlot=null;
  if(!port(hq)){toast('Der gewählte Hauptsitzhafen ist nicht verfügbar.');return;}
  newGameStartupInProgress=true;
  const startupStartedAt=performance.now();
