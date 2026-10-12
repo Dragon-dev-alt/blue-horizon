@@ -165,6 +165,7 @@ async function addLandMask(topology) {
   }
   if (!landPolygons.length) throw new Error('Die Landgeometrie konnte nicht vorbereitet werden.');
 }
+window.getNavigableWaterPolygons = () => landPolygons;
 window.isWaterRouteSafe = function (coords) {
   if (!window.waterRouteDataReady || !Array.isArray(coords) || coords.length < 2) return false;
   const cached = routeSafetyCache.get(coords);
