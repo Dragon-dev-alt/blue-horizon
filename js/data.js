@@ -84,17 +84,4 @@ const SHIP_TYPES=[
 {id:'ro-ro',name:'Ro-Ro-Frachter',className:'Spezialschiff',price:95000000,priceMin:60000000,priceMax:130000000,speed:18,capacity:660,upkeep:1500000,color:'#f18bc8',allowed:['cars'],range:7000,desc:'Für Fahrzeuge und rollende Ladung.'},
 {id:'river',name:'Binnenschiff',className:'Binnenschiff',price:8000000,priceMin:4000000,priceMax:12000000,speed:9,capacity:260,upkeep:110000,color:'#85c98d',allowed:['bulk','containers'],range:800,desc:'Binnenschifffahrt ist vorbereitet; echte Flussrouten kommen später.'}
 ];
-const CONTRACTS=[
-{id:'c1',company:'Nordlicht Elektronik',from:'ham',to:'nyc',cargo:'electronics',bonus:850000,type:'normal',deadline:28,desc:'Hochwertige Elektronik muss sicher über den Atlantik.'},
-{id:'c2',company:'EuroFresh Foods',from:'rot',to:'sin',cargo:'food',bonus:1100000,type:'urgent',deadline:32,desc:'Zeitkritische Kühlware mit lückenloser Kühlkette.'},
-{id:'c3',company:'AutoWerk Europe',from:'ant',to:'mia',cargo:'cars',bonus:720000,type:'normal',deadline:30,desc:'Fahrzeuge für einen wichtigen Händlertermin.'},
-{id:'c4',company:'AgriGlobal',from:'hou',to:'rot',cargo:'bulk',bonus:640000,type:'large',deadline:25,desc:'Schüttgut in großer Menge.'},
-{id:'c5',company:'PetroWorld',from:'dub',to:'mum',cargo:'oil',bonus:680000,type:'normal',deadline:14,desc:'Flüssigladung für eine Raffinerie.'},
-{id:'c6',company:'ExpressLink',from:'sin',to:'sha',cargo:'urgent',bonus:520000,type:'urgent',deadline:10,desc:'Expresssendung mit engem Zeitfenster.'},
-{id:'c7',company:'Baltic Trade',from:'osl',to:'ham',cargo:'containers',bonus:280000,type:'normal',deadline:12,desc:'Containerladung für einen regionalen Partner.'},
-{id:'c8',company:'Pacific Components',from:'tyo',to:'van',cargo:'electronics',bonus:1200000,type:'large',deadline:34,desc:'Elektronikkomponenten für die nordamerikanische Produktion.'},
-{id:'c9',company:'South Atlantic Cargo',from:'lis',to:'sao',cargo:'containers',bonus:760000,type:'large',deadline:27,desc:'Containertransport zwischen Europa und Brasilien.'},
-{id:'c10',company:'Mediterranean Grain',from:'mar',to:'ist',cargo:'bulk',bonus:410000,type:'normal',deadline:16,desc:'Getreidelieferung für einen regionalen Abnehmer.'},
-{id:'c11',company:'Ocean Auto Logistics',from:'sha',to:'syd',cargo:'cars',bonus:930000,type:'large',deadline:30,desc:'Fahrzeugtransport über den westlichen Pazifik.'},
-{id:'c12',company:'Arctic Electronics',from:'nyc',to:'ham',cargo:'urgent',bonus:900000,type:'urgent',deadline:20,desc:'Dringende Ersatzteile für einen europäischen Kunden.'}
-];
+
