@@ -79,9 +79,6 @@
 window.openContractsWindow = function () { document.getElementById("contractsOverlay")?.classList.remove("hidden"); };
 window.closeContractsWindow = function () { document.getElementById("contractsOverlay")?.classList.add("hidden"); };
 document.addEventListener("keydown", event => { if (event.key === "Escape") window.closeContractsWindow(); });
-window.openContractsWindow = function () { document.getElementById("contractsOverlay")?.classList.remove("hidden"); };
-window.closeContractsWindow = function () { document.getElementById("contractsOverlay")?.classList.add("hidden"); };
-document.addEventListener("keydown", event => { if (event.key === "Escape") window.closeContractsWindow(); });
 (() => {
   const button = document.getElementById("refreshUpdateButton");
   const stylesheet = document.querySelector('link[rel="stylesheet"][href*="styles.css"]');
