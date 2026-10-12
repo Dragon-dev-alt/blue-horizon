@@ -98,3 +98,12 @@
 #refreshUpdateButton:hover{background:#0b9da5;transform:translateY(-1px)}
 #refreshUpdateButton.update-ready{display:block}
 @media(max-width:600px){#refreshUpdateButton{right:12px;bottom:12px;padding:10px 13px;font-size:12px}}
+
+/* Centered title and redesigned anchor emblem for the main menu */
+#mainMenu .menu-brand-centered{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;margin:0 auto 28px;width:100%}
+#mainMenu .menu-brand-centered .logo-emblem{width:76px;height:76px;border-radius:22px;display:grid;place-items:center;color:#d8fffb;background:linear-gradient(145deg,#42e4d0 0%,#139bad 52%,#12617d 100%);border:1px solid rgba(183,255,248,.72);box-shadow:0 10px 30px rgba(0,205,202,.22),inset 0 1px 0 rgba(255,255,255,.5)}
+#mainMenu .menu-brand-centered .logo-emblem svg{width:58px;height:58px;filter:drop-shadow(0 2px 3px rgba(0,30,45,.3))}
+#mainMenu .menu-brand-centered .menu-brand-copy{width:100%}
+#mainMenu .menu-brand-centered h1{font-size:clamp(24px,4vw,31px);font-weight:850;letter-spacing:clamp(2px,.55vw,4px);line-height:1.15;text-shadow:0 3px 18px rgba(0,0,0,.35)}
+#mainMenu .menu-brand-centered p{margin:8px 0 0;font-size:10px;letter-spacing:clamp(2px,.6vw,3.5px);color:#b7d6e5}
+@media(max-width:480px){#mainMenu .menu-brand-centered .logo-emblem{width:66px;height:66px;border-radius:19px}#mainMenu .menu-brand-centered .logo-emblem svg{width:50px;height:50px}#mainMenu .menu-brand-centered{margin-bottom:22px}}
