@@ -13,26 +13,71 @@ let RIVER_LINKS=[
  ['fra','par'],['par','rou'],['vie','reg'],['reg','nue'],['vie','bra'],['bra','bud'],['bud','bel'],['bel','nov'],['nov','gal'],['gal','tul'],
  ['mem','dyb'],['dyb','pad'],['pad','cgr'],['cgr','stl'],['wuh','yue'],['yue','chq'],['chq','ful']
 ];
-/* Die versionierte Datei im Repository ist die Quelle für das Binnenroutennetz.
-   Der eingebaute Satz bleibt als sofort verfügbarer Fallback bestehen. */
-window.inlandWaterwayDataReady = false;
-window.inlandWaterwayDataLoading = true;
-fetch('./data/inland-waterways.json?v=inland-network-v1-20261012',{cache:'force-cache'})
+let INLAND_CORRIDORS=[];
+window.inlandWaterwayDataReady=false;
+window.inlandWaterwayDataLoading=true;
+function nearestCorridorIndex(coords,point){
+ let best=Infinity,index=0;
+ coords.forEach((p,i)=>{const dy=(p[1]-point.lat)*111.32,dx=(p[0]-point.lon)*111.32*Math.cos(point.lat*Math.PI/180),d=dx*dx+dy*dy;if(d<best){best=d;index=i}});
+ return {index,distanceKm:Math.sqrt(best)};
+}
+function corridorPathForPorts(a,b){
+ if(!a||!b)return null;
+ let best=null;
+ for(const corridor of INLAND_CORRIDORS){
+  if(!corridor.ports.includes(a.id)||!corridor.ports.includes(b.id))continue;
+  const ia=nearestCorridorIndex(corridor.coordinates,a),ib=nearestCorridorIndex(corridor.coordinates,b);
+  if(ia.distanceKm>45||ib.distanceKm>45)continue;
+  const lo=Math.min(ia.index,ib.index),hi=Math.max(ia.index,ib.index);
+  let points=corridor.coordinates.slice(lo,hi+1);
+  if(ia.index>ib.index)points=points.reverse();
+  points=[[a.lon,a.lat],...points,[b.lon,b.lat]];
+  if(!best||points.length<best.length)best=points;
+ }
+ return best;
+}
+function pointSegmentDistanceKm(point,a,b){
+ const lat0=point[1]*Math.PI/180,scaleX=111.32*Math.cos(lat0),scaleY=111.32;
+ const px=point[0]*scaleX,py=point[1]*scaleY,ax=a[0]*scaleX,ay=a[1]*scaleY,bx=b[0]*scaleX,by=b[1]*scaleY;
+ const dx=bx-ax,dy=by-ay,den=dx*dx+dy*dy;
+ const t=den?Math.max(0,Math.min(1,((px-ax)*dx+(py-ay)*dy)/den)):0;
+ return Math.hypot(px-(ax+t*dx),py-(ay+t*dy));
+}
+window.isInlandWaterRoute=function(route){
+ if(!Array.isArray(route)||route.length<2||!INLAND_CORRIDORS.length)return false;
+ return INLAND_CORRIDORS.some(corridor=>{
+  if(!Array.isArray(corridor.coordinates)||corridor.coordinates.length<2)return false;
+  return route.every(point=>{
+   let nearest=Infinity;
+   for(let i=1;i<corridor.coordinates.length;i++)nearest=Math.min(nearest,pointSegmentDistanceKm(point,corridor.coordinates[i-1],corridor.coordinates[i]));
+   return nearest<=35;
+  });
+ });
+};
+fetch('./data/inland-waterways.json?v=inland-corridors-v2-20261012',{cache:'force-cache'})
  .then(response=>{if(!response.ok)throw new Error('HTTP '+response.status);return response.json()})
  .then(data=>{
-  if(data&&data.schemaVersion===1&&Array.isArray(data.links)&&data.links.length){
-   RIVER_LINKS=data.links.filter(edge=>Array.isArray(edge)&&edge.length===2&&edge.every(id=>typeof id==='string'));
-   window.inlandWaterwayDataReady=true;
-   window.dispatchEvent(new Event('inland-waterway-data-ready'));
-   console.info('Binnenwasserstraßennetz aus Repository geladen:',RIVER_LINKS.length,'Verbindungen.');
-  }else throw new Error('Ungültiges Binnenwasserstraßennetz.');
+  if(!data||!Array.isArray(data.links)||!Array.isArray(data.corridors))throw new Error('Binnenwasserstraßendaten ohne Korridorgeometrien.');
+  RIVER_LINKS=data.links.filter(edge=>Array.isArray(edge)&&edge.length===2);
+  INLAND_CORRIDORS=data.corridors.filter(x=>Array.isArray(x.coordinates)&&x.coordinates.length>=2&&Array.isArray(x.ports));
+  window.inlandWaterwayDataReady=INLAND_CORRIDORS.length>0;
+  window.dispatchEvent(new Event('inland-waterway-data-ready'));
+  console.info('Binnenkorridore geladen:',INLAND_CORRIDORS.map(x=>x.name).join(', '));
  })
- .catch(error=>console.warn('Repository-Datensatz für Binnenwasserstraßen nicht geladen; eingebauter Fallback bleibt aktiv.',error))
+ .catch(error=>console.warn('Binnenkorridore nicht geladen; Hafenverbindungen bleiben als Fallback verfügbar.',error))
  .finally(()=>{window.inlandWaterwayDataLoading=false;});
-function riverRoute(from,to){const adj={};RIVER_LINKS.forEach(([a,b])=>{(adj[a]||(adj[a]=[])).push(b);(adj[b]||(adj[b]=[])).push(a)});const q=[[from]],seen=new Set([from]);let found=null;while(q.length){const path=q.shift(),last=path[path.length-1];if(last===to){found=path;break}(adj[last]||[]).forEach(n=>{if(!seen.has(n)){seen.add(n);q.push(path.concat(n))}})}if(!found)return null;const coords=found.map(id=>{const p=port(id);return p?[p.lon,p.lat]:null});if(coords.some(p=>!p))return null;
- // Glätten nur dann übernehmen, wenn die geglättete Route die Landprüfung besteht.
- if(coords.length>=3&&typeof smoothWaterRoute==='function')return smoothWaterRoute(coords);
- return coords}
+function riverRoute(from,to){
+ const a=port(from),b=port(to);
+ const corridorPath=corridorPathForPorts(a,b);
+ if(corridorPath&&corridorPath.length>1)return corridorPath;
+ const adj={};RIVER_LINKS.forEach(([x,y])=>{(adj[x]||(adj[x]=[])).push(y);(adj[y]||(adj[y]=[])).push(x)});
+ const q=[[from]],seen=new Set([from]);let found=null;
+ while(q.length){const path=q.shift(),last=path[path.length-1];if(last===to){found=path;break}(adj[last]||[]).forEach(n=>{if(!seen.has(n)){seen.add(n);q.push(path.concat(n))}})}
+ if(!found)return null;
+ const coords=found.map(id=>{const p=port(id);return p?[p.lon,p.lat]:null});
+ if(coords.some(p=>!p))return null;
+ return coords.length>=3&&typeof smoothWaterRoute==='function'?smoothWaterRoute(coords):coords;
+}
 function resolveWaterRoute(a,b){if(!a||!b)return null;if(a.river&&b.river){const r=riverRoute(a.id,b.id);if(r&&r.length>1)return r}return baseComputeWaterRoute(a,b)}
 
 /* Korrekturen für V1-Aufträge und Hafenklassen */
