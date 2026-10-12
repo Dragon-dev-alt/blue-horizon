@@ -29,3 +29,16 @@ Für ein präziseres Spiel-Routennetz sollte später ein dedizierter Gewässerda
 `js/sea-routing.js` speichert die geladene Natural-Earth-Landgeometrie jetzt nach dem ersten Abruf in IndexedDB (`blue-horizon-geodata-v1`, Datensatz `natural-earth-land-10m-v1`). Die Routenprüfung verwendet weiterhin diese Geometrie, um Landquerungen zu erkennen. Nach dem ersten erfolgreichen Download bleibt die Geometrie über normale Neuladungen und Spielstarts im selben Browserprofil verfügbar; das ist ein lokaler Cache, keine im GitHub-Repository eingecheckte Geodatei. Beim ersten Start oder nach dem Löschen der Browserdaten ist eine Internetverbindung erforderlich.
 
 **Wichtig: Das ist nur die Land-/Meer-Grundlage, noch kein vollständiges weltweites Gewässernetz.** Seen und Flüsse werden durch eine reine Landmaske nicht vollständig als schiffbares Wasser modelliert. Binnenschifffahrtsrouten verwenden weiterhin das explizite `RIVER_LINKS`-Netz in `js/waterways.js`. Für die nächste Stufe soll ein versionierter, lokal im Repository gespeicherter Gewässerdatensatz mit großen Flüssen und Wasserstraßen ergänzt werden; dabei müssen reine Flusslinien von tatsächlich schiffbaren Strecken unterschieden werden.
+
+
+## Routendaten ohne grafische Gewässerüberlagerung (12.10.2026)
+
+Die temporäre Wasserkarte-Schaltfläche und der Basiskartenwechsel wurden wieder aus der Oberfläche entfernt. Die Karte bleibt eine Satellitenkarte; Routendaten sind unsichtbare Logik und werden nicht als farbige Wasserflächen gerendert.
+
+`js/sea-routing.js` speichert nun beide großen Eingabedatensätze im IndexedDB-Speicher `blue-horizon-geodata-v1`:
+- `natural-earth-land-10m-v1`: Landgeometrie zur Prüfung, ob Routenabschnitte Land schneiden.
+- `searoute-marnet-20km-v1`: maritimes 20-km-Routennetz für die Routenberechnung.
+
+Nach einem ersten erfolgreichen Laden können beide Datensätze bei weiteren Starts desselben Browserprofils wiederverwendet werden. Beim ersten Start oder nach dem Löschen der Browserdaten müssen die Quelldaten noch aus dem Internet geladen werden. Diese Speicherung ist browserlokal und keine eingecheckte Datendatei im GitHub-Repository.
+
+**Noch offen:** Das weltweite Binnenwasserstraßennetz ist weiterhin nur durch die bestehenden Verbindungen in `js/waterways.js` repräsentiert. Das ist keine vollständige Datenbank aller großen Flüsse und keine Aussage zur tatsächlichen Schiffbarkeit jedes Flussabschnitts. Eine belastbare nächste Ausbaustufe braucht einen versionierten Gewässerdatensatz mit expliziten Flussgeometrien und Schiffbarkeitsklassen. Die Landmaske darf nicht als Wasserstraßen-Netz missverstanden werden.
