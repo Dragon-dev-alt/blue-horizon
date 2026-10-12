@@ -85,12 +85,12 @@
 
 /* Main-menu art: Blue Hour. Keep the loader artwork independent. */
 #mainMenu.overlay{background-color:#061827;background-image:linear-gradient(90deg,rgba(5,20,34,.48),rgba(5,20,34,.18) 58%,rgba(5,20,34,.30)),linear-gradient(0deg,rgba(5,20,34,.30),rgba(5,20,34,.08)),url("./assets/men%C3%BC-hintergrund.jpg?v=menu-bg-custom-20261012");background-position:center;background-size:cover;background-repeat:no-repeat;backdrop-filter:none}
-#mainMenu .menu-card{background:rgba(25,48,66,.35);border-color:rgba(170,210,230,.38);box-shadow:0 22px 70px rgba(0,8,18,.38),inset 0 1px 0 rgba(255,255,255,.08);backdrop-filter:blur(8px)}
+#mainMenu .menu-card{background:rgba(25,48,66,.18);border-color:rgba(170,210,230,.28);box-shadow:0 22px 70px rgba(0,8,18,.25),inset 0 1px 0 rgba(255,255,255,.04);backdrop-filter:blur(4px)}
 #mainMenu .menu-card h2{color:#f4faff}#mainMenu .menu-card>p{color:#d0e1ec}
 #mainMenu .menu-actions>button,#mainMenu .setup button{background:rgba(69,105,128,.72);border-color:rgba(188,219,238,.38);color:#f6fbff}
 #mainMenu .menu-actions>button:hover,#mainMenu .setup button:hover{background:rgba(91,139,164,.86);border-color:#a5e8f5}
 #mainMenu .menu-actions>button.primary,#mainMenu .setup button.primary{background:rgba(12,139,151,.94);border-color:#70e8e5}
-#mainMenu .setup{background:rgba(30,55,74,.78);border-color:rgba(180,214,233,.35)}
+#mainMenu .setup{background:transparent!important;border:0!important;border-top:0!important;box-shadow:none!important;padding-top:0!important}
 #mainMenu .setup label{color:#e4f1f8}#mainMenu .setup input,#mainMenu .setup select{background:rgba(8,26,41,.85);border-color:rgba(172,207,226,.42);color:#f4faff}
 
 /* Hinweis auf eine neu veröffentlichte GitHub-Pages-Version */
