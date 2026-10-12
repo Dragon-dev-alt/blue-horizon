@@ -230,7 +230,8 @@ function acceptOrder(contractId){
  }
  const t=cargo(c.cargo),st=shipType(s.type),diff=DIFFICULTIES[game.difficulty],units=Math.floor(st.capacity*t.capacity);
  const contractScale=c.type==='large'?1.3:1;
- const distanceFactor=Math.max(0.5,distance/1000);\n let revenue=Math.round((units*t.fee*distanceFactor*((a.demand+b.demand)/2)*diff.revenue+c.bonus*diff.revenue)*contractScale);
+ const distanceFactor=Math.max(0.5,distance/1000);
+ let revenue=Math.round((units*t.fee*distanceFactor*((a.demand+b.demand)/2)*diff.revenue+c.bonus*diff.revenue)*contractScale);
  const hq=game.hq||'ham',hqBonus=(c.from===hq||c.to===hq)?0.10:0;
  revenue=Math.round(revenue*(1+hqBonus));
  const days=Math.max(1,Math.ceil(distance/(st.speed*24*t.speed)+t.handling+1));
