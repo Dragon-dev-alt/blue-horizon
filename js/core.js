@@ -379,10 +379,9 @@ function frame(now){
    simulationProgress-=1;
    nextDay();
   }
-  // Limit costly Leaflet marker repositioning and DOM rotation to 15 FPS.
-  // The simulation clock still uses every animation frame, while fewer marker
-  // updates leave more main-thread time for purchases and other interactions.
-  if(now-lastShipFrame>=1000/15){
+  // Keep ship markers smooth at up to 60 FPS; skip redundant work only
+  // when the browser itself is already running below that rate.
+  if(now-lastShipFrame>=1000/60){
    lastShipFrame=now;
    game.ships.forEach(s=>{
     if(!s.trip)return;
