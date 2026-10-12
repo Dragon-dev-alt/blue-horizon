@@ -207,7 +207,7 @@ function scheduleContractEligibility(s,key){
  })();
 }
 const CONTRACT_REVENUE_MULTIPLIER=4;
-function contractBonus(c,s){const st=s&&shipType(s.type);const reference=shipType('coastal');const priceFactor=st&&reference?Math.sqrt(st.price/reference.price):1;return Math.round((Number(c?.bonus)||0)*priceFactor*4)}
+function contractBonus(c,s){return Math.round((Number(c?.bonus)||0)*4)}
 function eligibleContracts(s){
  if(!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)))return[];
  ensureShipStats(s);
