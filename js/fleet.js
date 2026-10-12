@@ -105,8 +105,42 @@ function cacheContractEligibility(key,result){
 function isContractEligibilityPending(s){return !!s&&contractEligibilityPending.has(contractEligibilityKey(s))}
 // Alle Schiffe teilen sich eine langsame Auftragswarteschlange. So laufen nicht
 // mehrere teure Routenprüfungen gleichzeitig, wenn mehrere Schiffe geliefert werden.
-const CONTRACT_ROUTE_STEP_DELAY=1400;
+const CONTRACT_ROUTE_STEP_DELAY=120;
 const contractGenerationQueue=[];
+let routeCalculationWorker=null;
+let routeCalculationWorkerId=0;
+const routeCalculationRequests=new Map();
+function getRouteCalculationWorker(){
+ if(routeCalculationWorker)return routeCalculationWorker;
+ if(typeof Worker!=='function')return null;
+ try{
+  routeCalculationWorker=new Worker('./js/route-worker.js?v=background-routing-v1-20261012',{type:'module'});
+  routeCalculationWorker.onmessage=event=>{
+   const message=event.data||{},pending=routeCalculationRequests.get(message.id);
+   if(!pending)return;
+   routeCalculationRequests.delete(message.id);
+   if(message.error)pending.reject(new Error(message.error));else pending.resolve(message.coords||null);
+  };
+  routeCalculationWorker.onerror=event=>{
+   const error=new Error(event.message||'Routen-Worker fehlgeschlagen.');
+   routeCalculationRequests.forEach(p=>p.reject(error));routeCalculationRequests.clear();
+   routeCalculationWorker.terminate();routeCalculationWorker=null;
+  };
+  return routeCalculationWorker;
+ }catch(error){console.warn('Hintergrund-Routenworker nicht verfügbar:',error);routeCalculationWorker=null;return null}
+}
+function calculateSeaRouteInBackground(connection){
+ const worker=getRouteCalculationWorker();
+ if(!worker)return Promise.resolve(null);
+ const a=port(connection.from),b=port(connection.to);
+ if(!a||!b)return Promise.resolve(null);
+ const id=++routeCalculationWorkerId;
+ return new Promise((resolve,reject)=>{
+  routeCalculationRequests.set(id,{resolve,reject});
+  try{worker.postMessage({id,from:[a.lon,a.lat],to:[b.lon,b.lat]})}
+  catch(error){routeCalculationRequests.delete(id);reject(error)}
+ });
+}
 let contractGenerationWorkerRunning=false;
 function yieldToBrowser(){
  return new Promise(resolve=>{
@@ -205,7 +239,16 @@ async function computeEligibleContractsAsync(s,key){
   await yieldToBrowser();
   if(!eligibilityStateIsCurrent(s,key))return null;
   const connection=candidates[i].connection;
-  const route=routeForContract({from:connection.from,to:connection.to},s);
+  let route;
+  if(s.type==='river'){
+   route=routeForContract({from:connection.from,to:connection.to},s);
+  }else{
+   try{route=await calculateSeaRouteInBackground(connection)}
+   catch(error){console.warn('Hintergrund-Routenberechnung fehlgeschlagen:',error);route=null}
+   if(route&&typeof window.cachePrecomputedContractRoute==='function'){
+    window.cachePrecomputedContractRoute(connection.from,connection.to,s.type,route);
+   }
+  }
   if(!routeFitsShip(route,s))continue;
   const routeKey=connection.from+'>'+connection.to;
   if(seen.has(routeKey))continue;
@@ -254,9 +297,9 @@ function scheduleContractEligibility(s,key){
  processContractGenerationQueue();
 }
 function eligibleContracts(s){
- // Keine Routensuche während der Lieferung: der teure Teil startet erst,
- // wenn das Schiff tatsächlich einsatzbereit ist.
- if(!s||Number(s.deliveryRemaining)>0||s.trip||s.inYard||(game?.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)))return[];
+ // Routen während der Lieferzeit im Worker vorberechnen; nur aktive, reparierte
+ // oder in der Werft befindliche Schiffe benötigen gerade keine neuen Aufträge.
+ if(!s||s.trip||s.inYard||(game?.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)))return[];
  ensureShipStats(s);
  const key=contractEligibilityKey(s);
  if(contractEligibilityCache.has(key))return contractEligibilityCache.get(key);
