@@ -6,10 +6,10 @@
    ========================================================= */
 const CONFIG={savePrefix:'blueHorizon.slot.',activeKey:'blueHorizon.activeSlot',version:3,daySeconds:40};
 const DIFFICULTIES={
- easy:{label:'Leicht',cash:3500000,cost:0.72,revenue:1.28,upkeep:0.72,desc:'3,5 Mio. € Startkapital · 28 % geringere laufende Kosten · 28 % höhere Auftragsvergütung.'},
- medium:{label:'Mittel',cash:2500000,cost:1,revenue:1,upkeep:1,desc:'2,5 Mio. € Startkapital · normale Kosten und Auftragsvergütung.'},
- hard:{label:'Schwer',cash:1800000,cost:1.25,revenue:0.88,upkeep:1.25,desc:'1,8 Mio. € Startkapital · 25 % höhere Kosten · 12 % geringere Auftragsvergütung.'},
- realistic:{label:'Realistisch',cash:1250000,cost:1.55,revenue:0.76,upkeep:1.5,desc:'1,25 Mio. € Startkapital · sehr hohe Betriebskosten und geringere Auftragsvergütung.'}
+ easy:{label:'Leicht',cash:100000000,cost:0.8,revenue:1.2,upkeep:0.8,desc:'100 Mio. € Startkapital · günstigere Finanzierung und Betriebskosten.'},
+ medium:{label:'Mittel',cash:75000000,cost:1,revenue:1,upkeep:1,desc:'75 Mio. € Startkapital · marktübliche Kaufpreise und Betriebskosten.'},
+ hard:{label:'Schwer',cash:55000000,cost:1.2,revenue:0.92,upkeep:1.2,desc:'55 Mio. € Startkapital · höhere Kauf- und Betriebskosten.'},
+ realistic:{label:'Realistisch',cash:40000000,cost:1.35,revenue:0.88,upkeep:1.35,desc:'40 Mio. € Startkapital · hohe Betriebskosten und vorsichtigere Auftragsmargen.'}
 };
 const PORTS=[
 {id:'ham',name:'Hamburg',country:'Deutschland',lat:53.5461,lon:9.9661,demand:1.12},{id:'rot',name:'Rotterdam',country:'Niederlande',lat:51.95,lon:4.14,demand:1.2},{id:'lon',name:'London Gateway',country:'Vereinigtes Königreich',lat:51.5,lon:0.5,demand:1.05},{id:'ant',name:'Antwerpen',country:'Belgien',lat:51.3,lon:4.25,demand:1.08},{id:'osl',name:'Oslo',country:'Norwegen',lat:59.9,lon:10.7,demand:.88},{id:'nyc',name:'New York',country:'USA',lat:40.67,lon:-74.05,demand:1.3},{id:'mia',name:'Miami',country:'USA',lat:25.78,lon:-80.18,demand:1.05},{id:'hou',name:'Houston',country:'USA',lat:29.73,lon:-95.0,demand:1.1},{id:'van',name:'Vancouver',country:'Kanada',lat:49.29,lon:-123.1,demand:.94},{id:'sao',name:'Santos',country:'Brasilien',lat:-23.96,lon:-46.3,demand:1.04},{id:'dur',name:'Durban',country:'Südafrika',lat:-29.87,lon:31.05,demand:.9},{id:'dub',name:'Dubai',country:'VAE',lat:25.0,lon:55.06,demand:1.1},{id:'mum',name:'Mumbai',country:'Indien',lat:18.95,lon:72.84,demand:1.2},{id:'sin',name:'Singapur',country:'Singapur',lat:1.26,lon:103.84,demand:1.4},{id:'sha',name:'Shanghai',country:'China',lat:31.23,lon:121.5,demand:1.5},{id:'tyo',name:'Tokyo',country:'Japan',lat:35.62,lon:139.8,demand:1.15},{id:'syd',name:'Sydney',country:'Australien',lat:-33.86,lon:151.2,demand:1.1},{id:'ist',name:'Istanbul',country:'Türkei',lat:40.98,lon:28.95,demand:.95},{id:'mar',name:'Marseille',country:'Frankreich',lat:43.3,lon:5.37,demand:.93},{id:'lis',name:'Lissabon',country:'Portugal',lat:38.72,lon:-9.13,demand:.96},{id:'dui',name:'Duisburg',country:'Deutschland',lat:51.435,lon:6.762,demand:.9,river:true},{id:'cgn',name:'Köln',country:'Deutschland',lat:50.938,lon:6.96,demand:.9,river:true},{id:'bas',name:'Basel',country:'Schweiz',lat:47.56,lon:7.59,demand:.9,river:true},{id:'str',name:'Straßburg',country:'Frankreich',lat:48.58,lon:7.75,demand:.9,river:true},{id:'fra',name:'Frankfurt am Main',country:'Deutschland',lat:50.11,lon:8.68,demand:.9,river:true},{id:'nue',name:'Nürnberg',country:'Deutschland',lat:49.45,lon:11.08,demand:.9,river:true},{id:'reg',name:'Regensburg',country:'Deutschland',lat:49.02,lon:12.1,demand:.9,river:true},{id:'vie',name:'Wien',country:'Österreich',lat:48.21,lon:16.37,demand:.9,river:true},{id:'bra',name:'Bratislava',country:'Slowakei',lat:48.14,lon:17.11,demand:.9,river:true},{id:'bud',name:'Budapest',country:'Ungarn',lat:47.5,lon:19.04,demand:.9,river:true},{id:'bel',name:'Belgrad',country:'Serbien',lat:44.82,lon:20.45,demand:.9,river:true},{id:'gal',name:'Galati',country:'Rumänien',lat:45.43,lon:28.05,demand:.9,river:true},{id:'par',name:'Paris (Gennevilliers)',country:'Frankreich',lat:48.93,lon:2.3,demand:.9,river:true},{id:'rou',name:'Rouen',country:'Frankreich',lat:49.44,lon:1.1,demand:.9,river:true},{id:'sev',name:'Sevilla',country:'Spanien',lat:37.38,lon:-5.99,demand:.9},{id:'mem',name:'Memphis',country:'USA',lat:35.12,lon:-90.05,demand:.9,river:true},{id:'stl',name:'St. Louis',country:'USA',lat:38.63,lon:-90.2,demand:.9,river:true},{id:'wuh',name:'Wuhan',country:'China',lat:30.59,lon:114.3,demand:.9,river:true},{id:'chq',name:'Chongqing',country:'China',lat:29.56,lon:106.55,demand:.9,river:true},
@@ -66,35 +66,35 @@ const PORTS=[
 {id:'lud',name:'Lüderitz',country:'Namibia',lat:-26.65,lon:15.15,demand:.88}
 ];
 const CARGO=[
-{id:'containers',name:'Standardcontainer',icon:'📦',fee:170,capacity:1,speed:1,handling:1,types:['coastal','medium','long','ultra']},
-{id:'electronics',name:'Elektronik',icon:'💻',fee:260,capacity:.75,speed:1,handling:1,types:['coastal','medium','long','ultra']},
-{id:'food',name:'Kühlfracht',icon:'🧊',fee:230,capacity:.72,speed:1.08,handling:2,types:['coastal','medium','long','ultra']},
-{id:'cars',name:'Fahrzeuge',icon:'🚗',fee:205,capacity:.78,speed:.94,handling:2,types:['ro-ro','medium']},
-{id:'bulk',name:'Schüttgut',icon:'🌾',fee:105,capacity:1.18,speed:.88,handling:2,types:['bulk','river']},
-{id:'oil',name:'Flüssigladung',icon:'🛢️',fee:195,capacity:1,speed:.92,handling:2,types:['tanker']},
-{id:'urgent',name:'Expressfracht',icon:'⚡',fee:390,capacity:.42,speed:1.2,handling:1,types:['coastal','medium','long','ultra']}
+{id:'containers',name:'Standardcontainer',icon:'📦',fee:500,capacity:1,speed:1,handling:1,types:['coastal','medium','long','ultra']},
+{id:'electronics',name:'Elektronik',icon:'💻',fee:750,capacity:.75,speed:1,handling:1,types:['coastal','medium','long','ultra']},
+{id:'food',name:'Kühlfracht',icon:'🧊',fee:650,capacity:.72,speed:1.08,handling:2,types:['coastal','medium','long','ultra']},
+{id:'cars',name:'Fahrzeuge',icon:'🚗',fee:620,capacity:.78,speed:.94,handling:2,types:['ro-ro','medium']},
+{id:'bulk',name:'Schüttgut',icon:'🌾',fee:320,capacity:1.18,speed:.88,handling:2,types:['bulk','river']},
+{id:'oil',name:'Flüssigladung',icon:'🛢️',fee:580,capacity:1,speed:.92,handling:2,types:['tanker']},
+{id:'urgent',name:'Expressfracht',icon:'⚡',fee:900,capacity:.42,speed:1.2,handling:1,types:['coastal','medium','long','ultra']}
 ];
 const SHIP_TYPES=[
-{id:'coastal',name:'Coastal-Frachter',className:'Coastal',price:420000,speed:13,capacity:180,upkeep:4900,color:'#5bd1b2',allowed:['containers','electronics','food','urgent'],range:1800,desc:'Kurze Küstenverbindungen.'},
-{id:'medium',name:'Mitteldistanz-Frachter',className:'Mitteldistanz',price:760000,speed:17,capacity:480,upkeep:7900,color:'#6cb6ff',allowed:['containers','electronics','food','cars','urgent'],range:5000,desc:'Regionale und mittlere Routen.'},
-{id:'long',name:'Langstrecken-Containerschiff',className:'Langstrecke',price:1450000,speed:20,capacity:920,upkeep:13900,color:'#b69cff',allowed:['containers','electronics','food','urgent'],range:30000,desc:'Für internationale Fernrouten.'},
-{id:'ultra',name:'Ultra-Containerklasse',className:'Langstrecke',price:2850000,speed:22,capacity:1800,upkeep:25500,color:'#e7a5ff',allowed:['containers','electronics','food','urgent'],range:30000,desc:'Sehr große Kapazität für globale Linien.'},
-{id:'tanker',name:'Produkttanker',className:'Spezialschiff',price:1120000,speed:15,capacity:820,upkeep:14300,color:'#ffb45e',allowed:['oil'],range:30000,desc:'Spezialisiert auf Flüssigladung.'},
-{id:'bulk',name:'Bulk Carrier',className:'Spezialschiff',price:890000,speed:14,capacity:1100,upkeep:10900,color:'#d7c4a1',allowed:['bulk'],range:30000,desc:'Für Schüttgut und Rohstoffe.'},
-{id:'ro-ro',name:'Ro-Ro-Frachter',className:'Spezialschiff',price:1480000,speed:18,capacity:660,upkeep:15100,color:'#f18bc8',allowed:['cars'],range:7000,desc:'Für Fahrzeuge und rollende Ladung.'},
-{id:'river',name:'Binnenschiff',className:'Binnenschiff',price:280000,speed:9,capacity:260,upkeep:3100,color:'#85c98d',allowed:['bulk','containers'],range:800,desc:'Binnenschifffahrt ist vorbereitet; echte Flussrouten kommen später.'}
+{id:'coastal',name:'Coastal-Frachter',className:'Coastal',price:8000000,speed:13,capacity:180,upkeep:280000,color:'#5bd1b2',allowed:['containers','electronics','food','urgent'],range:1800,desc:'Kurze Küstenverbindungen.'},
+{id:'medium',name:'Mitteldistanz-Frachter',className:'Mitteldistanz',price:25000000,speed:17,capacity:480,upkeep:650000,color:'#6cb6ff',allowed:['containers','electronics','food','cars','urgent'],range:5000,desc:'Regionale und mittlere Routen.'},
+{id:'long',name:'Langstrecken-Containerschiff',className:'Langstrecke',price:75000000,speed:20,capacity:920,upkeep:1600000,color:'#b69cff',allowed:['containers','electronics','food','urgent'],range:30000,desc:'Für internationale Fernrouten.'},
+{id:'ultra',name:'Ultra-Containerklasse',className:'Langstrecke',price:180000000,speed:22,capacity:1800,upkeep:3500000,color:'#e7a5ff',allowed:['containers','electronics','food','urgent'],range:30000,desc:'Sehr große Kapazität für globale Linien.'},
+{id:'tanker',name:'Produkttanker',className:'Spezialschiff',price:55000000,speed:15,capacity:820,upkeep:1300000,color:'#ffb45e',allowed:['oil'],range:30000,desc:'Spezialisiert auf Flüssigladung.'},
+{id:'bulk',name:'Bulk Carrier',className:'Spezialschiff',price:35000000,speed:14,capacity:1100,upkeep:900000,color:'#d7c4a1',allowed:['bulk'],range:30000,desc:'Für Schüttgut und Rohstoffe.'},
+{id:'ro-ro',name:'Ro-Ro-Frachter',className:'Spezialschiff',price:60000000,speed:18,capacity:660,upkeep:1500000,color:'#f18bc8',allowed:['cars'],range:7000,desc:'Für Fahrzeuge und rollende Ladung.'},
+{id:'river',name:'Binnenschiff',className:'Binnenschiff',price:3500000,speed:9,capacity:260,upkeep:110000,color:'#85c98d',allowed:['bulk','containers'],range:800,desc:'Binnenschifffahrt ist vorbereitet; echte Flussrouten kommen später.'}
 ];
 const CONTRACTS=[
-{id:'c1',company:'Nordlicht Elektronik',from:'ham',to:'nyc',cargo:'electronics',bonus:85000,type:'normal',deadline:28,desc:'Hochwertige Elektronik muss sicher über den Atlantik.'},
-{id:'c2',company:'EuroFresh Foods',from:'rot',to:'sin',cargo:'food',bonus:110000,type:'urgent',deadline:32,desc:'Zeitkritische Kühlware mit lückenloser Kühlkette.'},
-{id:'c3',company:'AutoWerk Europe',from:'ant',to:'mia',cargo:'cars',bonus:72000,type:'normal',deadline:30,desc:'Fahrzeuge für einen wichtigen Händlertermin.'},
-{id:'c4',company:'AgriGlobal',from:'hou',to:'rot',cargo:'bulk',bonus:64000,type:'large',deadline:25,desc:'Schüttgut in großer Menge.'},
-{id:'c5',company:'PetroWorld',from:'dub',to:'mum',cargo:'oil',bonus:68000,type:'normal',deadline:14,desc:'Flüssigladung für eine Raffinerie.'},
-{id:'c6',company:'ExpressLink',from:'sin',to:'sha',cargo:'urgent',bonus:52000,type:'urgent',deadline:10,desc:'Expresssendung mit engem Zeitfenster.'},
-{id:'c7',company:'Baltic Trade',from:'osl',to:'ham',cargo:'containers',bonus:28000,type:'normal',deadline:12,desc:'Containerladung für einen regionalen Partner.'},
-{id:'c8',company:'Pacific Components',from:'tyo',to:'van',cargo:'electronics',bonus:120000,type:'large',deadline:34,desc:'Elektronikkomponenten für die nordamerikanische Produktion.'},
-{id:'c9',company:'South Atlantic Cargo',from:'lis',to:'sao',cargo:'containers',bonus:76000,type:'large',deadline:27,desc:'Containertransport zwischen Europa und Brasilien.'},
-{id:'c10',company:'Mediterranean Grain',from:'mar',to:'ist',cargo:'bulk',bonus:41000,type:'normal',deadline:16,desc:'Getreidelieferung für einen regionalen Abnehmer.'},
-{id:'c11',company:'Ocean Auto Logistics',from:'sha',to:'syd',cargo:'cars',bonus:93000,type:'large',deadline:30,desc:'Fahrzeugtransport über den westlichen Pazifik.'},
-{id:'c12',company:'Arctic Electronics',from:'nyc',to:'ham',cargo:'urgent',bonus:90000,type:'urgent',deadline:20,desc:'Dringende Ersatzteile für einen europäischen Kunden.'}
+{id:'c1',company:'Nordlicht Elektronik',from:'ham',to:'nyc',cargo:'electronics',bonus:850000,type:'normal',deadline:28,desc:'Hochwertige Elektronik muss sicher über den Atlantik.'},
+{id:'c2',company:'EuroFresh Foods',from:'rot',to:'sin',cargo:'food',bonus:1100000,type:'urgent',deadline:32,desc:'Zeitkritische Kühlware mit lückenloser Kühlkette.'},
+{id:'c3',company:'AutoWerk Europe',from:'ant',to:'mia',cargo:'cars',bonus:720000,type:'normal',deadline:30,desc:'Fahrzeuge für einen wichtigen Händlertermin.'},
+{id:'c4',company:'AgriGlobal',from:'hou',to:'rot',cargo:'bulk',bonus:640000,type:'large',deadline:25,desc:'Schüttgut in großer Menge.'},
+{id:'c5',company:'PetroWorld',from:'dub',to:'mum',cargo:'oil',bonus:680000,type:'normal',deadline:14,desc:'Flüssigladung für eine Raffinerie.'},
+{id:'c6',company:'ExpressLink',from:'sin',to:'sha',cargo:'urgent',bonus:520000,type:'urgent',deadline:10,desc:'Expresssendung mit engem Zeitfenster.'},
+{id:'c7',company:'Baltic Trade',from:'osl',to:'ham',cargo:'containers',bonus:280000,type:'normal',deadline:12,desc:'Containerladung für einen regionalen Partner.'},
+{id:'c8',company:'Pacific Components',from:'tyo',to:'van',cargo:'electronics',bonus:1200000,type:'large',deadline:34,desc:'Elektronikkomponenten für die nordamerikanische Produktion.'},
+{id:'c9',company:'South Atlantic Cargo',from:'lis',to:'sao',cargo:'containers',bonus:760000,type:'large',deadline:27,desc:'Containertransport zwischen Europa und Brasilien.'},
+{id:'c10',company:'Mediterranean Grain',from:'mar',to:'ist',cargo:'bulk',bonus:410000,type:'normal',deadline:16,desc:'Getreidelieferung für einen regionalen Abnehmer.'},
+{id:'c11',company:'Ocean Auto Logistics',from:'sha',to:'syd',cargo:'cars',bonus:930000,type:'large',deadline:30,desc:'Fahrzeugtransport über den westlichen Pazifik.'},
+{id:'c12',company:'Arctic Electronics',from:'nyc',to:'ham',cargo:'urgent',bonus:900000,type:'urgent',deadline:20,desc:'Dringende Ersatzteile für einen europäischen Kunden.'}
 ];
