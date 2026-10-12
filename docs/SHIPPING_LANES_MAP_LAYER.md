@@ -23,3 +23,9 @@ Die Wasserkarte ist eine kartografische Darstellung, **kein amtlicher Nachweis**
 
 ## Nächste sinnvolle Ausbaustufe
 Für ein präziseres Spiel-Routennetz sollte später ein dedizierter Gewässerdatensatz lokal eingebunden und nach Wasserstraßenklasse gefiltert werden. Dabei müssen Seewege, schiffbare Flüsse, Schleusen, Tiefgang und Hafenanschlüsse getrennt modelliert werden; die Basiskarte allein sollte nie als Routing-Datenquelle dienen.
+
+## Persistente Routendaten (12.10.2026)
+
+`js/sea-routing.js` speichert die geladene Natural-Earth-Landgeometrie jetzt nach dem ersten Abruf in IndexedDB (`blue-horizon-geodata-v1`, Datensatz `natural-earth-land-10m-v1`). Die Routenprüfung verwendet weiterhin diese Geometrie, um Landquerungen zu erkennen. Nach dem ersten erfolgreichen Download bleibt die Geometrie über normale Neuladungen und Spielstarts im selben Browserprofil verfügbar; das ist ein lokaler Cache, keine im GitHub-Repository eingecheckte Geodatei. Beim ersten Start oder nach dem Löschen der Browserdaten ist eine Internetverbindung erforderlich.
+
+**Wichtig: Das ist nur die Land-/Meer-Grundlage, noch kein vollständiges weltweites Gewässernetz.** Seen und Flüsse werden durch eine reine Landmaske nicht vollständig als schiffbares Wasser modelliert. Binnenschifffahrtsrouten verwenden weiterhin das explizite `RIVER_LINKS`-Netz in `js/waterways.js`. Für die nächste Stufe soll ein versionierter, lokal im Repository gespeicherter Gewässerdatensatz mit großen Flüssen und Wasserstraßen ergänzt werden; dabei müssen reine Flusslinien von tatsächlich schiffbaren Strecken unterschieden werden.
