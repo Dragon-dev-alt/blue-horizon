@@ -95,7 +95,7 @@ function contractEligibilityKey(s){
  return [String(s.id),String(s.port),String(s.type),String(s.range),s.trip?'trip':'idle',
   s.inYard?'yard':'ready',(game?.repairOrders||[]).some(o=>String(o.shipId)===String(s.id))?'repair':'clear',
   window.waterRouteDataReady?'routes-ready':'routes-loading',
-  harborConnectionCatalog?'catalog-ready':'catalog-loading',game?.day||0].join('|');
+  harborConnectionCatalog?'catalog-ready':'catalog-loading',Number(s.deliveryRemaining)>0?'delivery':(game?.day||0)].join('|');
 }
 function cacheContractEligibility(key,result){
  if(contractEligibilityCache.has(key))contractEligibilityCache.delete(key);
