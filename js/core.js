@@ -250,36 +250,55 @@ function buyShip(typeId){
 }
 function openShipyard(){if(!game)return;$('shipyard').classList.remove('hidden');renderShipyard()}
 let shipyardExitLoading=false;
+async function waitForPurchasedShipReady(timeoutMs=25000){
+ const started=performance.now();
+ const ship=typeof selectedShip==='function'?selectedShip():game?.ships?.find(s=>String(s.id)===String(selectedShipId));
+ if(!ship)return;
+ // Auftragssuche startet im Hintergrund und gibt dem Browser zwischen den
+ // Routenprüfungen Zeit zum Zeichnen. Den Loader erst danach ausblenden.
+ if(typeof eligibleContracts==='function')eligibleContracts(ship);
+ while(performance.now()-started<timeoutMs){
+  const live=game?.ships?.find(s=>String(s.id)===String(ship.id));
+  if(!live||live.trip||live.inYard)break;
+  const key=typeof contractEligibilityKey==='function'?contractEligibilityKey(live):null;
+  const pending=key&&contractEligibilityPending instanceof Set&&contractEligibilityPending.has(key);
+  const cached=key&&contractEligibilityCache instanceof Map&&contractEligibilityCache.has(key);
+  if(cached||(!pending&&typeof eligibleContracts==='function'&&eligibleContracts(live).length))break;
+  if(!pending&&!cached)eligibleContracts(live);
+  await new Promise(resolve=>setTimeout(resolve,100));
+ }
+ await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+}
 function runShipPurchaseWithLoading(purchase){
  const overlay=$('loadingScreen'),yard=$('shipyard');
  if(shipyardExitLoading||!overlay){if(yard)yard.classList.add('hidden');purchase();return}
  shipyardExitLoading=true;
+ const hideOverlay=()=>{
+  overlay.classList.add('hidden');
+  overlay.style.removeProperty('display');overlay.style.removeProperty('visibility');
+  overlay.setAttribute('aria-hidden','true');
+  shipyardExitLoading=false;
+ };
  try{
-  // Shop sofort schließen: Der Ladescreen liegt nun zwischen Kauf und Karte.
   if(yard)yard.classList.add('hidden');
   if(typeof window.setLoadingScreen==='function')window.setLoadingScreen('Lädt … Schiff wird übernommen und Flotte aktualisiert',72);
   overlay.classList.remove('hidden');
   overlay.style.display='grid';overlay.style.visibility='visible';
   overlay.setAttribute('aria-hidden','false');
-  // Zwei Frames sicherstellen, damit der Browser den Overlay vor dem Rendern
-  // von Flotte, Auftragsliste und Kartenmarkern tatsächlich zeichnen kann.
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
-   window.setTimeout(()=>{
-    try{purchase()}
-    catch(error){console.error('Schiffskauf fehlgeschlagen:',error);toast('Der Schiffskauf konnte nicht abgeschlossen werden.')}
-    finally{
-     requestAnimationFrame(()=>requestAnimationFrame(()=>{
-      overlay.classList.add('hidden');
-      overlay.style.removeProperty('display');overlay.style.removeProperty('visibility');
-      overlay.setAttribute('aria-hidden','true');
-      shipyardExitLoading=false;
-     }));
-    }
+   window.setTimeout(async()=>{
+    try{
+     purchase();
+     if(typeof window.setLoadingScreen==='function')window.setLoadingScreen('Lädt … geprüfte Routen und Aufträge werden vorbereitet',82);
+     await waitForPurchasedShipReady();
+    }catch(error){
+     console.error('Schiffskauf/Initialisierung fehlgeschlagen:',error);
+     toast('Das Schiff wurde möglicherweise gekauft, die Oberfläche konnte aber nicht vollständig aktualisiert werden.');
+    }finally{hideOverlay()}
    },100);
   }));
  }catch(error){
-  overlay.classList.add('hidden');overlay.style.removeProperty('display');overlay.style.removeProperty('visibility');
-  overlay.setAttribute('aria-hidden','true');shipyardExitLoading=false;
+  hideOverlay();
   console.warn('Schiffskauf-Ladescreen konnte nicht angezeigt werden:',error);
   if(yard)yard.classList.add('hidden');
   purchase();
