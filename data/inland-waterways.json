@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "source": "Blue Horizon gameplay network",
   "updated": "2026-10-12",
-  "notes": "Links refer to port IDs in js/data.js. These are gameplay routing connections, not a complete authoritative hydrographic dataset.",
+  "notes": "Approximate navigable corridor centerlines for game routing. These are hand-curated gameplay geometries, not official navigation charts; depths, locks, bridge clearances and vessel restrictions are not modeled.",
   "links": [
     [
       "ham",
@@ -100,5 +100,318 @@
       "chq",
       "ful"
     ]
+  ],
+  "corridors": [
+    {
+      "id": "rhine",
+      "name": "Rhein",
+      "ports": [
+        "bas",
+        "str",
+        "dui",
+        "cgn"
+      ],
+      "coordinates": [
+        [
+          7.59,
+          47.56
+        ],
+        [
+          7.75,
+          48.58
+        ],
+        [
+          7.82,
+          48.95
+        ],
+        [
+          8.23,
+          49
+        ],
+        [
+          8.45,
+          49.49
+        ],
+        [
+          8.44,
+          49.99
+        ],
+        [
+          8.27,
+          50
+        ],
+        [
+          7.6,
+          50.36
+        ],
+        [
+          7.2,
+          50.55
+        ],
+        [
+          6.96,
+          50.94
+        ],
+        [
+          6.76,
+          51.44
+        ]
+      ]
+    },
+    {
+      "id": "danube",
+      "name": "Donau",
+      "ports": [
+        "reg",
+        "vie",
+        "bra",
+        "bud",
+        "bel",
+        "nov",
+        "gal",
+        "tul"
+      ],
+      "coordinates": [
+        [
+          12.1,
+          49.02
+        ],
+        [
+          12.4,
+          48.9
+        ],
+        [
+          13,
+          48.6
+        ],
+        [
+          13.45,
+          48.3
+        ],
+        [
+          14.3,
+          48.2
+        ],
+        [
+          15.1,
+          48.15
+        ],
+        [
+          16.37,
+          48.21
+        ],
+        [
+          17.11,
+          48.14
+        ],
+        [
+          18,
+          47.9
+        ],
+        [
+          19.04,
+          47.5
+        ],
+        [
+          20,
+          46.9
+        ],
+        [
+          21,
+          45.8
+        ],
+        [
+          20.45,
+          44.82
+        ],
+        [
+          19.85,
+          45.25
+        ],
+        [
+          18.95,
+          45.25
+        ],
+        [
+          17.2,
+          45.3
+        ],
+        [
+          16,
+          45.3
+        ],
+        [
+          14.5,
+          45.3
+        ],
+        [
+          13,
+          45.3
+        ],
+        [
+          12,
+          45.2
+        ],
+        [
+          11,
+          45.1
+        ],
+        [
+          10,
+          45.1
+        ],
+        [
+          9,
+          45.2
+        ],
+        [
+          28.05,
+          45.43
+        ],
+        [
+          28.7,
+          45.2
+        ],
+        [
+          29.6,
+          45.1
+        ],
+        [
+          29.7,
+          45
+        ]
+      ]
+    },
+    {
+      "id": "seine",
+      "name": "Seine",
+      "ports": [
+        "par",
+        "rou"
+      ],
+      "coordinates": [
+        [
+          2.3,
+          48.93
+        ],
+        [
+          2.1,
+          48.8
+        ],
+        [
+          1.9,
+          48.7
+        ],
+        [
+          1.6,
+          48.6
+        ],
+        [
+          1.3,
+          48.5
+        ],
+        [
+          1.1,
+          49
+        ],
+        [
+          1.1,
+          49.2
+        ],
+        [
+          1.1,
+          49.44
+        ]
+      ]
+    },
+    {
+      "id": "mississippi",
+      "name": "Mississippi",
+      "ports": [
+        "stl",
+        "cgr",
+        "pad",
+        "dyb",
+        "mem"
+      ],
+      "coordinates": [
+        [
+          -90.2,
+          38.63
+        ],
+        [
+          -90.1,
+          38
+        ],
+        [
+          -90.05,
+          37.3
+        ],
+        [
+          -89.7,
+          36.7
+        ],
+        [
+          -89.5,
+          36
+        ],
+        [
+          -89.4,
+          35.5
+        ],
+        [
+          -90.05,
+          35.12
+        ]
+      ]
+    },
+    {
+      "id": "yangtze",
+      "name": "Jangtse",
+      "ports": [
+        "chq",
+        "ful",
+        "yue",
+        "wuh"
+      ],
+      "coordinates": [
+        [
+          106.55,
+          29.56
+        ],
+        [
+          107,
+          29.7
+        ],
+        [
+          108,
+          30
+        ],
+        [
+          109,
+          30.3
+        ],
+        [
+          110,
+          30.5
+        ],
+        [
+          111,
+          30.7
+        ],
+        [
+          112,
+          30.6
+        ],
+        [
+          113,
+          30.5
+        ],
+        [
+          114.3,
+          30.59
+        ]
+      ]
+    }
   ]
 }
