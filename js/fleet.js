@@ -134,16 +134,18 @@ async function generateGuaranteedContractAsync(s,key){
  const destinations=PORTS.filter(p=>p.id!==origin.id&&portCanServeShip(p,s)&&
    (s.type==='river'?!!p.river:!p.river))
   .map(p=>({p,directKm:haversine({lat:origin.lat,lon:origin.lon},{lat:p.lat,lon:p.lon})*1.852}))
-  .filter(item=>item.directKm<=s.range && item.directKm>=minimumUsefulRouteKm(s))
+  // Die Luftlinie ist nur ein Vorfilter. Alle plausiblen Ziele prüfen, weil Küstenrouten
+  // deutlich länger als die Luftlinie sein können und die ersten Ziele oft ungeeignet sind.
+  .filter(item=>item.directKm<=Number(s.range||0)+1)
   .sort((a,b)=>{
-   // Fernverkehrsschiffe sollen bevorzugt lange, aber noch reichweitenkonforme Aufträge erhalten.
    if(s.type==='ultra'||s.type==='long'||s.type==='tanker')return b.directKm-a.directKm;
    if(s.type==='medium'||s.type==='bulk'||s.type==='ro-ro')return Math.abs(a.directKm-s.range*.72)-Math.abs(b.directKm-s.range*.72);
    return a.directKm-b.directKm;
   });
- // Nicht dutzende globale Routen in einem Auswahlvorgang erzeugen. Die Ziele
- // sind bereits nach Schiffsprofil sortiert; sechs sichere Versuche reichen zunächst.
- for(const item of destinations.slice(0,24)){
+ // Immer alle erreichbaren Zielhäfen durchprobieren, nicht nach wenigen Fehlrouten aufgeben.
+ // Automatische Folgeaufträge dürfen auch kürzer sein als die bevorzugte Mindestlänge;
+ // die tatsächliche sichere Route und die harte Reichweitenobergrenze bleiben Pflicht.
+ for(const item of destinations){
   await yieldToBrowser();
   if(!eligibilityStateIsCurrent(s,nextKey))return null;
   const target=item.p;
@@ -160,7 +162,8 @@ async function generateGuaranteedContractAsync(s,key){
   const coords=routeForContract(contract,s);
   if(!coords||coords.length<2)continue;
   const distanceNm=routeDistanceNauticalMiles(coords);
-  if(!routeFitsShip(coords,s))continue;
+  const actualKm=distanceNm*1.852;
+  if(actualKm>Number(s.range||0)+1)continue;
   const freight=cargo(cargoId);
   contract.deadline=contract.type==='urgent'?Math.max(5,Math.ceil(distanceNm/(st.speed*24*freight.speed)+freight.handling+3)):null;
   game.nextContractId=(game.nextContractId||1)+1;
