@@ -26,10 +26,15 @@ function normalizeUsedStock(){
    game.usedStock[t.id]=Array.from({length:count},(_,i)=>stockOffer(t.id,i));
   }
  });
+ // Binnenschiffe müssen auch bei bestehenden Spielständen immer angeboten werden.
+ if(!Array.isArray(game.usedStock.river))game.usedStock.river=[];
+ if(game.usedStock.river.length===0)game.usedStock.river.push(stockOffer('river',0));
 }
 function generateStock(){
  const stock={};
  SHIP_TYPES.forEach(t=>{const count=Math.floor(Math.random()*5);stock[t.id]=Array.from({length:count},(_,i)=>stockOffer(t.id,i))});
+ // Zum Spielstart ist mindestens ein Binnenschiff verfügbar.
+ if(stock.river.length===0)stock.river.push(stockOffer('river',0));
  return stock;
 }
 function shipIllustration(typeId,color){
