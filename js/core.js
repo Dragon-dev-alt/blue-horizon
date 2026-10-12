@@ -255,7 +255,7 @@ async function precomputeHarborRoutes(){
   let done=0;
   for(const task of tasks){
    if(task.kind==='river'){
-    if(typeof riverRoute==='function')riverRoute(task.origin.id,task.destination.id);
+    if(typeof routeForContract==='function')routeForContract({from:task.origin.id,to:task.destination.id},{type:'river'});
    }else{
     baseComputeWaterRoute(task.origin,task.destination);
    }
