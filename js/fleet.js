@@ -95,7 +95,7 @@ function contractEligibilityKey(s){
  return [String(s.id),String(s.port),String(s.type),String(s.range),s.trip?'trip':'idle',
   s.inYard?'yard':'ready',(game?.repairOrders||[]).some(o=>String(o.shipId)===String(s.id))?'repair':'clear',
   window.waterRouteDataReady?'routes-ready':'routes-loading',
-  harborConnectionCatalog?'catalog-ready':'catalog-loading',Number(s.deliveryRemaining)>0?'delivery':(game?.day||0)].join('|');
+  harborConnectionCatalog?'catalog-ready':'catalog-loading',(game?.day||0)].join('|');
 }
 function cacheContractEligibility(key,result){
  if(contractEligibilityCache.has(key))contractEligibilityCache.delete(key);
@@ -298,10 +298,12 @@ function scheduleContractEligibility(s,key){
  processContractGenerationQueue();
 }
 function eligibleContracts(s){
- // Routen während der Lieferzeit im Worker vorberechnen; nur aktive, reparierte
- // oder in der Werft befindliche Schiffe benötigen gerade keine neuen Aufträge.
+ // Lieferzeit beeinflusst nur die Sichtbarkeit, nicht die vorbereiteten Aufträge.
+ // So stehen vorab berechnete Aufträge am Liefertag sofort zur Verfügung.
  if(!s||s.trip||s.inYard||(game?.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)))return[];
  ensureShipStats(s);
+ const existing=(game?.generatedContracts||[]).filter(c=>contractBelongsToShip(c,s));
+ if(existing.length)return existing;
  const key=contractEligibilityKey(s);
  if(contractEligibilityCache.has(key))return contractEligibilityCache.get(key);
  scheduleContractEligibility(s,key);
