@@ -58,6 +58,22 @@ function hideLoadingScreen(){
   overlay.setAttribute('aria-hidden','true');
  }
 }
+function animateLoadingProgress(from,to,duration,message){
+ return new Promise(resolve=>{
+  const start=performance.now();
+  const tick=now=>{
+   const t=Math.min(1,(now-start)/Math.max(1,duration));
+   // Ease smoothly while ensuring the displayed percentage always counts upward.
+   const eased=1-Math.pow(1-t,3);
+   const value=Math.round(from+(to-from)*eased);
+   window.setLoadingScreen(message,value);
+   if(t<1)requestAnimationFrame(tick);else resolve();
+  };
+  window.setLoadingScreen(message,from);
+  requestAnimationFrame(tick);
+ });
+}
+
 async function startNewGame(){
  if(newGameStartupInProgress)return;
  const name=($('companyInput')?.value||'').trim()||'Blue Horizon Shipping';
@@ -70,17 +86,21 @@ async function startNewGame(){
   // paint the loader rather than appearing frozen during initialization.
   window.setLoadingScreen('Lädt … Reederei wird gegründet',5);
   await waitForPaint();
-  await waitForPaint();
-
-  window.setLoadingScreen('Lädt … Startkapital und Firmendaten',18);
+  await animateLoadingProgress(5,18,450,'Lädt … Startkapital und Firmendaten');
   game=makeGame(name,selectedDifficulty,hq);
   activeSlot=firstFreeSlot();if(activeSlot<0)activeSlot=0;
   selectedShipId=game.ships[0]?.id||null;
   saveGame();
   await waitForPaint();
 
-  window.setLoadingScreen('Lädt … Wasserwege und Landdaten',38);
-  const routingReady=await waitForWaterRouting();
+  await animateLoadingProgress(18,38,550,'Lädt … Wasserwege und Landdaten');
+  // Let routing load while the bar visibly advances. If routing takes longer,
+  // wait for the real task before moving to the next stage.
+  const routingPromise=waitForWaterRouting();
+  const [routingReady]=await Promise.all([
+   routingPromise,
+   animateLoadingProgress(38,68,1800,'Lädt … Wasserwege, Häfen und Landdaten')
+  ]);
   window.setLoadingScreen('Lädt … Häfen und Spieloberfläche',68);
   await waitForPaint();
 
@@ -92,8 +112,7 @@ async function startNewGame(){
   const elapsed=()=>performance.now()-startupStartedAt;
   const remainingLoaderMs=minimumLoaderMs-elapsed();
   if(remainingLoaderMs>0){
-   window.setLoadingScreen('Lädt … letzte Vorbereitungen',90);
-   await new Promise(resolve=>setTimeout(resolve,remainingLoaderMs));
+   await animateLoadingProgress(68,90,remainingLoaderMs,'Lädt … letzte Vorbereitungen');
   }
 
   $('mainMenu').classList.add('hidden');
@@ -106,7 +125,7 @@ async function startNewGame(){
   }
   updateHudStats();
   saveGame();
-  window.setLoadingScreen('Alles bereit – deine Reederei startet …',100);
+  await animateLoadingProgress(90,100,500,'Alles bereit – deine Reederei startet …');
   await waitForPaint();
   hideLoadingScreen();
   if(routingReady)toast('Firma gegründet – kaufe dein erstes Schiff in der Werft.');
