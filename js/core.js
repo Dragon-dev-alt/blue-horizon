@@ -12,9 +12,36 @@ function addLog(msg){game.log.unshift('Tag '+game.day+' · '+msg);game.log=game.
 function haversine(a,b){const r=6371,rad=x=>x*Math.PI/180,d1=rad(b.lat-a.lat),d2=rad(b.lon-a.lon),q=Math.sin(d1/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(d2/2)**2;return 2*r*Math.asin(Math.sqrt(q))*0.539957}
 /* Karte und Häfen */
 function bindShipDocumentFallback(){if(window.__blueHorizonShipFallbackBound)return;window.__blueHorizonShipFallbackBound=true;document.addEventListener('click',ev=>{const target=ev.target&&typeof ev.target.closest==='function'?ev.target.closest('.ship-icon[data-ship-id]'):null;if(target&&target.dataset.shipId)queueShipSelection(target.dataset.shipId)},true)}
-let navigableWaterVisible=false,navigableWaterLayer=null;
-function drawNavigableWaterOverlay(){if(!map||!navigableWaterLayer||!window.waterRouteDataReady||typeof window.getNavigableWaterPolygons!=='function')return;const canvas=navigableWaterLayer._canvas;if(!canvas)return;const size=map.getSize(),dpr=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.round(size.x*dpr);canvas.height=Math.round(size.y*dpr);canvas.style.width=size.x+'px';canvas.style.height=size.y+'px';const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,size.x,size.y);ctx.fillStyle='rgba(0, 255, 90, 0.48)';ctx.fillRect(0,0,size.x,size.y);ctx.globalCompositeOperation='destination-out';const bounds=map.getBounds().pad(0.2),polygons=window.getNavigableWaterPolygons()||[];for(const poly of polygons){if(poly.maxLon<bounds.getWest()-360||poly.minLon>bounds.getEast()+360||poly.maxLat<bounds.getSouth()||poly.minLat>bounds.getNorth())continue;const ring=poly.outer;if(!Array.isArray(ring)||ring.length<3)continue;ctx.beginPath();let started=false;for(const point of ring){let lon=point[0];while(lon-map.getCenter().lng>180)lon-=360;while(lon-map.getCenter().lng< -180)lon+=360;const p=map.latLngToLayerPoint([point[1],lon]);if(!Number.isFinite(p.x)||!Number.isFinite(p.y))continue;if(!started){ctx.moveTo(p.x,p.y);started=true}else ctx.lineTo(p.x,p.y)}if(started){ctx.closePath();ctx.fill()}}ctx.globalCompositeOperation='source-over';}
-function toggleNavigableWater(){navigableWaterVisible=!navigableWaterVisible;if(!map)return;const toggle=$('waterViewToggle');if(toggle)toggle.setAttribute('aria-pressed',String(navigableWaterVisible));if(navigableWaterVisible){if(!window.waterRouteDataReady){toast('Die Wasserkarte lädt noch. Die grüne Markierung erscheint automatisch, sobald sie bereit ist.');}if(!navigableWaterLayer){const canvas=L.DomUtil.create('canvas','navigable-water-overlay');canvas.style.position='absolute';canvas.style.left='0';canvas.style.top='0';canvas.style.pointerEvents='none';canvas.style.zIndex='350';canvas.style.display='block';const WaterOverlay=L.Layer.extend({initialize:function(){this._canvas=canvas},onAdd:function(m){m.getPanes().overlayPane.appendChild(canvas);m.on('moveend zoomend resize',drawNavigableWaterOverlay);window.addEventListener('water-route-data-ready',drawNavigableWaterOverlay);drawNavigableWaterOverlay()},onRemove:function(m){m.off('moveend zoomend resize',drawNavigableWaterOverlay);window.removeEventListener('water-route-data-ready',drawNavigableWaterOverlay);if(canvas.parentNode)canvas.parentNode.removeChild(canvas)}});navigableWaterLayer=new WaterOverlay()}navigableWaterLayer.addTo(map);drawNavigableWaterOverlay()}else if(navigableWaterLayer&&map.hasLayer(navigableWaterLayer)){map.removeLayer(navigableWaterLayer)}}
+let navigableWaterVisible=false,shippingLaneLayer=null,shippingLaneLoading=false,shippingLaneError=null;
+const SHIPPING_LANES_GEOJSON_URL='https://raw.githubusercontent.com/newzealandpaul/Shipping-Lanes/master/data/Shipping_Lanes_v1.geojson';
+async function loadShippingLaneLayer(){
+ if(shippingLaneLayer||shippingLaneLoading)return;
+ shippingLaneLoading=true;shippingLaneError=null;
+ try{
+  const response=await fetch(SHIPPING_LANES_GEOJSON_URL,{cache:'force-cache'});
+  if(!response.ok)throw new Error('HTTP '+response.status);
+  const data=await response.json();
+  if(!data||!Array.isArray(data.features))throw new Error('GeoJSON-Format unerwartet');
+  shippingLaneLayer=L.geoJSON(data,{style:function(feature){
+   const type=String(feature&&feature.properties&&feature.properties.Type||'Minor').toLowerCase();
+   if(type==='major')return{color:'#40f5c2',weight:2.6,opacity:.95};
+   if(type==='middle')return{color:'#41c9f5',weight:1.8,opacity:.85};
+   return{color:'#b5e8ff',weight:1.1,opacity:.7};
+  },interactive:false}).addTo(map);
+  toast('Globale Schifffahrtsrouten wurden eingeblendet.');
+ }catch(error){
+  shippingLaneError=error;console.error('Schifffahrtsrouten konnten nicht geladen werden:',error);
+  toast('Schifffahrtsrouten konnten nicht geladen werden. Bitte Internetverbindung prüfen.');
+ }finally{shippingLaneLoading=false;}
+}
+function toggleNavigableWater(){
+ navigableWaterVisible=!navigableWaterVisible;
+ const toggle=$('waterViewToggle');
+ if(toggle)toggle.setAttribute('aria-pressed',String(navigableWaterVisible));
+ if(!map)return;
+ if(navigableWaterVisible){if(shippingLaneLayer)shippingLaneLayer.addTo(map);else loadShippingLaneLayer();}
+ else if(shippingLaneLayer&&map.hasLayer(shippingLaneLayer))map.removeLayer(shippingLaneLayer);
+}
 function initMap(){map=L.map('map',{zoomControl:true,worldCopyJump:true}).setView([22,8],2);L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,attribution:'Tiles © Esri'}).addTo(map);PORTS.forEach(p=>{const marker=L.circleMarker([p.lat,p.lon],{radius:6,color:'#fff0b8',weight:2,fillColor:'#f5bd59',fillOpacity:.95,interactive:true,keyboard:true}).bindTooltip(p.name+' · '+p.country+' · Klicken für Hafeninfos',{direction:'top'});marker.on('click',()=>showPortInfo(p.id,marker));marker.addTo(map);portMarkers.push(marker)});map.on('zoomend',()=>{renderShips();renderPorts();if(navigableWaterVisible)drawNavigableWaterOverlay()});map.on('click',ev=>{if(ev.originalEvent&&ev.originalEvent.defaultPrevented)return;selectedShipId=null;previewedRouteShipId=null;previewedRouteContractId=null;renderUI();renderShips();showSelectedShipRoute(false)});bindShipDocumentFallback();}
 function renderPorts(){portMarkers.forEach(m=>{if(portsVisible){if(!map.hasLayer(m))m.addTo(map)}else if(map.hasLayer(m))map.removeLayer(m)})}
 function togglePorts(){portsVisible=!portsVisible;renderPorts()}
