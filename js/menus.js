@@ -6,8 +6,16 @@ function showNewGame(){
  $('menuActions').classList.add('hidden');
  $('newGameSetup').classList.add('visible');
  $('menuHeading').textContent='Neue Runde';
- $('menuDescription').textContent='Benenne deine Firma, wähle den Hauptsitzhafen und den Schwierigkeitsgrad.';
+ $('menuDescription').textContent='Benenne deine Firma, wähle einen freien Speicherplatz, den Hauptsitzhafen und den Schwierigkeitsgrad.';
  $('companyInput').value='';
+ const slotSelect=$('saveSlotChoice');
+ if(slotSelect){
+  slotSelect.innerHTML=Array.from({length:5},(_,i)=>{
+   const saved=loadSlot(i);
+   return '<option value="'+i+'" '+(saved?'disabled':'')+'>Speicherplatz '+(i+1)+(saved?' — belegt':' — frei')+'</option>';
+  }).join('');
+  slotSelect.value=Array.from({length:5},(_,i)=>i).find(i=>!slotExists(i))?.toString()||'';
+ }
  const hq=$('hqPort');
  if(hq){
   hq.innerHTML=PORTS.map(p=>'<option value="'+p.id+'">'+p.name+' — '+p.country+(p.river?' · Binnenhafen':'')+'</option>').join('');
@@ -74,10 +82,13 @@ function animateLoadingProgress(from,to,duration,message){
  });
 }
 
-async function startNewGame(){
+async async function startNewGame(){
  if(newGameStartupInProgress)return;
  const name=($('companyInput')?.value||'').trim()||'Blue Horizon Shipping';
  const hq=$('hqPort')?.value||'ham';
+ const chosenSlot=$('saveSlotChoice')?.value;
+ if(chosenSlot==null||chosenSlot===''||!Number.isInteger(Number(chosenSlot))||Number(chosenSlot)<0||Number(chosenSlot)>4){toast('Bitte wähle einen freien Speicherplatz aus.');return;}
+ if(slotExists(Number(chosenSlot))){toast('Dieser Speicherplatz ist belegt. Bitte lösche den Spielstand zuerst oder wähle einen freien Slot.');return;}
  if(!port(hq)){toast('Der gewählte Hauptsitzhafen ist nicht verfügbar.');return;}
  newGameStartupInProgress=true;
  const startupStartedAt=performance.now();
@@ -88,7 +99,7 @@ async function startNewGame(){
   await waitForPaint();
   await animateLoadingProgress(5,18,450,'Lädt … Startkapital und Firmendaten');
   game=makeGame(name,selectedDifficulty,hq);
-  activeSlot=firstFreeSlot();if(activeSlot<0)activeSlot=0;
+  activeSlot=Number(chosenSlot);
   selectedShipId=game.ships[0]?.id||null;
   saveGame();
   await waitForPaint();
