@@ -106,6 +106,16 @@ async function storeLandTopology(topology){
  try{await new Promise((resolve,reject)=>{const tx=db.transaction(LAND_DATA_STORE,'readwrite');tx.objectStore(LAND_DATA_STORE).put({id:LAND_DATA_KEY,source:'Natural Earth / world-atlas land-10m',version:1,savedAt:Date.now(),topology});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Geodaten konnten nicht gespeichert werden.'));});}
  finally{db.close();}
 }
+async function readStoredSeaNetwork(){
+ const db=await openGeoDataDB();
+ try{return await new Promise((resolve,reject)=>{const req=db.transaction(LAND_DATA_STORE,'readonly').objectStore(LAND_DATA_STORE).get('searoute-marnet-20km-v1');req.onsuccess=()=>resolve(req.result?.network||null);req.onerror=()=>reject(req.error);});}
+ finally{db.close();}
+}
+async function storeSeaNetwork(network){
+ const db=await openGeoDataDB();
+ try{await new Promise((resolve,reject)=>{const tx=db.transaction(LAND_DATA_STORE,'readwrite');tx.objectStore(LAND_DATA_STORE).put({id:'searoute-marnet-20km-v1',source:'searoute-ts MARNET 20km',version:1,savedAt:Date.now(),network});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Seeroutennetz konnte nicht gespeichert werden.'));});}
+ finally{db.close();}
+}
 async function loadLandTopology(){
  try{
   const stored=await readStoredLandTopology();
@@ -272,11 +282,28 @@ window.isWaterRouteSafe = function (coords) {
     ]);
     seaRouteImpl = router.seaRoute;
     seaRouteAlternativesImpl = router.seaRouteAlternatives;
-    DEFAULT_MARNET = networkModule.DEFAULT_MARNET;
     feature = topojson.feature;
     if (typeof seaRouteImpl !== 'function' || typeof seaRouteAlternativesImpl !== 'function' ||
-        !DEFAULT_MARNET || typeof feature !== 'function') {
+        !networkModule.DEFAULT_MARNET || typeof feature !== 'function') {
       throw new Error('Die Routing-Bibliotheken wurden unvollständig geladen.');
+    }
+    // Das eigentliche 20-km-Seeroutennetz ebenfalls lokal persistent halten.
+    // Falls ein Browser das Objekt nicht strukturiert klonen kann, auf das
+    // importierte Original zurückfallen, statt den Spielstart zu blockieren.
+    try {
+      DEFAULT_MARNET = await readStoredSeaNetwork();
+      if (DEFAULT_MARNET) console.info('Seeroutennetz aus lokalem Geodaten-Cache geladen.');
+    } catch (cacheError) {
+      console.warn('Gespeichertes Seeroutennetz nicht lesbar; nutze Originaldaten.', cacheError);
+    }
+    if (!DEFAULT_MARNET) {
+      DEFAULT_MARNET = networkModule.DEFAULT_MARNET;
+      try {
+        await storeSeaNetwork(DEFAULT_MARNET);
+        console.info('Seeroutennetz dauerhaft im lokalen Geodaten-Cache gespeichert.');
+      } catch (cacheError) {
+        console.warn('Seeroutennetz geladen, aber nicht lokal speicherbar.', cacheError);
+      }
     }
 
     const landTopology = await loadLandTopology();
