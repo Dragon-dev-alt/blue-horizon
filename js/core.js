@@ -244,18 +244,16 @@ function buyShip(typeId){
  runShipPurchaseWithLoading(()=>{
   if(!game||game.cash<t.price*d.cost)return;
   game.cash-=Math.round(t.price*d.cost);const id='s'+game.nextShipId++;const range=randomShipRange(typeId);const home=port(randomShipPort(typeId,range));
-  game.ships.push({id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null,condition:100,range,deliveryRemaining:4});
-  selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'. Lieferung in 4 Spieltagen.');saveGame();renderUI();renderShips(id);toast('Schiff gekauft – Lieferung in 4 Spieltagen.');
+  game.ships.push({id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null,condition:100,range,deliveryRemaining:6});
+  selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'. Lieferung in 6 Spieltagen.');saveGame();renderUI();renderShips(id);toast('Schiff gekauft – Lieferung in 6 Spieltagen.');
  });
 }
 function openShipyard(){if(!game)return;$('shipyard').classList.remove('hidden');renderShipyard()}
 let shipyardExitLoading=false;
 function waitForPurchasedShipReady(){
- const ship=typeof selectedShip==='function'?selectedShip():game?.ships?.find(s=>String(s.id)===String(selectedShipId));
- if(!ship)return;
- // Sofort im Hintergrund starten. Die Routensuche liefert zwischen einzelnen
- // Kandidaten an den Browser zurück und blockiert den Schiffskauf nicht.
- if(typeof eligibleContracts==='function')eligibleContracts(ship);
+ // Während der Lieferzeit wird absichtlich keinerlei Routensuche gestartet.
+ // eligibleContracts beginnt die Suche automatisch nach der Auslieferung,
+ // sobald die normale Spielansicht erneut gerendert wird.
 }
 function runShipPurchaseWithLoading(purchase){
  const overlay=$('loadingScreen'),yard=$('shipyard');
