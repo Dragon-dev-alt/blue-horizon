@@ -188,7 +188,6 @@ async function computeEligibleContractsAsync(s,key){
  game.generatedContracts=game.generatedContracts.filter(c=>
   String(c.id)===String(activeContractId)||
   String(c.assignedShipId)!==String(s.id)||String(c.from)!==String(s.port)||
-  String(c.id).startsWith(prefix)&&String(c.from)!==String(s.port)
  );
  valid.forEach(c=>game.generatedContracts.push(c));
  if(valid.length)game.nextContractId=(game.nextContractId||1)+valid.length;
