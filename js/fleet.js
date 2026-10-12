@@ -206,7 +206,8 @@ function scheduleContractEligibility(s,key){
   }
  })();
 }
-function contractBonus(c,s){const st=s&&shipType(s.type);const reference=shipType('coastal');const priceFactor=st&&reference?Math.sqrt(st.price/reference.price):1;return Math.round((Number(c?.bonus)||0)*priceFactor)}
+const CONTRACT_REVENUE_MULTIPLIER=4;
+function contractBonus(c,s){const st=s&&shipType(s.type);const reference=shipType('coastal');const priceFactor=st&&reference?Math.sqrt(st.price/reference.price):1;return Math.round((Number(c?.bonus)||0)*priceFactor*4)}
 function eligibleContracts(s){
  if(!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)))return[];
  ensureShipStats(s);
@@ -232,11 +233,11 @@ function acceptOrder(contractId){
  const t=cargo(c.cargo),st=shipType(s.type),diff=DIFFICULTIES[game.difficulty],units=Math.floor(st.capacity*t.capacity);
  const contractScale=c.type==='large'?1.3:1;
  const distanceFactor=Math.max(0.5,distance/1000);
- let revenue=Math.round((units*t.fee*distanceFactor*((a.demand+b.demand)/2)*diff.revenue+contractBonus(c,s)*diff.revenue)*contractScale);
+ let revenue=Math.round((units*t.fee*distanceFactor*((a.demand+b.demand)/2)*diff.revenue+contractBonus(c,s)*diff.revenue)*contractScale*CONTRACT_REVENUE_MULTIPLIER);
  const hq=game.hq||'ham',hqBonus=(c.from===hq||c.to===hq)?0.10:0;
  revenue=Math.round(revenue*(1+hqBonus));
  const days=Math.max(1,Math.ceil(distance/(st.speed*24*t.speed)+t.handling+1));
- s.trip={contractId:c.id,contractType:c.type||'normal',deadline:(c.type==='urgent'?Number(c.deadline)||days: null),from:c.from,to:c.to,cargo:c.cargo,coords,routeSmoothed:s.type!=='river',progress:0,distance,days,daysElapsed:0,revenue,baseRevenue:Math.round((units*t.fee*distanceFactor*((a.demand+b.demand)/2)*diff.revenue+c.bonus*diff.revenue)*contractScale),hqBonus,units,cost:Math.round((distance*35+days*st.upkeep/7)*diff.cost)};
+ s.trip={contractId:c.id,contractType:c.type||'normal',deadline:(c.type==='urgent'?Number(c.deadline)||days: null),from:c.from,to:c.to,cargo:c.cargo,coords,routeSmoothed:s.type!=='river',progress:0,distance,days,daysElapsed:0,revenue,baseRevenue:Math.round((units*t.fee*distanceFactor*((a.demand+b.demand)/2)*diff.revenue+contractBonus(c,s)*diff.revenue)*contractScale*CONTRACT_REVENUE_MULTIPLIER),hqBonus,units,cost:Math.round((distance*35+days*st.upkeep/7)*diff.cost)};
  s.status='sailing';selectedShipId=s.id;previewedRouteShipId=null;previewedRouteContractId=null;
  addLog(s.name+' übernimmt Auftrag von '+c.company+': '+a.name+' → '+b.name+(hqBonus?' · 10 % Hauptsitzbonus':'')+'.');
  saveGame();renderUI();renderShips();showSelectedShipRoute(true);
