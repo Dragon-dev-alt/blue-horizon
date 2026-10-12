@@ -92,10 +92,12 @@ function contractBelongsToShip(c,s){
 }
 function contractBonus(c){return Math.round(Number(c?.bonus)||0)}
 function contractEligibilityKey(s){
+ // Nur schiff- und routenrelevante Werte gehören in den Schlüssel.
+ // Der Katalog darf den Schlüssel nach dem asynchronen Laden nicht verändern:
+ // sonst verwirft die gerade laufende Berechnung ihre Ergebnisse und startet nicht erneut.
  return [String(s.id),String(s.port),String(s.type),String(s.range),s.trip?'trip':'idle',
   s.inYard?'yard':'ready',(game?.repairOrders||[]).some(o=>String(o.shipId)===String(s.id))?'repair':'clear',
-  window.waterRouteDataReady?'routes-ready':'routes-loading',
-  harborConnectionCatalog?'catalog-ready':'catalog-loading'].join('|');
+  window.waterRouteDataReady?'routes-ready':'routes-loading'].join('|');
 }
 function cacheContractEligibility(key,result){
  if(contractEligibilityCache.has(key))contractEligibilityCache.delete(key);
@@ -103,8 +105,8 @@ function cacheContractEligibility(key,result){
  while(contractEligibilityCache.size>MAX_ELIGIBILITY_CACHE)contractEligibilityCache.delete(contractEligibilityCache.keys().next().value);
 }
 function isContractEligibilityPending(s){return !!s&&contractEligibilityPending.has(contractEligibilityKey(s))}
-// Alle Schiffe teilen sich eine langsame Auftragswarteschlange. So laufen nicht
-// mehrere teure Routenprüfungen gleichzeitig, wenn mehrere Schiffe geliefert werden.
+// Bis zu drei Schiffe werden parallel für Aufträge vorbereitet. Die eigentliche
+// Karten-/Routenberechnung läuft im Web Worker, damit die Oberfläche bedienbar bleibt.
 const CONTRACT_ROUTE_STEP_DELAY=200;
 const contractGenerationQueue=[];
 let routeCalculationWorker=null;
@@ -284,8 +286,16 @@ function scheduleContractEligibility(s,key){
     await yieldToBrowser();
     if(!eligibilityStateIsCurrent(s,key))return;
     const result=await computeEligibleContractsAsync(s,key);
-    if(result===null)return;
     const live=game&&game.ships.find(item=>String(item.id)===String(s.id));
+    if(result===null){
+     // Schiff oder Route hat sich während der Berechnung geändert: aktuellen Zustand
+     // erneut einplanen, damit keine Flotte dauerhaft ohne Aufträge zurückbleibt.
+     if(live){
+      const currentKey=contractEligibilityKey(live);
+      if(currentKey!==key&&!contractEligibilityPending.has(currentKey))scheduleContractEligibility(live,currentKey);
+     }
+     return;
+    }
     if(!live)return;
     const finalKey=contractEligibilityKey(live);
     cacheContractEligibility(finalKey,result);
