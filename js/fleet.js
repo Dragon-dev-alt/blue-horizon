@@ -371,6 +371,9 @@ function showSelectedShipRoute(fitBounds=false){
  if(!map||!game)return;
  const s=selectedShip();
  if(!s)return;
+ // Während der Auslieferung dürfen vorbereitete Aufträge existieren,
+ // ihre Vorschau-Route wird aber erst nach der Lieferung auf der Karte gezeigt.
+ if(!s.trip&&Number(s.deliveryRemaining)>0)return;
  let coords=null,isActiveTrip=!!s.trip,contract=null;
  if(isActiveTrip&&Array.isArray(s.trip.coords)&&s.trip.coords.length>1){
   coords=s.trip.coords;
