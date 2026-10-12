@@ -32,7 +32,7 @@ function ensureShipStats(s){
  // Alte Speicherstände können Schiffe am falschen Hafentyp enthalten.
  // Nur ruhende Schiffe verlegen; aktive Fahrten werden nie verschoben.
  const needsRiver=s.type==='river';
- if(!s.trip&&!s.inYard&&current&&Boolean(current.river)!==needsRiver){
+ if(!s.trip&&!s.inYard&&current&&(Boolean(current.river)!==needsRiver||!randomShipPortHasOption(current,s.type,s.range))){
   const candidates=PORTS.filter(p=>Boolean(p.river)===needsRiver&&randomShipPortHasOption(p,s.type,s.range));
   candidates.sort((a,b)=>haversine({lat:current.lat,lon:current.lon},{lat:a.lat,lon:a.lon})-haversine({lat:current.lat,lon:current.lon},{lat:b.lat,lon:b.lon}));
   const nearest=candidates[0];
