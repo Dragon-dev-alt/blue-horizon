@@ -84,7 +84,7 @@
 .overwrite-confirm{margin-top:12px;padding:12px;border:1px solid #ff6478;border-radius:10px;background:#351722}.overwrite-confirm p{font-size:12px;line-height:1.5;margin:0 0 10px}.overwrite-actions{display:flex;gap:8px}.overwrite-actions button{flex:1;min-width:0}.overwrite-actions .danger-confirm{background:#a91f35;border-color:#ff6478;color:#fff}.save-row .delete-save-button{display:flex;align-items:center;justify-content:center;text-align:center;line-height:1;padding:0;position:relative}
 
 /* Main-menu art: Blue Hour. Keep the loader artwork independent. */
-#mainMenu.overlay{background-color:#061827;background-image:linear-gradient(90deg,rgba(5,20,34,.48),rgba(5,20,34,.18) 58%,rgba(5,20,34,.30)),linear-gradient(0deg,rgba(5,20,34,.30),rgba(5,20,34,.08)),url("./assets/Blauer%20Horizont%20%C3%BCber%20dem%20Containerhafen.png?v=menu-bluehour-20261012");background-position:center;background-size:cover;background-repeat:no-repeat;backdrop-filter:none}
+#mainMenu.overlay{background-color:#061827;background-image:linear-gradient(90deg,rgba(5,20,34,.48),rgba(5,20,34,.18) 58%,rgba(5,20,34,.30)),linear-gradient(0deg,rgba(5,20,34,.30),rgba(5,20,34,.08)),url("./assets/men%C3%BC-hintergrund.jpg?v=menu-bg-custom-20261012");background-position:center;background-size:cover;background-repeat:no-repeat;backdrop-filter:none}
 #mainMenu .menu-card{background:rgba(25,48,66,.88);border-color:rgba(170,210,230,.48);box-shadow:0 22px 70px rgba(0,8,18,.45),inset 0 1px 0 rgba(255,255,255,.10);backdrop-filter:blur(12px)}
 #mainMenu .menu-card h2{color:#f4faff}#mainMenu .menu-card>p{color:#d0e1ec}
 #mainMenu .menu-actions>button,#mainMenu .setup button{background:rgba(69,105,128,.72);border-color:rgba(188,219,238,.38);color:#f6fbff}
