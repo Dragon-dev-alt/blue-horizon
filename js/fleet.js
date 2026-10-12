@@ -115,7 +115,7 @@ async function generateGuaranteedContractAsync(s,key){
   game.generatedContracts.splice(existingIndex,1);
   nextKey=contractEligibilityKey(s);
  }
- if(s.type!=='river'&&!window.waterRouteDataReady)return null;
+ if(!window.waterRouteDataReady)return null;
  const origin=port(s.port),st=shipType(s.type);
  if(!origin||!st||!portCanServeShip(origin,s))return null;
  const cargoId=st.allowed.find(id=>{const item=cargo(id);return item&&item.types.includes(s.type)});
@@ -124,7 +124,12 @@ async function generateGuaranteedContractAsync(s,key){
    (s.type==='river'?!!p.river:!p.river))
   .map(p=>({p,directKm:haversine({lat:origin.lat,lon:origin.lon},{lat:p.lat,lon:p.lon})*1.852}))
   .filter(item=>item.directKm<=s.range)
-  .sort((a,b)=>a.directKm-b.directKm);
+  .sort((a,b)=>{
+   // Fernverkehrsschiffe sollen bevorzugt lange, aber noch reichweitenkonforme Aufträge erhalten.
+   if(s.type==='ultra'||s.type==='long'||s.type==='tanker')return b.directKm-a.directKm;
+   if(s.type==='medium'||s.type==='bulk'||s.type==='ro-ro')return Math.abs(a.directKm-s.range*.72)-Math.abs(b.directKm-s.range*.72);
+   return a.directKm-b.directKm;
+  });
  for(const item of destinations){
   await yieldToBrowser();
   if(!eligibilityStateIsCurrent(s,nextKey))return null;
@@ -157,7 +162,7 @@ async function computeEligibleContractsAsync(s,key){
  ensureShipStats(s);
  const st=shipType(s.type),origin=port(s.port);
  if(!st||!origin||!portCanServeShip(origin,s))return[];
- if(s.type!=='river'&&!window.waterRouteDataReady)return[];
+ if(!window.waterRouteDataReady)return[];
  const eligible=[];
  // Static checks are cheap; only matching contracts need route computation.
  const candidates=allContracts().filter(c=>{
@@ -247,7 +252,7 @@ let previewedRouteShipId=null,previewedRouteContractId=null;
 function revalidateExistingTripRoutes(){
  if(!game||!window.waterRouteDataReady)return;
  game.ships.forEach(s=>{
-  if(!s.trip||s.type==='river')return;
+  if(!s.trip)return;
   if(Array.isArray(s.trip.coords)&&window.isWaterRouteSafe(s.trip.coords)){
    if(!s.trip.routeSmoothed){
     const smoothed=smoothWaterRoute(s.trip.coords);
@@ -277,7 +282,7 @@ function showSelectedShipRoute(fitBounds=false){
  let coords=null,isActiveTrip=!!s.trip,contract=null;
  if(isActiveTrip&&Array.isArray(s.trip.coords)&&s.trip.coords.length>1){
   coords=s.trip.coords;
-  if(s.type!=='river'&&window.isWaterRouteSafe&&window.isWaterRouteSafe(coords)&&!s.trip.routeSmoothed){
+  if(window.isWaterRouteSafe&&window.isWaterRouteSafe(coords)&&!s.trip.routeSmoothed){
    const smoothed=smoothWaterRoute(coords);
    if(smoothed!==coords){
     coords=smoothed;
@@ -287,7 +292,7 @@ function showSelectedShipRoute(fitBounds=false){
    s.trip.routeSmoothed=true;
    saveGame();
   }
-  if(s.type!=='river'&&window.isWaterRouteSafe&&!window.isWaterRouteSafe(coords)){
+  if(window.isWaterRouteSafe&&!window.isWaterRouteSafe(coords)){
    const replacement=routeForContract({from:s.trip.from,to:s.trip.to},s);
    if(replacement&&replacement.length>1){coords=replacement;s.trip.coords=replacement;s.trip.distance=routeDistanceNauticalMiles(replacement);saveGame()}
    else{if(fitBounds)toast('Die gespeicherte Route ist nicht sicher und wird nicht angezeigt.');return}
@@ -299,7 +304,7 @@ function showSelectedShipRoute(fitBounds=false){
   if(contract){coords=routeForContract(contract,s);previewedRouteShipId=String(s.id);previewedRouteContractId=contract.id}
  }
  if(!coords||coords.length<2)return;
- if(s.type!=='river'&&(!window.isWaterRouteSafe||!window.isWaterRouteSafe(coords))){
+ if(!window.waterRouteDataReady||!window.isWaterRouteSafe||!window.isWaterRouteSafe(coords)){
   if(fitBounds)toast('Diese Route besteht die Landprüfung nicht und wird nicht angezeigt.');
   return;
  }
