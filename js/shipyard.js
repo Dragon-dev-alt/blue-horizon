@@ -83,10 +83,10 @@ function buyUsedShip(typeId,offerId){
   if(game.cash<currentOffer.price){toast('Nicht genug Kapital. Dieses Schiff kostet '+money(currentOffer.price)+'.');return}
   currentOffers.splice(currentIndex,1);game.cash-=currentOffer.price;
   const id='s'+game.nextShipId++;
-  const ship={id,name:currentOffer.name,type:typeId,port:randomShipPort(typeId,currentOffer.range),trip:null,condition:currentOffer.condition,range:currentOffer.range,deliveryRemaining:4,acquisitionPrice:currentOffer.price};
+  const ship={id,name:currentOffer.name,type:typeId,port:randomShipPort(typeId,currentOffer.range),trip:null,condition:currentOffer.condition,range:currentOffer.range,deliveryRemaining:6,acquisitionPrice:currentOffer.price};
   game.ships.push(ship);selectedShipId=id;
-  addLog('Gebrauchtes Schiff gekauft: '+ship.name+' · Zustand '+ship.condition+' % · Reichweite '+ship.range.toLocaleString('de-DE')+' km · Hafen '+port(ship.port).name+'. Lieferung in 4 Spieltagen.');
-  saveGame();renderUI();renderShips(id);yardMode='used';toast('Schiff gekauft – Lieferung in 4 Spieltagen.');
+  addLog('Gebrauchtes Schiff gekauft: '+ship.name+' · Zustand '+ship.condition+' % · Reichweite '+ship.range.toLocaleString('de-DE')+' km · Hafen '+port(ship.port).name+'. Lieferung in 6 Spieltagen.');
+  saveGame();renderUI();renderShips(id);yardMode='used';toast('Schiff gekauft – Lieferung in 6 Spieltagen.');
  });
 }
 function selectShip(id){selectShipSafely(id)}
