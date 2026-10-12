@@ -254,7 +254,35 @@ function chooseDifficulty(id){selectedDifficulty=id;document.querySelectorAll('[
 
 function firstFreeSlot(){for(let i=0;i<5;i++)if(!slotExists(i))return i;return -1}
 function showSaves(){hideSetups();$('menuActions').classList.add('hidden');$('savesSetup').classList.add('visible');$('menuHeading').textContent='Spielstände laden';$('menuDescription').textContent='Wähle eine gespeicherte Runde aus diesem Browser.';renderSaveList()}
-function renderSaveList(){$('saveList').innerHTML=Array.from({length:5},(_,i)=>{const g=loadSlot(i);return g?'<div class="save-row"><span><b>'+escapeHtml(g.company)+'</b><small>'+DIFFICULTIES[g.difficulty]?.label+' · Tag '+g.day+' · '+money(g.cash)+'</small></span><button onclick="loadGameSlot('+i+')">Laden</button></div>':'<div class="save-row"><span>Speicherplatz '+(i+1)+'<small>Leer</small></span><button disabled>Laden</button></div>'}).join('')}
+function renderSaveList(){
+ $('saveList').innerHTML=Array.from({length:5},(_,i)=>{
+  const g=loadSlot(i);
+  return g
+   ?'<div class="save-row"><span><b>'+escapeHtml(g.company)+'</b><small>'+DIFFICULTIES[g.difficulty]?.label+' · Tag '+g.day+' · Kontostand: '+money(g.cash)+'</small></span><button type="button" onclick="loadGameSlot('+i+')">Laden</button><button type="button" class="delete-save-button" title="Spielstand löschen" aria-label="Spielstand '+(i+1)+' löschen" onclick="deleteSaveSlot('+i+')">×</button></div>'
+   :'<div class="save-row"><span><b>Speicherplatz '+(i+1)+'</b><small>Leer</small></span><button disabled>Laden</button><button type="button" class="delete-save-button" disabled title="Kein Spielstand zum Löschen" aria-label="Leerer Speicherplatz">×</button></div>';
+ }).join('');
+}
+function deleteSaveSlot(slot){
+ if(!Number.isInteger(slot)||slot<0||slot>4||!slotExists(slot))return;
+ const saved=loadSlot(slot);
+ if(!confirm('Spielstand „'+(saved?.company||('Speicherplatz '+(slot+1)))+'“ wirklich dauerhaft löschen?'))return;
+ try{
+  localStorage.removeItem(CONFIG.savePrefix+slot);
+  if(Number(localStorage.getItem(CONFIG.activeKey))===slot)localStorage.removeItem(CONFIG.activeKey);
+  renderSaveList();
+  const slotSelect=$('saveSlotChoice');
+  if(slotSelect&&$('newGameSetup')?.classList.contains('visible')){
+   const wasSelected=slotSelect.value;
+   const selectedIndex=Array.from({length:5},(_,i)=>i).find(i=>!slotExists(i));
+   slotSelect.innerHTML=Array.from({length:5},(_,i)=>{
+    const occupied=slotExists(i);
+    return '<option value="'+i+'" '+(occupied?'disabled':'')+'>Speicherplatz '+(i+1)+(occupied?' — belegt':' — frei')+'</option>';
+   }).join('');
+   slotSelect.value=slotExists(Number(wasSelected))?String(selectedIndex??''):String(slot);
+  }
+  toast('Spielstand gelöscht.');
+ }catch(e){toast('Der Spielstand konnte nicht gelöscht werden.');}
+}
 function removeLegacyStarterShip(savedGame){
  if(!savedGame||!Array.isArray(savedGame.ships))return false;
  const initialIndex=savedGame.ships.findIndex(ship=>{
