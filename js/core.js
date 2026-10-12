@@ -215,7 +215,7 @@ function baseRenderUI(){
  $('dateLabel').textContent='Jahr '+(Math.floor((game.day-1)/360)+1)+' · Tag '+game.day;
  $('logLines').innerHTML=game.log.slice(0,6).map(x=>'<div>'+escapeHtml(x)+'</div>').join('');
  const s=selectedShip();
- const contractsPanel=$('contractsPanel');if(contractsPanel)contractsPanel.style.display=s?'':'none';
+ const contractsPanel=$('contractsPanel');if(contractsPanel)contractsPanel.style.display=s?'':'none';const sidePanel=document.querySelector('.side');if(sidePanel)sidePanel.classList.toggle('orders-open',!!s);
  $('selectedShipLabel').textContent=s?s.name:'';
  const orders=eligibleContracts(s);
  const underRepair=!!s&&(s.inYard||(game.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)));
@@ -239,7 +239,7 @@ function baseRenderUI(){
    ?'<div class="order"><h3>Wasserwege werden geprüft</h3><p class="notice">Aufträge werden angezeigt, sobald das Routennetz bereit ist.</p></div>'
    :'<div class="order"><h3>Aufträge werden gesucht</h3><p class="notice">Die Routen werden schrittweise im Hintergrund geprüft. Du kannst währenddessen weiter mit dem Spiel interagieren.</p></div>';
  }else if(orders.length){
-  $('ordersList').innerHTML=orders.map(c=>'<div class="order"><div class="contract-type contract-type-'+(c.type||'normal')+'">'+(c.type==='urgent'?'⏱ ZEITKRITISCH':c.type==='large'?'📦 GROSSAUFTRAG':'STANDARD')+'</div><h3>'+escapeHtml(c.company)+'</h3><p>'+port(c.from).name+' → '+port(c.to).name+'<br>'+cargo(c.cargo).icon+' '+cargo(c.cargo).name+(c.type==='urgent'?'<br><b>Lieferfrist: '+c.deadline+' Spieltage</b>':'')+'</p><p>'+escapeHtml(c.desc)+'</p><div class="bonus">'+(c.type==='large'?'Großauftragsvergütung · ': 'Bonus ')+money(c.bonus*DIFFICULTIES[game.difficulty].revenue*(c.type==='large'?1.3:1))+'</div><div class="contract-actions"><button type="button" class="route-preview-button" onclick="previewContractRoute(\''+c.id+'\')">Route ansehen</button><button class="primary" style="width:100%" onclick="acceptOrder(\''+c.id+'\')">Auftrag übernehmen</button></div></div>').join('');
+  $('ordersList').innerHTML=orders.map(c=>'<div class="order"><div class="contract-type contract-type-'+(c.type||'normal')+'">'+(c.type==='urgent'?'⏱ ZEITKRITISCH':c.type==='large'?'📦 GROSSAUFTRAG':'STANDARD')+'</div><h3>'+escapeHtml(c.company)+'</h3><p>'+port(c.from).name+' → '+port(c.to).name+'<br>'+cargo(c.cargo).icon+' '+cargo(c.cargo).name+(c.type==='urgent'?'<br><b>Lieferfrist: '+c.deadline+' Spieltage</b>':'')+'</p><p>'+escapeHtml(c.desc)+'</p><div class="bonus">'+(c.type==='large'?'Großauftragsvergütung · ': 'Bonus ')+money(contractBonus(c,s)*DIFFICULTIES[game.difficulty].revenue*(c.type==='large'?1.3:1))+'</div><div class="contract-actions"><button type="button" class="route-preview-button" onclick="previewContractRoute(\''+c.id+'\')">Route ansehen</button><button class="primary" style="width:100%" onclick="acceptOrder(\''+c.id+'\')">Auftrag übernehmen</button></div></div>').join('');
  }else{
   $('ordersList').innerHTML='<div class="order"><h3>Kein sicherer Auftrag gefunden</h3><p>Es wird kein Auftrag angeboten, dessen Wasserroute vollständig geprüft wurde und innerhalb der Schiffsreichweite liegt. Nach dem Laden weiterer Wasserwege wird automatisch erneut gesucht.</p></div>';
  }
