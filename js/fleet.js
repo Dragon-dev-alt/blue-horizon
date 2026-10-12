@@ -55,7 +55,7 @@ let harborConnectionsByOrigin=new Map();
 let harborCatalogLoadPromise=null;
 const contractEligibilityCache=new Map();
 const contractEligibilityPending=new Set();
-const MAX_ELIGIBILITY_CACHE=80;
+const MAX_ELIGIBILITY_CACHE=48;
 const CONTRACT_REVENUE_MULTIPLIER=4;
 
 function allContracts(){
