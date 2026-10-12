@@ -90,7 +90,7 @@
 #mainMenu .menu-actions>button,#mainMenu .setup button{background:rgba(69,105,128,.72);border-color:rgba(188,219,238,.38);color:#f6fbff}
 #mainMenu .menu-actions>button:hover,#mainMenu .setup button:hover{background:rgba(91,139,164,.86);border-color:#a5e8f5}
 #mainMenu .menu-actions>button.primary,#mainMenu .setup button.primary{background:rgba(12,139,151,.94);border-color:#70e8e5}
-#mainMenu .setup{background:transparent!important;border:0!important;border-top:0!important;box-shadow:none!important;padding-top:0!important}
+#mainMenu .setup{display:contents!important;background:transparent!important;border:0!important;border-top:0!important;box-shadow:none!important;padding:0!important;margin:0!important}
 #mainMenu .setup label{color:#e4f1f8}#mainMenu .setup input,#mainMenu .setup select{background:rgba(8,26,41,.85);border-color:rgba(172,207,226,.42);color:#f4faff}
 
 /* Hinweis auf eine neu veröffentlichte GitHub-Pages-Version */
