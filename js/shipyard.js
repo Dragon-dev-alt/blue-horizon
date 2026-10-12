@@ -11,7 +11,7 @@ function stockOffer(typeId,index){
  const marketFactor=.92+Math.random()*.16;
  const raw=(min+(max-min)*conditionFactor)*ageFactor*marketFactor*DIFFICULTIES[game?.difficulty||'easy'].cost;
  const price=Math.max(min,Math.min(max,Math.round(raw/100000)*100000));
- const home=randomShipPort(typeId);
+ const home=randomShipPort(typeId,range);
  return {offerId:typeId+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),type:typeId,name:t.name+' '+String(index+1).padStart(2,'0'),condition,age,range,price,port:home};
 }
 function normalizeUsedStock(){
@@ -20,7 +20,7 @@ function normalizeUsedStock(){
  SHIP_TYPES.forEach(t=>{
   const value=game.usedStock[t.id];
   if(Array.isArray(value)){
-   value.forEach((o,i)=>{if(!o.offerId)o.offerId=t.id+'-legacy-'+i+'-'+Math.random().toString(36).slice(2,6);if(!o.type)o.type=t.id;if(!o.condition)o.condition=10+Math.floor(Math.random()*81);if(!o.range)o.range=randomShipRange(t.id);const offerPort=port(o.port);if(!offerPort||!!offerPort.river!==(t.id==='river'))o.port=randomShipPort(t.id);if(!o.age)o.age=5+Math.floor(Math.random()*25);if(!o.price){const min=Number(t.priceMin)||Math.round(t.price*.65),max=Number(t.priceMax)||Math.round(t.price*1.35);const factor=Math.max(.72,1-o.age/100);o.price=Math.max(min,Math.min(max,Math.round((min+(max-min)*(.58+o.condition/100*.42))*factor*DIFFICULTIES[game.difficulty].cost/100000)*100000))}if(!o.name)o.name=t.name+' '+(i+1)});
+   value.forEach((o,i)=>{if(!o.offerId)o.offerId=t.id+'-legacy-'+i+'-'+Math.random().toString(36).slice(2,6);if(!o.type)o.type=t.id;if(!o.condition)o.condition=10+Math.floor(Math.random()*81);if(!o.range)o.range=randomShipRange(t.id);const offerPort=port(o.port);if(!offerPort||!!offerPort.river!==(t.id==='river'))o.port=randomShipPort(t.id,o.range);if(!o.age)o.age=5+Math.floor(Math.random()*25);if(!o.price){const min=Number(t.priceMin)||Math.round(t.price*.65),max=Number(t.priceMax)||Math.round(t.price*1.35);const factor=Math.max(.72,1-o.age/100);o.price=Math.max(min,Math.min(max,Math.round((min+(max-min)*(.58+o.condition/100*.42))*factor*DIFFICULTIES[game.difficulty].cost/100000)*100000))}if(!o.name)o.name=t.name+' '+(i+1)});
   } else {
    const count=Math.max(0,Math.min(8,Number(value)||0));
    game.usedStock[t.id]=Array.from({length:count},(_,i)=>stockOffer(t.id,i));
@@ -83,7 +83,7 @@ function buyUsedShip(typeId,offerId){
   if(game.cash<currentOffer.price){toast('Nicht genug Kapital. Dieses Schiff kostet '+money(currentOffer.price)+'.');return}
   currentOffers.splice(currentIndex,1);game.cash-=currentOffer.price;
   const id='s'+game.nextShipId++;
-  const ship={id,name:currentOffer.name,type:typeId,port:currentOffer.port,trip:null,condition:currentOffer.condition,range:currentOffer.range,deliveryRemaining:0,acquisitionPrice:currentOffer.price};
+  const ship={id,name:currentOffer.name,type:typeId,port:randomShipPort(typeId,currentOffer.range),trip:null,condition:currentOffer.condition,range:currentOffer.range,deliveryRemaining:0,acquisitionPrice:currentOffer.price};
   game.ships.push(ship);selectedShipId=id;
   addLog('Gebrauchtes Schiff gekauft: '+ship.name+' · Zustand '+ship.condition+' % · Reichweite '+ship.range.toLocaleString('de-DE')+' km · Hafen '+port(ship.port).name+'.');
   saveGame();renderUI();renderShips(id);yardMode='used';toast('Schiff gekauft: '+ship.name);
