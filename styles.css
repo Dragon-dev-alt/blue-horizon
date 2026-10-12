@@ -79,3 +79,6 @@
 .save-row .delete-save-button:hover:not(:disabled){background:#d62845;border-color:#ff9aaa;box-shadow:0 0 12px #ff304455}
 .save-row .delete-save-button:disabled{opacity:.25;cursor:not-allowed}
 .save-row>span{min-width:0;overflow-wrap:anywhere}
+
+/* Dedicated save-slot screen and in-game overwrite confirmation. */
+.overwrite-confirm{margin-top:12px;padding:12px;border:1px solid #ff6478;border-radius:10px;background:#351722}.overwrite-confirm p{font-size:12px;line-height:1.5;margin:0 0 10px}.overwrite-actions{display:flex;gap:8px}.overwrite-actions button{flex:1;min-width:0}.overwrite-actions .danger-confirm{background:#a91f35;border-color:#ff6478;color:#fff}.save-row .delete-save-button{display:flex;align-items:center;justify-content:center;text-align:center;line-height:1;padding:0;position:relative}
