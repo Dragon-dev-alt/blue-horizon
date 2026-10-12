@@ -244,48 +244,18 @@ function buyShip(typeId){
  runShipPurchaseWithLoading(()=>{
   if(!game||game.cash<t.price*d.cost)return;
   game.cash-=Math.round(t.price*d.cost);const id='s'+game.nextShipId++;const range=randomShipRange(typeId);const home=port(randomShipPort(typeId,range));
-  game.ships.push({id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null,condition:100,range});
-  selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'.');saveGame();renderUI();renderShips(id);toast('Neues Schiff gekauft: '+t.name+'.');
+  game.ships.push({id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null,condition:100,range,deliveryRemaining:1});
+  selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'. Lieferung in 1 Spieltag.');saveGame();renderUI();renderShips(id);toast('Schiff gekauft – Lieferung in 1 Spieltag.');
  });
 }
 function openShipyard(){if(!game)return;$('shipyard').classList.remove('hidden');renderShipyard()}
 let shipyardExitLoading=false;
-async function waitForPurchasedShipReady(){
+function waitForPurchasedShipReady(){
  const ship=typeof selectedShip==='function'?selectedShip():game?.ships?.find(s=>String(s.id)===String(selectedShipId));
  if(!ship)return;
- const started=performance.now();
- // Den Ladebildschirm erst verlassen, wenn die Auftragssuche für das gekaufte
- // Schiff wirklich abgeschlossen ist. Ein Timeout hat zuvor die Suche bei
- // langsamen Routenprüfungen abgebrochen und den Rest ins laufende Spiel verlagert.
+ // Sofort im Hintergrund starten. Die Routensuche liefert zwischen einzelnen
+ // Kandidaten an den Browser zurück und blockiert den Schiffskauf nicht.
  if(typeof eligibleContracts==='function')eligibleContracts(ship);
- let lastMessageAt=0;
- while(true){
-  const live=game?.ships?.find(s=>String(s.id)===String(ship.id));
-  if(!live||live.trip||live.inYard)break;
-  const key=typeof contractEligibilityKey==='function'?contractEligibilityKey(live):null;
-  const pending=!!(key&&contractEligibilityPending instanceof Set&&contractEligibilityPending.has(key));
-  const cached=!!(key&&contractEligibilityCache instanceof Map&&contractEligibilityCache.has(key));
-  if(cached&&!pending)break;
-  if(!pending&&!cached&&typeof eligibleContracts==='function')eligibleContracts(live);
-  const now=performance.now();
-  if(now-lastMessageAt>1200){
-   lastMessageAt=now;
-   if(typeof window.setLoadingScreen==='function'){
-    const elapsed=Math.round((now-started)/1000);
-    window.setLoadingScreen('Lädt … geprüfte Routen und passende Aufträge werden fertiggestellt ('+elapsed+' s)',82);
-   }
-  }
-  await new Promise(resolve=>setTimeout(resolve,80));
- }
- // UI und Routenanzeige noch unter dem Loader aktualisieren, damit dieser
- // Render-Aufwand nicht erst beim ersten sichtbaren Frame nach dem Kauf anfällt.
- if(game&&selectedShipId!=null){
-  renderUI();
-  renderShips(String(selectedShipId));
-  showSelectedShipRoute(false);
-  saveGame();
- }
- await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
 }
 function runShipPurchaseWithLoading(purchase){
  const overlay=$('loadingScreen'),yard=$('shipyard');
@@ -299,21 +269,24 @@ function runShipPurchaseWithLoading(purchase){
  };
  try{
   if(yard)yard.classList.add('hidden');
-  if(typeof window.setLoadingScreen==='function')window.setLoadingScreen('Lädt … Schiff wird übernommen und Flotte aktualisiert',72);
+  if(typeof window.setLoadingScreen==='function')window.setLoadingScreen('Lädt … Schiff wird übernommen',72);
   overlay.classList.remove('hidden');
   overlay.style.display='grid';overlay.style.visibility='visible';
   overlay.setAttribute('aria-hidden','false');
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
-   window.setTimeout(async()=>{
+   window.setTimeout(()=>{
     try{
      purchase();
-     if(typeof window.setLoadingScreen==='function')window.setLoadingScreen('Lädt … geprüfte Routen und Aufträge werden vorbereitet',82);
-     await waitForPurchasedShipReady();
+     waitForPurchasedShipReady();
     }catch(error){
-     console.error('Schiffskauf/Initialisierung fehlgeschlagen:',error);
-     toast('Das Schiff wurde möglicherweise gekauft, die Oberfläche konnte aber nicht vollständig aktualisiert werden.');
-    }finally{hideOverlay()}
-   },100);
+     console.error('Schiffskauf fehlgeschlagen:',error);
+     toast('Der Schiffskauf konnte nicht vollständig abgeschlossen werden.');
+    }finally{
+     // Routen werden absichtlich nicht abgewartet: das Schiff wird ausgeliefert,
+     // während die Auftragsprüfung im Hintergrund weiterläuft.
+     hideOverlay();
+    }
+   },50);
   }));
  }catch(error){
   hideOverlay();
@@ -327,7 +300,7 @@ function closeShipyard(){
  if(yard)yard.classList.add('hidden');
 }
 
-function advanceGameDay(){if(!game)return;game.day++;const d=DIFFICULTIES[game.difficulty];let expenses=0;game.ships.forEach(s=>{expenses+=shipType(s.type).upkeep*d.upkeep/7;if(s.trip){const tr=s.trip;tr.daysElapsed++;tr.progress=Math.min(1,tr.daysElapsed/tr.days);if(tr.progress>=1){const c=allContracts().find(x=>x.id===tr.contractId);const lateUrgent=tr.contractType==='urgent'&&tr.deadline!=null&&tr.daysElapsed>tr.deadline;const netRevenue=Math.round(tr.revenue*(lateUrgent ? 0.8 : 1))-tr.cost;game.cash+=netRevenue;game.rep=Math.max(0,Math.min(100,game.rep+(lateUrgent?-3:1)));game.completed++;addLog(s.name+' erreicht '+port(tr.to).name+(lateUrgent?' verspätet. 20 % Vergütungsabzug und 3 Rufpunkte verloren.':' pünktlich/erfolgreich')+'. Nettoerlös: '+money(netRevenue)+'.');if(c&&c.assignedShipId&&Array.isArray(game.generatedContracts))game.generatedContracts=game.generatedContracts.filter(x=>x.id!==c.id);s.port=tr.to;s.trip=null;s.status='idle'}}});game.cash-=expenses;game.cash-=18000*d.cost;if(game.day%7===0){game.cash-=180000*d.upkeep;addLog('Wöchentliche Verwaltungskosten: '+money(180000*d.upkeep)+'.')}if(game.cash<0)game.rep=Math.max(0,game.rep-2);(game.buildOrders||[]).forEach(o=>{o.remaining--;if(o.remaining<=0){game.ships.push({id:o.id,name:o.name,type:o.type,port:o.port,trip:null,condition:100,deliveryRemaining:0});addLog('Neubau ausgeliefert: '+o.name+' (100 % Zustand).')}});game.buildOrders=(game.buildOrders||[]).filter(o=>o.remaining>0);(game.repairOrders||[]).forEach(o=>{o.remaining--;if(o.remaining<=0){const ship=game.ships.find(x=>x.id===o.shipId);if(ship){ship.condition=o.target;ship.inYard=false;addLog(ship.name+' ist nach der Überholung wieder einsatzbereit ('+ship.condition+' %).')}}});game.repairOrders=(game.repairOrders||[]).filter(o=>o.remaining>0);saveGame();renderUI();renderShips();showSelectedShipRoute(false)}
+function advanceGameDay(){if(!game)return;game.day++;const d=DIFFICULTIES[game.difficulty];let expenses=0;game.ships.forEach(s=>{expenses+=shipType(s.type).upkeep*d.upkeep/7;if(Number(s.deliveryRemaining)>0){s.deliveryRemaining=Math.max(0,Number(s.deliveryRemaining)-1);if(s.deliveryRemaining===0)addLog(s.name+' wurde ausgeliefert und ist einsatzbereit.')}if(s.trip){const tr=s.trip;tr.daysElapsed++;tr.progress=Math.min(1,tr.daysElapsed/tr.days);if(tr.progress>=1){const c=allContracts().find(x=>x.id===tr.contractId);const lateUrgent=tr.contractType==='urgent'&&tr.deadline!=null&&tr.daysElapsed>tr.deadline;const netRevenue=Math.round(tr.revenue*(lateUrgent ? 0.8 : 1))-tr.cost;game.cash+=netRevenue;game.rep=Math.max(0,Math.min(100,game.rep+(lateUrgent?-3:1)));game.completed++;addLog(s.name+' erreicht '+port(tr.to).name+(lateUrgent?' verspätet. 20 % Vergütungsabzug und 3 Rufpunkte verloren.':' pünktlich/erfolgreich')+'. Nettoerlös: '+money(netRevenue)+'.');if(c&&c.assignedShipId&&Array.isArray(game.generatedContracts))game.generatedContracts=game.generatedContracts.filter(x=>x.id!==c.id);s.port=tr.to;s.trip=null;s.status='idle'}}});game.cash-=expenses;game.cash-=18000*d.cost;if(game.day%7===0){game.cash-=180000*d.upkeep;addLog('Wöchentliche Verwaltungskosten: '+money(180000*d.upkeep)+'.')}if(game.cash<0)game.rep=Math.max(0,game.rep-2);(game.buildOrders||[]).forEach(o=>{o.remaining--;if(o.remaining<=0){game.ships.push({id:o.id,name:o.name,type:o.type,port:o.port,trip:null,condition:100,deliveryRemaining:0});addLog('Neubau ausgeliefert: '+o.name+' (100 % Zustand).')}});game.buildOrders=(game.buildOrders||[]).filter(o=>o.remaining>0);(game.repairOrders||[]).forEach(o=>{o.remaining--;if(o.remaining<=0){const ship=game.ships.find(x=>x.id===o.shipId);if(ship){ship.condition=o.target;ship.inYard=false;addLog(ship.name+' ist nach der Überholung wieder einsatzbereit ('+ship.condition+' %).')}}});game.repairOrders=(game.repairOrders||[]).filter(o=>o.remaining>0);saveGame();renderUI();renderShips();showSelectedShipRoute(false)}
 function nextDay(){if(!game)return;advanceGameDay();}
 function baseRenderUI(){
  if(!game)return;
@@ -344,11 +317,13 @@ function baseRenderUI(){
  $('selectedShipLabel').textContent=s?s.name:'';
  const orders=eligibleContracts(s);
  const underRepair=!!s&&(s.inYard||(game.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)));
- const waitingForRoutes=!!s&&!s.trip&&!underRepair&&s.type!=='river'&&!window.waterRouteDataReady;
- const checkingForOrders=!!s&&!s.trip&&!underRepair&&!waitingForRoutes&&typeof isContractEligibilityPending==='function'&&isContractEligibilityPending(s);
+ const inDelivery=!!s&&Number(s.deliveryRemaining)>0;
+ const waitingForRoutes=!!s&&!s.trip&&!underRepair&&!inDelivery&&s.type!=='river'&&!window.waterRouteDataReady;
+ const checkingForOrders=!!s&&!s.trip&&!underRepair&&!inDelivery&&!waitingForRoutes&&typeof isContractEligibilityPending==='function'&&isContractEligibilityPending(s);
  $('ordersHelp').textContent=!s?'Wähle ein Schiff aus.':
   s.trip?'Dieses Schiff ist unterwegs. Die türkisfarbene Linie zeigt seine aktive Route.':
   underRepair?'Dieses Schiff wird in der Werft überholt und ist vorübergehend nicht verfügbar.':
+  inDelivery?'Dein Schiff wird ausgeliefert. Währenddessen werden passende Aufträge im Hintergrund geprüft.':
   waitingForRoutes?'Wasserwege werden geladen und auf Land geprüft. Sichere Aufträge erscheinen danach automatisch.':
   checkingForOrders?'Passende Hafenaufträge werden im Hintergrund berechnet, damit die Karte flüssig bleibt.':
   orders.length?'Verfügbare Aufträge für '+s.name+'. Die gestrichelte goldene Linie zeigt die Routenvorschau.':
@@ -359,6 +334,8 @@ function baseRenderUI(){
   $('ordersList').innerHTML='<p class="notice">Wähle ein Schiff aus der Flotte oder auf der Karte.</p>';
  }else if(underRepair){
   $('ordersList').innerHTML='<div class="order"><h3>In der Werft</h3><p>Aufträge werden nach Abschluss der Überholung wieder verfügbar.</p></div>';
+ }else if(inDelivery){
+  $('ordersList').innerHTML='<div class="order"><h3>🚢 Schiff wird ausgeliefert</h3><p>Verbleibende Lieferzeit: '+Number(s.deliveryRemaining)+' Spieltag. Die passenden Hafenrouten werden bereits im Hintergrund vorbereitet.</p></div>';
  }else if(waitingForRoutes||checkingForOrders){
   $('ordersList').innerHTML=waitingForRoutes
    ?'<div class="order"><h3>Wasserwege werden geprüft</h3><p class="notice">Aufträge werden angezeigt, sobald das Routennetz bereit ist.</p></div>'
