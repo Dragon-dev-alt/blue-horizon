@@ -99,6 +99,14 @@ function portTypeName(p){return p.level===3?'Internationaler Hafen':p.level===2?
    Hafenpaare häufig erneut ab. Geometrie und Landprüfung werden nur einmal erzeugt. */
 const contractRouteCache=new Map();
 const MAX_CONTRACT_ROUTE_CACHE=240;
+window.cachePrecomputedContractRoute=function(from,to,type,coords){
+ const key=(type==='river'?'river':'sea')+'|'+String(from)+'|'+String(to);
+ const value=Array.isArray(coords)&&coords.length>1?coords:null;
+ if(contractRouteCache.has(key))contractRouteCache.delete(key);
+ contractRouteCache.set(key,value);
+ while(contractRouteCache.size>MAX_CONTRACT_ROUTE_CACHE)contractRouteCache.delete(contractRouteCache.keys().next().value);
+ return value;
+};
 function routeForContract(c,s){
  const a=port(c?.from),b=port(c?.to);
  if(!a||!b||!s||!window.waterRouteDataReady||typeof window.isWaterRouteSafe!=='function')return null;
