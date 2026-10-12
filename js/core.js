@@ -2,7 +2,16 @@
 /* Zustand und Speicherung */
 let game=null,activeSlot=0,map=null,portMarkers=[],shipMarkers={},routeLayers=[],waterRouteCache=new Map(),simulationSpeed=1,simulationProgress=0,lastFrame=0,lastShipFrame=0,lastHudRefresh=0,animationId=0,portsVisible=true,seaRoutingAvailable=false;
 const routeMetricsCache=new WeakMap();
-const $=id=>document.getElementById(id),money=n=>'€ '+Math.round(n).toLocaleString('de-DE'),port=id=>PORTS.find(p=>p.id===id),shipType=id=>SHIP_TYPES.find(t=>t.id===id),cargo=id=>CARGO.find(c=>c.id===id);
+/* Immutable lookup tables avoid repeated linear scans during marker updates,
+   route generation and simulation ticks. */
+const PORT_BY_ID=new Map(PORTS.map(item=>[String(item.id),item]));
+const SHIP_TYPE_BY_ID=new Map(SHIP_TYPES.map(item=>[String(item.id),item]));
+const CARGO_BY_ID=new Map(CARGO.map(item=>[String(item.id),item]));
+const $=id=>document.getElementById(id),
+ money=n=>'€ '+Math.round(n).toLocaleString('de-DE'),
+ port=id=>PORT_BY_ID.get(String(id))||null,
+ shipType=id=>SHIP_TYPE_BY_ID.get(String(id))||null,
+ cargo=id=>CARGO_BY_ID.get(String(id))||null;
 function baseMakeGame(name,difficulty){const d=DIFFICULTIES[difficulty];return{company:name.trim()||'Blue Horizon Shipping',difficulty,cash:d.cash,day:1,rep:50,ships:[{id:'s1',name:'Nordstern',type:'coastal',port:'ham',trip:null,condition:100,range:randomShipRange('coastal')}],nextShipId:2,log:['Willkommen bei '+(name.trim()||'Blue Horizon Shipping')+'. Deine erste Runde beginnt. Du startest mit einem Küstenfrachter und realistischem Firmenkapital.'],completed:0,loans:0,created:Date.now()}}
 function saveGame(){if(!game)return;try{localStorage.setItem(CONFIG.savePrefix+activeSlot,JSON.stringify(game));localStorage.setItem(CONFIG.activeKey,String(activeSlot))}catch(e){toast('Speichern nicht möglich: Browser-Speicher voll.')}}
 function loadSlot(slot){try{const raw=localStorage.getItem(CONFIG.savePrefix+slot);if(!raw)return null;const g=JSON.parse(raw);if(!g||!Array.isArray(g.ships)||!g.company)return null;return g}catch(e){return null}}
@@ -459,9 +468,9 @@ function frame(now){
    simulationProgress-=1;
    nextDay();
   }
-  // Keep ship markers smooth at up to 60 FPS; skip redundant work only
-  // when the browser itself is already running below that rate.
-  if(now-lastShipFrame>=1000/60){
+  // 30 FPS is visually smooth for ship markers and halves repeated map work.
+  // Simulation time still advances on every animation frame.
+  if(now-lastShipFrame>=1000/30){
    lastShipFrame=now;
    game.ships.forEach(s=>{
     if(!s.trip)return;
