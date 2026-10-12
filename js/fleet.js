@@ -103,7 +103,7 @@ function eligibilityStateIsCurrent(s,key){
 function loadHarborConnectionCatalog(){
  if(harborConnectionCatalog)return Promise.resolve(harborConnectionCatalog);
  if(harborCatalogLoadPromise)return harborCatalogLoadPromise;
- harborCatalogLoadPromise=fetch('./data/harbor-connections.json?v=connection-catalog-v1-20261012',{cache:'force-cache'})
+ harborCatalogLoadPromise=fetch('./data/harbor-connections.json?v=connection-catalog-v2-20261012',{cache:'force-cache'})
   .then(response=>{if(!response.ok)throw new Error('HTTP '+response.status);return response.json()})
   .then(data=>{
    if(!data||data.schemaVersion!==1||!Array.isArray(data.connections))throw new Error('Ungültiger Hafenverbindungskatalog.');
@@ -184,8 +184,12 @@ async function computeEligibleContractsAsync(s,key){
  }
  if(!eligibilityStateIsCurrent(s,key))return null;
  if(!Array.isArray(game.generatedContracts))game.generatedContracts=[];
- const prefix='route_'+String(s.id).replace(/[^a-zA-Z0-9_-]/g,'')+'_';
- game.generatedContracts=game.generatedContracts.filter(c=>!String(c.id).startsWith(prefix)||String(c.from)!==String(s.port));
+ const activeContractId=game.ships.find(item=>String(item.id)===String(s.id))?.trip?.contractId;
+ game.generatedContracts=game.generatedContracts.filter(c=>
+  String(c.id)===String(activeContractId)||
+  String(c.assignedShipId)!==String(s.id)||String(c.from)!==String(s.port)||
+  String(c.id).startsWith(prefix)&&String(c.from)!==String(s.port)
+ );
  valid.forEach(c=>game.generatedContracts.push(c));
  if(valid.length)game.nextContractId=(game.nextContractId||1)+valid.length;
  saveGame();
