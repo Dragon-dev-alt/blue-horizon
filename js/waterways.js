@@ -95,19 +95,6 @@ PORTS.forEach(p=>{
 });
 function portTypeName(p){return p.level===3?'Internationaler Hafen':p.level===2?'Regionaler Seehafen':'Binnenhafen'}
 
-/* =========================================================
-   ERWEITERUNGEN & KORREKTUREN
-   Alle Overrides stehen gesammelt am Ende des Scripts.
-   =========================================================
-   V1.1: Aufträge nur anbieten, wenn Schiff, Start-/Zielhafen und Route zusammenpassen. */
-CONTRACTS.push(
- {id:'river1',company:'RheinCargo',from:'dui',to:'cgn',cargo:'containers',bonus:9000,deadline:5,desc:'Containertransport auf dem Rhein.'},
- {id:'river2',company:'DonauLogistik',from:'vie',to:'bud',cargo:'bulk',bonus:12000,deadline:6,desc:'Schüttguttransport auf der Donau.'},
- {id:'river3',company:'Oberrhein Handel',from:'bas',to:'str',cargo:'containers',bonus:8500,deadline:5,desc:'Containerladung zwischen Oberrheinhäfen.'},
- {id:'river4',company:'Seine Fracht',from:'par',to:'rou',cargo:'bulk',bonus:7500,deadline:4,desc:'Schüttguttransport auf der Seine.'},
- {id:'river5',company:'Mississippi Trade',from:'mem',to:'stl',cargo:'bulk',bonus:14000,deadline:7,desc:'Schüttguttransport auf dem Mississippi.'},
- {id:'river6',company:'Yangtze Freight',from:'wuh',to:'chq',cargo:'containers',bonus:16000,deadline:7,desc:'Containertransport auf dem Jangtse.'}
-);
 /* Begrenzter Routen-Cache: Auftragstabellen und Schiffsauswahl fragen dieselben
    Hafenpaare häufig erneut ab. Geometrie und Landprüfung werden nur einmal erzeugt. */
 const contractRouteCache=new Map();
