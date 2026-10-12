@@ -144,7 +144,7 @@ function smoothWaterRoute(coords){
 }
 /* Bounded LRU cache: prevent route geometry for every port pair from
    accumulating indefinitely during a long play session. */
-const MAX_CACHED_WATER_ROUTES=180;
+const MAX_CACHED_WATER_ROUTES=520;
 function cacheWaterRoute(key,coords){
  if(waterRouteCache.has(key))waterRouteCache.delete(key);
  waterRouteCache.set(key,coords);
@@ -224,6 +224,67 @@ function baseComputeWaterRoute(a,b){
   return null;
  }
 }
+/* Beim allerersten Laden werden häufige Hafenverbindungen im Hintergrund vorgewärmt.
+   See- und Binnenschiffe teilen sich je ein Routennetz; dadurch müssen nicht dieselben
+   Geometrien für jeden einzelnen Schiffstyp mehrfach berechnet werden. */
+let routeWarmupStarted=false;
+let routeWarmupFinished=false;
+function routeWarmupYield(){return new Promise(resolve=>setTimeout(resolve,0))}
+async function precomputeHarborRoutes(){
+ if(routeWarmupStarted)return;
+ routeWarmupStarted=true;
+ const overlay=$('loadingScreen');
+ if(overlay)window.setLoadingScreen('Seekarten und Hafenverbindungen werden vorbereitet …',8);
+ try{
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  const seaPorts=PORTS.filter(p=>!p.river);
+  const riverPorts=PORTS.filter(p=>p.river);
+  const groups=[{ports:seaPorts,kind:'sea'},{ports:riverPorts,kind:'river'}];
+  let tasks=[];
+  for(const group of groups){
+   for(const origin of group.ports){
+    const valid=group.ports.filter(p=>p.id!==origin.id&&portCanServeShip(p,{type:group.kind==='river'?'river':'medium'}));
+    if(!valid.length)continue;
+    const distances=valid.map(p=>({p,d:haversine({lat:origin.lat,lon:origin.lon},{lat:p.lat,lon:p.lon})}));
+    distances.sort((a,b)=>a.d-b.d);
+    const picks=[distances[0]?.p,distances[Math.floor(distances.length*.55)]?.p,distances[distances.length-1]?.p]
+      .filter((p,i,arr)=>p&&arr.findIndex(x=>x?.id===p.id)===i).slice(0,2);
+    for(const destination of picks)tasks.push({origin,destination,kind:group.kind});
+   }
+  }
+  let done=0;
+  for(const task of tasks){
+   if(task.kind==='river'){
+    if(typeof riverRoute==='function')riverRoute(task.origin.id,task.destination.id);
+   }else{
+    baseComputeWaterRoute(task.origin,task.destination);
+   }
+   done++;
+   if(done%2===0){
+    const progress=tasks.length?Math.round(10+done/tasks.length*85):95;
+    if(overlay)window.setLoadingScreen('Hafenrouten werden vorbereitet ('+done+' / '+tasks.length+') …',progress);
+    await routeWarmupYield();
+   }
+  }
+  routeWarmupFinished=true;
+  if(overlay)window.setLoadingScreen('Routennetz bereit – Spiel wird gestartet …',100);
+  window.dispatchEvent(new Event('harbor-routes-precomputed'));
+  console.info('Hafenrouten vorgewärmt:',tasks.length,'Verbindungen.');
+ }catch(error){
+  console.warn('Routenvorbereitung unvollständig; fehlende Routen werden bei Bedarf berechnet.',error);
+  routeWarmupFinished=true;
+  window.dispatchEvent(new Event('harbor-routes-precomputed'));
+ }finally{
+  if(overlay){
+   await new Promise(resolve=>setTimeout(resolve,350));
+   overlay.classList.add('hidden');
+   overlay.style.display='none';
+   overlay.style.visibility='hidden';
+   overlay.setAttribute('aria-hidden','true');
+  }
+ }
+}
+
 /* Flotte, Aufträge und Fahrten */
 function selectedShip(){if(!game)return null;if(selectedShipId==null)return null;return game.ships.find(s=>String(s.id)===String(selectedShipId))||null}
 let selectedShipId='s1';
@@ -490,7 +551,12 @@ function frame(now){
  animationId=requestAnimationFrame(frame);
 }
 /* Initialisierung */
-function init(){initMap();seaRoutingAvailable=typeof window.searoute==='function'&&window.waterRouteDataReady===true;if(!seaRoutingAvailable)console.info('Wasserwege werden geladen und auf Landkreuzungen geprüft.');const active=Number(localStorage.getItem(CONFIG.activeKey));$('continueHint').textContent=Number.isInteger(active)&&slotExists(active)?'Letzten Spielstand fortsetzen':'Noch kein Spielstand vorhanden';requestAnimationFrame(frame)}
+function init(){initMap();seaRoutingAvailable=typeof window.searoute==='function'&&window.waterRouteDataReady===true;if(!seaRoutingAvailable)console.info('Wasserwege werden geladen und auf Landkreuzungen geprüft.');const active=Number(localStorage.getItem(CONFIG.activeKey));$('continueHint').textContent=Number.isInteger(active)&&slotExists(active)?'Letzten Spielstand fortsetzen':'Noch kein Spielstand vorhanden';requestAnimationFrame(frame);
+ const overlay=$('loadingScreen');
+ if(overlay){window.setLoadingScreen('Seekarten und Hafenverbindungen werden geladen …',3);requestAnimationFrame(()=>requestAnimationFrame(()=>{}));}
+ if(window.waterRouteDataReady)precomputeHarborRoutes();
+ else window.addEventListener('water-route-data-ready',()=>{seaRoutingAvailable=typeof window.searoute==='function'&&typeof window.isWaterRouteSafe==='function'&&window.waterRouteDataReady===true;precomputeHarborRoutes()},{once:true});
+}
 window.addEventListener('water-route-data-ready',()=>{seaRoutingAvailable=typeof window.searoute==='function'&&typeof window.isWaterRouteSafe==='function'&&window.waterRouteDataReady===true;waterRouteCache.clear();if(game){revalidateExistingTripRoutes();renderUI();renderShips();showSelectedShipRoute(true);saveGame()}console.info('Wasserwege und Landprüfung sind bereit.');if(!game)toast('Wasserwege geladen – Routen werden auf Land geprüft.')});
 window.addEventListener('water-route-data-error',()=>{seaRoutingAvailable=false;console.error('Routen bleiben deaktiviert, bis die Landprüfung verfügbar ist.');toast('Wasserprüfung nicht geladen. Bitte Internetverbindung prüfen.')});
 window.addEventListener('load',init);
