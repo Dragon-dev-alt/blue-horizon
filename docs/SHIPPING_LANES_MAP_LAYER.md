@@ -42,3 +42,10 @@ Die temporäre Wasserkarte-Schaltfläche und der Basiskartenwechsel wurden wiede
 Nach einem ersten erfolgreichen Laden können beide Datensätze bei weiteren Starts desselben Browserprofils wiederverwendet werden. Beim ersten Start oder nach dem Löschen der Browserdaten müssen die Quelldaten noch aus dem Internet geladen werden. Diese Speicherung ist browserlokal und keine eingecheckte Datendatei im GitHub-Repository.
 
 **Noch offen:** Das weltweite Binnenwasserstraßennetz ist weiterhin nur durch die bestehenden Verbindungen in `js/waterways.js` repräsentiert. Das ist keine vollständige Datenbank aller großen Flüsse und keine Aussage zur tatsächlichen Schiffbarkeit jedes Flussabschnitts. Eine belastbare nächste Ausbaustufe braucht einen versionierten Gewässerdatensatz mit expliziten Flussgeometrien und Schiffbarkeitsklassen. Die Landmaske darf nicht als Wasserstraßen-Netz missverstanden werden.
+
+
+## Binnenrouten und geglättete Linien (12.10.2026)
+
+`data/inland-waterways.json` ist jetzt die Laufzeitquelle für das modellierte Binnenwasserstraßennetz. `js/waterways.js` lädt die Datei aus dem Repository und nutzt bei einem Ladefehler weiterhin die eingebauten Verbindungen als Fallback. Flussrouten werden mit der vorhandenen Glättungsfunktion verarbeitet; eine geglättete Variante wird nur verwendet, wenn sie die Landprüfung besteht. Seerouten nutzen weiterhin das maritime Routingnetz, die Landprüfung und die vorhandene Glättung.
+
+Das ist noch kein vollständiger, offizieller globaler Gewässeratlas: Die Binnenkanten sind Spielverbindungen zwischen Häfen, keine hochauflösenden Flussmittellinien. Die Landprüfung kann eine Route verwerfen, wenn eine Verbindung zwischen zwei Binnenhäfen als direkte Linie Land schneidet. Für echte Flussverläufe sollten später Geometrien entlang des tatsächlichen Flussbetts und Schiffbarkeitsattribute ergänzt werden.
