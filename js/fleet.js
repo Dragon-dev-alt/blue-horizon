@@ -265,7 +265,7 @@ function revalidateExistingTripRoutes(){
    return;
   }
   const from=s.trip.from||s.port,to=s.trip.to;
-  const replacement=port(from)&&port(to)?baseComputeWaterRoute(port(from),port(to)):null;
+  const replacement=port(from)&&port(to)?routeForContract({from,to},s):null;
   if(replacement){s.trip.coords=replacement;s.trip.distance=routeDistanceNauticalMiles(replacement);s.trip.routeSmoothed=true;addLog('Sicherheitsprüfung: Route von '+port(from).name+' nach '+port(to).name+' aktualisiert.');}
   else{ s.trip=null;s.port=from;s.status='idle';addLog('Eine alte Route für '+s.name+' wurde gestoppt, da keine sichere Wasserroute verfügbar war.'); }
  });
