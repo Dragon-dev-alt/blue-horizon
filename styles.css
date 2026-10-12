@@ -125,3 +125,29 @@
 
 /* Aktive Wasserkarte: dezente maritime Markierung statt des alten Grün-Tons. */
 #waterViewToggle[aria-pressed="true"]{background:#124d70;border-color:#63c9f4;color:#e3f7ff}
+
+/* Blue Horizon: cohesive in-game overlays and redesigned company orders */
+.overlay:not(#mainMenu):not(#loadingScreen){background:radial-gradient(ellipse at 50% 8%,rgba(29,81,108,.72),rgba(3,15,27,.88) 70%),linear-gradient(135deg,#071725,#0a2437);backdrop-filter:blur(7px)}
+#shipyard.overlay{background:radial-gradient(ellipse at 50% 0%,rgba(30,91,119,.66),rgba(3,15,27,.9) 72%),linear-gradient(135deg,#071725,#0a2437)}
+#shipyard .menu-card,#roadmapWindow .menu-card{width:min(760px,96vw);max-height:88dvh;overflow:auto;border:1px solid #4e7893;border-radius:18px;background:linear-gradient(145deg,rgba(14,37,56,.98),rgba(5,20,34,.98));box-shadow:0 26px 90px #0009,inset 0 1px 0 #ffffff12}
+#shipyard .menu-brand h1,#roadmapWindow h2{color:#f1f9ff;letter-spacing:1px}#shipyard .menu-brand p{color:#8fb7cc}
+.contract-overlay{z-index:2100;align-items:center;justify-content:center;padding:clamp(10px,2vw,26px)}
+.contract-window{width:min(1320px,100%);height:min(820px,calc(100dvh - 32px));display:flex;flex-direction:column;overflow:hidden;border:1px solid #3c789c;border-radius:20px;background:linear-gradient(145deg,rgba(9,30,48,.99),rgba(4,18,32,.99));box-shadow:0 28px 100px #000b,inset 0 1px 0 #ffffff0c}
+.contract-window-head{display:flex;align-items:center;gap:15px;padding:19px 22px;border-bottom:1px solid #2b506a;background:linear-gradient(100deg,#153a55,#0b263d)}
+.contract-title-icon{display:grid;place-items:center;width:49px;height:49px;flex:0 0 49px;border:1px solid #4389b3;border-radius:14px;background:linear-gradient(145deg,#17618c,#103b5d);font-size:25px;box-shadow:0 5px 20px #00111f88}
+.contract-heading{min-width:0}.contract-heading h2{margin:0;font-size:clamp(19px,2.2vw,27px)}.contract-heading p{margin:5px 0 0;color:#a7c7db;font-size:12px}.contract-ship-label{margin-left:auto;font-size:12px;white-space:nowrap}
+.contract-close{width:40px;height:40px;flex:0 0 40px;padding:0;border:1px solid #3b617b;background:#0b2438;font-size:25px;line-height:1}.contract-close:hover{background:#1b4966;border-color:#7ec9ee}
+.contract-window-body{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(260px,.75fr);gap:18px;min-height:0;flex:1;padding:18px}
+.contract-list-column{display:flex;flex-direction:column;min-height:0;overflow:hidden}.contract-list-intro{padding:0 2px 12px;color:#9cb9cc;font-size:12px;line-height:1.5}
+#contractsPanel .order-list{max-height:none;overflow:auto;flex:1;padding:1px 7px 1px 1px;scrollbar-color:#315d78 #091b2b;scrollbar-width:thin}
+#contractsPanel .order{margin-bottom:9px;padding:13px 14px;border:1px solid #2a5069;border-radius:12px;background:linear-gradient(110deg,#102f48,#0c263b);box-shadow:inset 0 1px 0 #ffffff08;transition:transform .15s ease,border-color .15s ease,background .15s ease}
+#contractsPanel .order:hover{transform:translateY(-1px);border-color:#3e8cbb;background:linear-gradient(110deg,#153c5a,#0d2a42)}
+#contractsPanel .order h3{font-size:14px;color:#f2f8fc;line-height:1.4;margin:0 0 7px}#contractsPanel .order p{font-size:12px;line-height:1.55;color:#a6c1d3}
+#contractsPanel .order .bonus{display:inline-block;margin-top:6px;padding:4px 8px;border:1px solid #286d5d;border-radius:999px;background:#0c493d;color:#9af0cd;font-size:10px}
+#contractsPanel .order button{border-radius:8px;background:linear-gradient(180deg,#1388db,#0864b3);border-color:#349de7;color:#fff;font-weight:750}
+.contract-detail-placeholder{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;min-height:260px;padding:clamp(18px,3vw,30px);border:1px solid #2c5975;border-radius:16px;background:radial-gradient(ellipse at 50% 0%,#143e5c,#0a2236 75%);box-shadow:inset 0 1px 0 #ffffff08}
+.detail-anchor{display:grid;place-items:center;width:58px;height:58px;border-radius:17px;border:1px solid #4388b4;background:#12466c;color:#d5efff;font-size:29px;margin-bottom:22px}
+.contract-detail-placeholder h3{margin:0 0 9px;font-size:19px}.contract-detail-placeholder p{margin:0;color:#a8c5d8;font-size:13px;line-height:1.7}.detail-note{margin-top:24px;padding:12px;border-left:3px solid #49c8d6;background:#0c2b40;color:#b5d4e4;font-size:11px;line-height:1.6}
+.contract-window-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-top:1px solid #25475e;background:#081c2c;color:#86a9bf;font-size:10px}.contract-window-footer span{display:flex;align-items:center;gap:8px}.status-dot{width:8px;height:8px;border-radius:50%;background:#51d6a1;box-shadow:0 0 10px #51d6a166}
+.side.orders-open{display:none!important}
+@media(max-width:760px){.contract-window{height:calc(100dvh - 16px);border-radius:14px}.contract-window-head{padding:12px;gap:10px}.contract-title-icon{width:38px;height:38px;flex-basis:38px;font-size:20px}.contract-heading p{font-size:10px}.contract-ship-label{display:none}.contract-window-body{grid-template-columns:1fr;gap:8px;padding:10px}.contract-detail-placeholder{display:none}.contract-window-footer{padding:9px 12px}.contract-window-footer span:last-child{display:none}#contractsPanel .order{padding:11px}}
