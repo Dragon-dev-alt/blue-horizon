@@ -141,7 +141,9 @@ async function generateGuaranteedContractAsync(s,key){
    if(s.type==='medium'||s.type==='bulk'||s.type==='ro-ro')return Math.abs(a.directKm-s.range*.72)-Math.abs(b.directKm-s.range*.72);
    return a.directKm-b.directKm;
   });
- for(const item of destinations){
+ // Nicht dutzende globale Routen in einem Auswahlvorgang erzeugen. Die Ziele
+ // sind bereits nach Schiffsprofil sortiert; sechs sichere Versuche reichen zunächst.
+ for(const item of destinations.slice(0,6)){
   await yieldToBrowser();
   if(!eligibilityStateIsCurrent(s,nextKey))return null;
   const target=item.p;
@@ -180,7 +182,17 @@ async function computeEligibleContractsAsync(s,key){
   const destination=port(c.to);
   return contractHasCompatiblePorts(c,s)&&!!destination;
  });
- for(const c of candidates){
+ // Eine Auswahlprüfung darf niemals das Spiel blockieren: erst die plausibelsten
+ // Aufträge testen, weitere werden bei Bedarf beim nächsten UI-Zyklus geprüft.
+ candidates.sort((a,b)=>{
+  const origin=port(s.port),pa=port(a.to),pb=port(b.to);
+  const da=origin&&pa?haversine({lat:origin.lat,lon:origin.lon},{lat:pa.lat,lon:pa.lon}):Infinity;
+  const db=origin&&pb?haversine({lat:origin.lat,lon:origin.lon},{lat:pb.lat,lon:pb.lon}):Infinity;
+  const target=({coastal:.45,medium:.68,long:.76,ultra:.82,tanker:.72,bulk:.62,'ro-ro':.65,river:.4})[s.type]||.6;
+  return Math.abs(da*1.852-s.range*target)-Math.abs(db*1.852-s.range*target);
+ });
+ const ROUTE_CHECK_BUDGET=10;
+ for(const c of candidates.slice(0,ROUTE_CHECK_BUDGET)){
   await yieldToBrowser();
   if(!eligibilityStateIsCurrent(s,key))return null;
   const coords=routeForContract(c,s);
@@ -243,8 +255,11 @@ function acceptOrder(contractId){
  const a=port(c.from),b=port(c.to),coords=routeForContract(c,s);
  if(!a||!b||!coords||coords.length<2){toast('Keine geprüfte Wasserroute für diesen Auftrag verfügbar.');return}
  const distance=routeDistanceNauticalMiles(coords);
- if(distance*1.852>s.range){
-  toast('Diese Route überschreitet die Reichweite dieses Schiffs ('+s.range.toLocaleString('de-DE')+' km).');return;
+ if(!routeFitsShip(coords,s)){
+  toast(distance*1.852>s.range
+   ?'Diese Route überschreitet die Reichweite dieses Schiffs ('+s.range.toLocaleString('de-DE')+' km).'
+   :'Diese Route ist für die Reichweite dieses Schiffstyps zu kurz. Bitte wähle einen längeren Auftrag.');
+  return;
  }
  const t=cargo(c.cargo),st=shipType(s.type),diff=DIFFICULTIES[game.difficulty],units=Math.floor(st.capacity*t.capacity);
  const contractScale=c.type==='large'?1.3:1;
