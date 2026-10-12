@@ -113,6 +113,8 @@ async function startNewGame(){
   const remainingLoaderMs=minimumLoaderMs-elapsed();
   if(remainingLoaderMs>0){
    await animateLoadingProgress(68,90,remainingLoaderMs,'Lädt … letzte Vorbereitungen');
+  }else{
+   await animateLoadingProgress(68,90,700,'Lädt … letzte Vorbereitungen');
   }
 
   $('mainMenu').classList.add('hidden');
