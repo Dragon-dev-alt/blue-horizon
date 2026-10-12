@@ -236,34 +236,43 @@ function buyShip(typeId){
   if(!game||game.cash<t.price*d.cost)return;
   game.cash-=Math.round(t.price*d.cost);const id='s'+game.nextShipId++;const home=port(randomShipPort(typeId));
   game.ships.push({id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null,condition:100,range:randomShipRange(typeId)});
-  selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'.');saveGame();renderUI();renderShips(id);openShipyard();toast('Neues Schiff gekauft: '+t.name+'.');
+  selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'.');saveGame();renderUI();renderShips(id);toast('Neues Schiff gekauft: '+t.name+'.');
  });
 }
 function openShipyard(){if(!game)return;$('shipyard').classList.remove('hidden');renderShipyard()}
 let shipyardExitLoading=false;
 function runShipPurchaseWithLoading(purchase){
- const overlay=$('loadingScreen');
- if(shipyardExitLoading||!overlay){purchase();return}
+ const overlay=$('loadingScreen'),yard=$('shipyard');
+ if(shipyardExitLoading||!overlay){if(yard)yard.classList.add('hidden');purchase();return}
  shipyardExitLoading=true;
  try{
+  // Shop sofort schließen: Der Ladescreen liegt nun zwischen Kauf und Karte.
+  if(yard)yard.classList.add('hidden');
   if(typeof window.setLoadingScreen==='function')window.setLoadingScreen('Lädt … Schiff wird übernommen und Flotte aktualisiert',72);
   overlay.classList.remove('hidden');
-  // Dem Browser zwei Frames geben, damit der Ladebildschirm vor der
-  // rechenintensiven Flotten-/Auftragsaktualisierung tatsächlich erscheint.
+  overlay.style.display='grid';overlay.style.visibility='visible';
+  overlay.setAttribute('aria-hidden','false');
+  // Zwei Frames sicherstellen, damit der Browser den Overlay vor dem Rendern
+  // von Flotte, Auftragsliste und Kartenmarkern tatsächlich zeichnen kann.
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
    window.setTimeout(()=>{
     try{purchase()}
+    catch(error){console.error('Schiffskauf fehlgeschlagen:',error);toast('Der Schiffskauf konnte nicht abgeschlossen werden.')}
     finally{
      requestAnimationFrame(()=>requestAnimationFrame(()=>{
       overlay.classList.add('hidden');
+      overlay.style.removeProperty('display');overlay.style.removeProperty('visibility');
+      overlay.setAttribute('aria-hidden','true');
       shipyardExitLoading=false;
      }));
     }
-   },40);
+   },100);
   }));
  }catch(error){
-  overlay.classList.add('hidden');shipyardExitLoading=false;
+  overlay.classList.add('hidden');overlay.style.removeProperty('display');overlay.style.removeProperty('visibility');
+  overlay.setAttribute('aria-hidden','true');shipyardExitLoading=false;
   console.warn('Schiffskauf-Ladescreen konnte nicht angezeigt werden:',error);
+  if(yard)yard.classList.add('hidden');
   purchase();
  }
 }
