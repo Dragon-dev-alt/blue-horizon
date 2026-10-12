@@ -108,18 +108,25 @@ CONTRACTS.push(
  {id:'river5',company:'Mississippi Trade',from:'mem',to:'stl',cargo:'bulk',bonus:14000,deadline:7,desc:'Schüttguttransport auf dem Mississippi.'},
  {id:'river6',company:'Yangtze Freight',from:'wuh',to:'chq',cargo:'containers',bonus:16000,deadline:7,desc:'Containertransport auf dem Jangtse.'}
 );
+/* Begrenzter Routen-Cache: Auftragstabellen und Schiffsauswahl fragen dieselben
+   Hafenpaare häufig erneut ab. Geometrie und Landprüfung werden nur einmal erzeugt. */
+const contractRouteCache=new Map();
+const MAX_CONTRACT_ROUTE_CACHE=240;
 function routeForContract(c,s){
- const a=port(c.from),b=port(c.to);
+ const a=port(c?.from),b=port(c?.to);
  if(!a||!b||!s||!window.waterRouteDataReady||typeof window.isWaterRouteSafe!=='function')return null;
- let coords=null;
- if(s.type==='river'){
-  if(!a.river||!b.river)return null;
-  coords=riverRoute(a.id,b.id);
- }else{
-  if(a.river||b.river)return null;
-  coords=resolveWaterRoute(a,b);
+ if((s.type==='river'&&(!a.river||!b.river))||(s.type!=='river'&&(a.river||b.river)))return null;
+ const key=(s.type==='river'?'river':'sea')+'|'+a.id+'|'+b.id;
+ if(contractRouteCache.has(key)){
+  const cached=contractRouteCache.get(key);
+  contractRouteCache.delete(key);contractRouteCache.set(key,cached);
+  return cached;
  }
+ let coords=s.type==='river'?riverRoute(a.id,b.id):resolveWaterRoute(a,b);
  // Keine Auftragsroute wird akzeptiert oder gezeichnet, wenn auch nur ein Abschnitt Land schneidet.
- return coords&&coords.length>1&&window.isWaterRouteSafe(coords)?coords:null;
+ coords=coords&&coords.length>1&&window.isWaterRouteSafe(coords)?coords:null;
+ contractRouteCache.set(key,coords);
+ while(contractRouteCache.size>MAX_CONTRACT_ROUTE_CACHE)contractRouteCache.delete(contractRouteCache.keys().next().value);
+ return coords;
 }
 
