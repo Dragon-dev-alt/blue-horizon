@@ -105,7 +105,7 @@ function cacheContractEligibility(key,result){
 function isContractEligibilityPending(s){return !!s&&contractEligibilityPending.has(contractEligibilityKey(s))}
 // Alle Schiffe teilen sich eine langsame Auftragswarteschlange. So laufen nicht
 // mehrere teure Routenprüfungen gleichzeitig, wenn mehrere Schiffe geliefert werden.
-const CONTRACT_ROUTE_STEP_DELAY=280;
+const CONTRACT_ROUTE_STEP_DELAY=1400;
 const contractGenerationQueue=[];
 let contractGenerationWorkerRunning=false;
 function yieldToBrowser(){
@@ -212,8 +212,8 @@ async function computeEligibleContractsAsync(s,key){
   seen.add(routeKey);
   const contract=createContractFromRoute(s,connection,route,i);
   if(contract)valid.push(contract);
-  // Drei unterschiedliche sichere Routen reichen für eine übersichtliche Auswahl.
-  if(valid.length>=3)break;
+  // Eine geprüfte Route reicht zunächst. Weitere Aufträge werden erst bei späterer Auswahl ergänzt.
+  if(valid.length>=1)break;
  }
  if(!eligibilityStateIsCurrent(s,key))return null;
  if(!Array.isArray(game.generatedContracts))game.generatedContracts=[];
@@ -254,7 +254,9 @@ function scheduleContractEligibility(s,key){
  processContractGenerationQueue();
 }
 function eligibleContracts(s){
- if(!s||s.trip||s.inYard||(game?.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)))return[];
+ // Keine Routensuche während der Lieferung: der teure Teil startet erst,
+ // wenn das Schiff tatsächlich einsatzbereit ist.
+ if(!s||Number(s.deliveryRemaining)>0||s.trip||s.inYard||(game?.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)))return[];
  ensureShipStats(s);
  const key=contractEligibilityKey(s);
  if(contractEligibilityCache.has(key))return contractEligibilityCache.get(key);
