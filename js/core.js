@@ -275,17 +275,53 @@ function removeLegacyStarterShip(savedGame){
  }
  return true;
 }
-function loadGameSlot(slot){
+async function loadGameSlot(slot){
  const g=loadSlot(slot);
  if(!g){toast('Spielstand konnte nicht geladen werden.');return}
- const removedStarter=removeLegacyStarterShip(g);
- game=g;activeSlot=slot;
- selectedShipId=game.ships[0]?.id||null;
- if(!DIFFICULTIES[game.difficulty])game.difficulty='medium';
- $('mainMenu').classList.add('hidden');
- renderUI();renderShips();map.invalidateSize();showSelectedShipRoute(true);
- if(removedStarter){saveGame();toast('Kostenloses Startschiff entfernt. Kaufe dein erstes Schiff in der Werft.');}
- else toast('Spielstand geladen: '+game.company);
+ const overlay=$('loadingScreen');
+ const paint=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+ const animate=(from,to,duration,message)=>new Promise(resolve=>{
+  const start=performance.now();
+  const tick=now=>{
+   const t=Math.min(1,(now-start)/Math.max(1,duration));
+   const eased=1-Math.pow(1-t,3);
+   window.setLoadingScreen(message,Math.round(from+(to-from)*eased));
+   if(t<1)requestAnimationFrame(tick);else resolve();
+  };
+  window.setLoadingScreen(message,from);requestAnimationFrame(tick);
+ });
+ try{
+  setSpeed(0);
+  window.setLoadingScreen('Lädt … Spielstand wird vorbereitet',4);
+  await paint();
+  await animate(4,18,400,'Lädt … Spielstand wird vorbereitet');
+  const removedStarter=removeLegacyStarterShip(g);
+  game=g;activeSlot=slot;
+  selectedShipId=game.ships[0]?.id||null;
+  if(!DIFFICULTIES[game.difficulty])game.difficulty='medium';
+  await animate(18,38,500,'Lädt … Spielstand und Flottendaten');
+  // Wait for map routing data as well, but keep the progress moving while it loads.
+  const routingPromise=(typeof waitForWaterRouting==='function')
+   ?waitForWaterRouting().catch(()=>false):Promise.resolve(false);
+  const routingReady=await Promise.all([
+   routingPromise,
+   animate(38,68,1800,'Lädt … Wasserwege und Hafendaten')
+  ]).then(values=>values[0]);
+  window.setLoadingScreen('Lädt … Spieloberfläche wird aufgebaut',72);
+  $('mainMenu').classList.add('hidden');
+  renderUI();renderShips();map.invalidateSize();showSelectedShipRoute(true);
+  if(removedStarter)saveGame();
+  await paint();
+  await animate(72,100,650,'Spielstand bereit – deine Reederei startet …');
+  $('loadingScreen')?.classList.add('hidden');
+  if(removedStarter){toast('Kostenloses Startschiff entfernt. Kaufe dein erstes Schiff in der Werft.');}
+  else toast('Spielstand geladen: '+game.company);
+ }catch(e){
+  console.error('Fehler beim Laden des Spielstands:',e);
+  $('loadingScreen')?.classList.add('hidden');
+  $('mainMenu').classList.remove('hidden');
+  toast('Der Spielstand konnte nicht vollständig geladen werden. Bitte erneut versuchen.');
+ }
 }
 function continueGame(){let slot=Number(localStorage.getItem(CONFIG.activeKey));if(!Number.isInteger(slot)||!slotExists(slot)){for(let i=0;i<5;i++)if(slotExists(i)){slot=i;break}}if(!slotExists(slot)){toast('Noch kein Spielstand vorhanden. Starte eine neue Runde.');showNewGame();return}loadGameSlot(slot)}
 function openMainMenu(){setSpeed(0);$('mainMenu').classList.remove('hidden');showMenuHome();$('continueHint').textContent=slotExists(Number(localStorage.getItem(CONFIG.activeKey)))?'Letzten Spielstand fortsetzen':'Noch kein Spielstand vorhanden'}
