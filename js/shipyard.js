@@ -3,10 +3,16 @@
 function stockOffer(typeId,index){
  const t=shipType(typeId),band=SHIP_RANGE_BANDS[typeId]||[500,t.range];
  const condition=10+Math.floor(Math.random()*81);
+ const age=3+Math.floor(Math.random()*28);
  const range=Math.round((band[0]+Math.random()*(band[1]-band[0]))/100)*100;
- const price=Math.round(t.price*(.48+(.9-condition/100)*.4)*DIFFICULTIES[game?.difficulty||'easy'].cost);
+ const min=Number(t.priceMin)||Math.round(t.price*.65),max=Number(t.priceMax)||Math.round(t.price*1.35);
+ const conditionFactor=.58+(condition/100)*.42;
+ const ageFactor=Math.max(.72,1-(age/100));
+ const marketFactor=.92+Math.random()*.16;
+ const raw=(min+(max-min)*conditionFactor)*ageFactor*marketFactor*DIFFICULTIES[game?.difficulty||'easy'].cost;
+ const price=Math.max(min,Math.min(max,Math.round(raw/100000)*100000));
  const home=randomShipPort(typeId);
- return {offerId:typeId+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),type:typeId,name:t.name+' '+String(index+1).padStart(2,'0'),condition,range,price,port:home};
+ return {offerId:typeId+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),type:typeId,name:t.name+' '+String(index+1).padStart(2,'0'),condition,age,range,price,port:home};
 }
 function normalizeUsedStock(){
  if(!game)return;
@@ -14,7 +20,7 @@ function normalizeUsedStock(){
  SHIP_TYPES.forEach(t=>{
   const value=game.usedStock[t.id];
   if(Array.isArray(value)){
-   value.forEach((o,i)=>{if(!o.offerId)o.offerId=t.id+'-legacy-'+i+'-'+Math.random().toString(36).slice(2,6);if(!o.type)o.type=t.id;if(!o.condition)o.condition=10+Math.floor(Math.random()*81);if(!o.range)o.range=randomShipRange(t.id);const offerPort=port(o.port);if(!offerPort||!!offerPort.river!==(t.id==='river'))o.port=randomShipPort(t.id);if(!o.price)o.price=Math.round(t.price*(.48+(.9-o.condition/100)*.4)*DIFFICULTIES[game.difficulty].cost);if(!o.name)o.name=t.name+' '+(i+1)});
+   value.forEach((o,i)=>{if(!o.offerId)o.offerId=t.id+'-legacy-'+i+'-'+Math.random().toString(36).slice(2,6);if(!o.type)o.type=t.id;if(!o.condition)o.condition=10+Math.floor(Math.random()*81);if(!o.range)o.range=randomShipRange(t.id);const offerPort=port(o.port);if(!offerPort||!!offerPort.river!==(t.id==='river'))o.port=randomShipPort(t.id);if(!o.age)o.age=5+Math.floor(Math.random()*25);if(!o.price){const min=Number(t.priceMin)||Math.round(t.price*.65),max=Number(t.priceMax)||Math.round(t.price*1.35);const factor=Math.max(.72,1-o.age/100);o.price=Math.max(min,Math.min(max,Math.round((min+(max-min)*(.58+o.condition/100*.42))*factor*DIFFICULTIES[game.difficulty].cost/100000)*100000))}if(!o.name)o.name=t.name+' '+(i+1)});
   } else {
    const count=Math.max(0,Math.min(8,Number(value)||0));
    game.usedStock[t.id]=Array.from({length:count},(_,i)=>stockOffer(t.id,i));
@@ -36,7 +42,7 @@ function renderShipyard(){
  if(!game.buildOrders)game.buildOrders=[];
  if(!game.repairOrders)game.repairOrders=[];
  const d=DIFFICULTIES[game.difficulty];
- const intro='<p class="notice">Jedes Angebot ist ein einzelnes gebrauchtes Schiff mit eigenen Werten. Scrolle durch die Liste und vergleiche Zustand, Reichweite, Preis und Liegeplatz.</p>';
+ const intro='<p class="notice">Jedes Angebot ist ein einzelnes gebrauchtes Schiff. Die Preisspanne hängt von Schiffsklasse, Zustand, Alter und Marktlage ab. Vergleiche Zustand, Alter, Reichweite, Preis und Liegeplatz.</p>';
  const back='<button style="width:100%;margin-top:10px" onclick="yardMode=\'home\';renderShipyard()">← Zur Werft-Auswahl</button>';
  if(yardMode==='home'){
   $('yardContent').innerHTML=intro+
@@ -51,7 +57,7 @@ function renderShipyard(){
  const offers=game.usedStock[typeId]||[];
  const cards=offers.length?offers.map(o=>{
   const t=shipType(typeId),place=port(o.port);
-  return '<div class="order ship-offer-card" style="margin-top:12px"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><h3 style="margin:0">'+escapeHtml(o.name)+'</h3><span class="bonus">'+money(o.price)+'</span></div>'+shipIllustration(typeId,t.color)+'<p>'+escapeHtml(t.desc)+'<br><b>Zustand:</b> '+o.condition+' %<br><b>Reichweite:</b> '+o.range.toLocaleString('de-DE')+' km<br><b>Geschwindigkeit:</b> '+t.speed+' kn<br><b>Kapazität:</b> '+t.capacity+' Einheiten<br><b>Unterhalt:</b> '+money(Math.round(t.upkeep*d.upkeep))+'/Woche<br><b>Liegeplatz:</b> '+escapeHtml(place?place.name:'Unbekannter Hafen')+'</p><button class="primary" style="width:100%" onclick="buyUsedShip(\''+typeId+'\',\''+o.offerId+'\')">Dieses Schiff kaufen · '+money(o.price)+'</button></div>';
+  return '<div class="order ship-offer-card" style="margin-top:12px"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><h3 style="margin:0">'+escapeHtml(o.name)+'</h3><span class="bonus">'+money(o.price)+'</span></div>'+shipIllustration(typeId,t.color)+'<p>'+escapeHtml(t.desc)+'<br><b>Preisrahmen der Klasse:</b> '+money(t.priceMin||t.price*.65)+'–'+money(t.priceMax||t.price*1.35)+'<br><b>Zustand:</b> '+o.condition+' %<br><b>Alter:</b> '+o.age+' Jahre<br><b>Reichweite:</b> '+o.range.toLocaleString('de-DE')+' km<br><b>Geschwindigkeit:</b> '+t.speed+' kn<br><b>Kapazität:</b> '+t.capacity+' Einheiten<br><b>Unterhalt:</b> '+money(Math.round(t.upkeep*d.upkeep))+'/Woche<br><b>Liegeplatz:</b> '+escapeHtml(place?place.name:'Unbekannter Hafen')+'</p><button class="primary" style="width:100%" onclick="buyUsedShip(\''+typeId+'\',\''+o.offerId+'\')">Dieses Schiff kaufen · '+money(o.price)+'</button></div>';
  }).join(''):'<div class="order"><h3>Derzeit keine Angebote</h3><p>Für diese Klasse sind momentan keine gebrauchten Schiffe verfügbar. Wähle eine andere Klasse.</p></div>';
  const repairOptions=game.ships.map(sh=>'<option value="'+sh.id+'">'+escapeHtml(sh.name)+' · '+(sh.condition??100)+' %</option>').join('');
  $('yardContent').innerHTML=intro+back+'<div class="field" style="margin-top:14px"><label for="yardType">Schiffsklasse filtern</label><select id="yardType" onchange="renderShipyard()">'+opts+'</select></div><p class="notice">'+offers.length+' individuelles Angebot'+(offers.length===1?'':'e')+' für diese Schiffsklasse</p><div style="max-height:52vh;overflow-y:auto;padding-right:5px">'+cards+'</div><div class="order"><h3>🛠️ Reparaturen</h3>'+(game.ships.length?'<div class="field"><label for="repairShip">Schiff auswählen</label><select id="repairShip">'+repairOptions+'</select></div><button style="width:100%" onclick="repairSelectedShip()">Ausgewähltes Schiff überholen</button>':'<p class="notice">Keine eigenen Schiffe vorhanden.</p>')+'</div>';
