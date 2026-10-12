@@ -187,7 +187,7 @@ async function computeEligibleContractsAsync(s,key){
  const activeContractId=game.ships.find(item=>String(item.id)===String(s.id))?.trip?.contractId;
  game.generatedContracts=game.generatedContracts.filter(c=>
   String(c.id)===String(activeContractId)||
-  String(c.assignedShipId)!==String(s.id)||String(c.from)!==String(s.port)||
+  String(c.assignedShipId)!==String(s.id)||String(c.from)!==String(s.port)
  );
  valid.forEach(c=>game.generatedContracts.push(c));
  if(valid.length)game.nextContractId=(game.nextContractId||1)+valid.length;
