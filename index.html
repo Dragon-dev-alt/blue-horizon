@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#07131f"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%23071f30%22/%3E%3Cpath d=%22M8 38 Q20 28 32 38 T56 38%22 fill=%22none%22 stroke=%22%2347d8d0%22 stroke-width=%226%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M8 48 Q20 38 32 48 T56 48%22 fill=%22none%22 stroke=%22%2347d8d0%22 stroke-width=%224%22 stroke-linecap=%22round%22/%3E%3C/svg%3E"><title>Blue Horizon — Reederei-Manager</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="preload" as="image" href="./assets/Blauer%20Horizont%20%C3%BCber%20dem%20Containerhafen.png?v=loader-png-20261012"><link rel="stylesheet" href="./styles.css?v=orders-panel-on-select-fix2-20261012">
+<link rel="preload" as="image" href="./assets/Blauer%20Horizont%20%C3%BCber%20dem%20Containerhafen.png?v=loader-png-20261012"><link rel="stylesheet" href="./styles.css?v=navigable-water-overlay-v11-20261012">
 </head>
 <body>
 <div class="app" id="gameApp">
@@ -14,7 +14,7 @@
  <div class="top-actions"><button type="button" onclick="openShipyard()">⚓ Werft</button><div class="playback-controls" role="group" aria-label="Simulationssteuerung"><button type="button" id="pauseBtn" onclick="setSpeed(0)" aria-pressed="false" title="Simulation pausieren"><span class="control-icon" aria-hidden="true">Ⅱ</span><span>Pause</span></button><button type="button" id="playBtn" class="active" onclick="setSpeed(1)" aria-pressed="true" title="Simulation mit normaler Geschwindigkeit"><span class="control-icon" aria-hidden="true">▶</span><span>Play</span></button><button type="button" id="fastBtn" onclick="setSpeed(1.5)" aria-pressed="false" title="Simulation 1,5-fach beschleunigen"><span class="control-icon" aria-hidden="true">⏩</span><span>1,5×</span></button></div><button type="button" onclick="openFleetWindow()">🚢 Flotte</button><button type="button" onclick="openMainMenu()">☰ Menü</button></div>
 </header>
 <main class="workspace"><div id="map" class="map"></div>
- <div class="map-tools"><div class="map-label"><strong>🌐 WELTWEITER BETRIEB</strong><small>Satellitenansicht · zoomen & Karte ziehen</small></div><button onclick="map.setView([22,8],2)">🌐 Welt</button><button onclick="map.setView([49,12],4)">🇪🇺 Europa</button><button onclick="togglePorts()">⚑ Häfen</button></div>
+ <div class="map-tools"><div class="map-label"><strong>🌐 WELTWEITER BETRIEB</strong><small>Satellitenansicht · zoomen & Karte ziehen</small></div><button onclick="map.setView([22,8],2)">🌐 Welt</button><button onclick="map.setView([49,12],4)">🇪🇺 Europa</button><button onclick="togglePorts()">⚑ Häfen</button><button id="waterViewToggle" type="button" onclick="toggleNavigableWater()" aria-pressed="false">🟢 Befahrbare Gewässer</button></div>
  <aside class="side">
   <section class="panel"><div class="panel-head">🚢 Deine Flotte <span id="fleetCount" class="muted"></span></div><div id="fleetList" class="fleet-list"></div></section>
   <section id="contractsPanel" class="panel" style="min-height:0;display:flex;flex-direction:column;flex:1"><div class="panel-head">🏢 Firmenaufträge <span class="muted" id="selectedShipLabel"></span></div><div class="panel-body" style="min-height:0;overflow:auto"><div id="ordersHelp" class="notice">Wähle ein Schiff und übernimm einen Auftrag eines Unternehmens. Nur passende Frachtarten werden angezeigt.</div><div id="ordersList" class="order-list"></div><div class="soon"><b>🚢 Passagierbeförderung — COMING SOON</b><br>Personenverkehr wird später ergänzt.</div></div></section>
@@ -54,14 +54,14 @@
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="./js/data.js?v=orders-price-balance-v06-20261012"></script>
-<script src="./js/core.js?v=contract-pay-boost-x4-v07-20261012"></script>
+<script src="./js/core.js?v=navigable-water-overlay-v11-20261012"></script>
 <script src="./js/waterways.js?v=water-only-long-routes-v10-20261012"></script>
 <script src="./js/loading-screen.js?v=loader-20261012"></script>
 <script src="./js/menus.js?v=fix-shownewgame-20261012b"></script>
 <script src="./js/fleet.js?v=water-only-long-routes-v10-20261012b"></script>
 <script src="./js/roadmap.js?v=roundcurves-ac90957104"></script>
 <script src="./js/shipyard.js?v=river-stock-guarantee-v08-20261012"></script>
-<script type="module" src="./js/sea-routing.js?v=coastbatch-41376d3065"></script>
+<script type="module" src="./js/sea-routing.js?v=navigable-water-overlay-v11-20261012"></script>
 
 <script>
 // Auftragsfenster erst nach einer bewussten Schiffsauswahl öffnen; Flottenliste bleibt aus der Kartenansicht.
