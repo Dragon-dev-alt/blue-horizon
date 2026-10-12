@@ -219,7 +219,11 @@ async function addLandMask(topology) {
 }
 window.getNavigableWaterPolygons = () => landPolygons;
 window.isWaterRouteSafe = function (coords) {
-  if (!window.waterRouteDataReady || !Array.isArray(coords) || coords.length < 2) return false;
+  if (!Array.isArray(coords) || coords.length < 2) return false;
+  // Flusslinien liegen geografisch auf Landflächen; für sie gilt die explizite
+  // Prüfung gegen die versionierten Binnenkorridore statt gegen die Landmaske.
+  if (typeof window.isInlandWaterRoute === 'function' && window.isInlandWaterRoute(coords)) return true;
+  if (!window.waterRouteDataReady) return false;
   const cached = routeSafetyCache.get(coords);
   if (cached !== undefined) return cached;
 
