@@ -291,6 +291,7 @@ async function loadGameSlot(slot){
   window.setLoadingScreen(message,from);requestAnimationFrame(tick);
  });
  try{
+  const previousSpeed=simulationSpeed;
   setSpeed(0);
   window.setLoadingScreen('Lädt … Spielstand wird vorbereitet',4);
   await paint();
@@ -314,6 +315,7 @@ async function loadGameSlot(slot){
   await paint();
   await animate(72,100,650,'Spielstand bereit – deine Reederei startet …');
   $('loadingScreen')?.classList.add('hidden');
+  setSpeed(previousSpeed===0?0:(previousSpeed||1));
   if(removedStarter){toast('Kostenloses Startschiff entfernt. Kaufe dein erstes Schiff in der Werft.');}
   else toast('Spielstand geladen: '+game.company);
  }catch(e){
