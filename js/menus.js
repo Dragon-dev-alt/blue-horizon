@@ -68,27 +68,31 @@ async function startNewGame(){
  try{
   // Cover the setup screen before creating any game state so the browser can
   // paint the loader rather than appearing frozen during initialization.
-  window.setLoadingScreen('Lädt … Reederei wird gegründet',8);
+  window.setLoadingScreen('Lädt … Reederei wird gegründet',5);
   await waitForPaint();
   await waitForPaint();
 
-  window.setLoadingScreen('Lädt … Startkapital und Firmendaten',24);
+  window.setLoadingScreen('Lädt … Startkapital und Firmendaten',18);
   game=makeGame(name,selectedDifficulty,hq);
   activeSlot=firstFreeSlot();if(activeSlot<0)activeSlot=0;
   selectedShipId=game.ships[0]?.id||null;
   saveGame();
   await waitForPaint();
 
-  window.setLoadingScreen('Lädt … Wasserwege und Landdaten',45);
+  window.setLoadingScreen('Lädt … Wasserwege und Landdaten',38);
   const routingReady=await waitForWaterRouting();
-  window.setLoadingScreen('Lädt … Häfen und Spieloberfläche',82);
+  window.setLoadingScreen('Lädt … Häfen und Spieloberfläche',68);
   await waitForPaint();
 
-  // Keep the loader clearly visible even if the routing data was cached.
-  const minimumLoaderMs=2600;
-  const remainingLoaderMs=minimumLoaderMs-(performance.now()-startupStartedAt);
+  // Keep the loader visible long enough for the UI to settle. The base
+  // duration scales with the amount of world data, so adding ports/features
+  // later automatically gives startup more time without hard-coding every task.
+  const worldDataSize=Array.isArray(PORTS)?PORTS.length:0;
+  const minimumLoaderMs=Math.min(12000,4500+worldDataSize*18);
+  const elapsed=()=>performance.now()-startupStartedAt;
+  const remainingLoaderMs=minimumLoaderMs-elapsed();
   if(remainingLoaderMs>0){
-   window.setLoadingScreen('Lädt … letzte Vorbereitungen',92);
+   window.setLoadingScreen('Lädt … letzte Vorbereitungen',90);
    await new Promise(resolve=>setTimeout(resolve,remainingLoaderMs));
   }
 
