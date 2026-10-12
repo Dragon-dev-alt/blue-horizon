@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#07131f"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%23071f30%22/%3E%3Cpath d=%22M8 38 Q20 28 32 38 T56 38%22 fill=%22none%22 stroke=%22%2347d8d0%22 stroke-width=%226%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M8 48 Q20 38 32 48 T56 48%22 fill=%22none%22 stroke=%22%2347d8d0%22 stroke-width=%224%22 stroke-linecap=%22round%22/%3E%3C/svg%3E"><title>Blue Horizon — Reederei-Manager</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="preload" as="image" href="./assets/Blauer%20Horizont%20%C3%BCber%20dem%20Containerhafen.png?v=loader-png-20261012"><link rel="stylesheet" href="./styles.css?v=save-slots-redx-20261012">
+<link rel="preload" as="image" href="./assets/Blauer%20Horizont%20%C3%BCber%20dem%20Containerhafen.png?v=loader-png-20261012"><link rel="stylesheet" href="./styles.css?v=save-slot-screen-20261012">
 </head>
 <body>
 <div class="app" id="gameApp">
@@ -31,11 +31,12 @@
   <button onclick="showSaves()"><strong>▤ Spielstände laden</strong><small>Gespeicherte Runden auswählen</small></button>
   <button disabled title="Kommt später"><strong>⚙ Einstellungen</strong><small>Coming soon</small></button>
  </div>
- <div class="setup" id="newGameSetup"><div class="field"><label for="companyInput">Name deiner Reederei</label><input id="companyInput" maxlength="36" placeholder="z. B. Nordstern Shipping"></div><div class="field"><label for="saveSlotChoice">Speicherplatz auswählen (Pflicht)</label><select id="saveSlotChoice" onchange="handleSaveSlotChange(this)" required><option value="">Bitte freien Speicherplatz wählen</option></select></div><div class="field"><label for="hqPort">Hauptsitzhafen</label><select id="hqPort"></select></div>
+ <div class="setup" id="newGameSetup"><div class="field"><label for="companyInput">Name deiner Reederei</label><input id="companyInput" maxlength="36" placeholder="z. B. Nordstern Shipping"></div><div class="field"><label for="hqPort">Hauptsitzhafen</label><select id="hqPort"></select></div>
   <label class="muted" style="font-size:10px;letter-spacing:1px">SCHWIERIGKEIT WÄHLEN</label><div class="difficulty" id="difficultyChoices">
   <button class="active" data-difficulty="easy" onclick="chooseDifficulty('easy')">Leicht</button><button data-difficulty="medium" onclick="chooseDifficulty('medium')">Mittel</button><button data-difficulty="hard" onclick="chooseDifficulty('hard')">Schwer</button><button data-difficulty="realistic" onclick="chooseDifficulty('realistic')">Realistisch</button></div>
-  <p class="notice" id="difficultyInfo">Mehr Startkapital, geringere Kosten und bessere Auftragsvergütung.</p><button class="primary" style="width:100%" onclick="startNewGame()">Firma gründen & starten</button><button style="width:100%;margin-top:7px" onclick="showMenuHome()">Zurück</button>
+  <p class="notice" id="difficultyInfo">Mehr Startkapital, geringere Kosten und bessere Auftragsvergütung.</p><button class="primary" style="width:100%" onclick="startNewGame()">Firma gründen & weiter</button><button style="width:100%;margin-top:7px" onclick="showMenuHome()">Zurück</button>
  </div>
+ <div class="setup" id="newGameSaveSetup"><h2>Speicherplatz auswählen</h2><div id="newGameSaveList"></div><div id="overwriteConfirm" class="overwrite-confirm hidden"><p id="overwriteConfirmText">Möchtest du diesen Spielstand überschreiben?</p><div class="overwrite-actions"><button type="button" onclick="cancelSaveOverwrite()">Abbrechen</button><button type="button" class="danger-confirm" onclick="confirmSaveOverwrite()">Ja, überschreiben</button></div></div><button style="width:100%;margin-top:10px" onclick="hideSetups();$('newGameSetup').classList.add('visible');$('menuHeading').textContent='Neue Runde';$('menuDescription').textContent='Benenne deine Reederei, wähle den Hauptsitzhafen und den Schwierigkeitsgrad.'">Zurück zur Firmengründung</button></div>
  <div class="setup" id="savesSetup"><h2>Gespeicherte Spielstände</h2><div id="saveList"></div><button style="width:100%;margin-top:10px" onclick="showMenuHome()">Zurück zum Hauptmenü</button></div>
  <p class="notice" style="margin-top:22px">Der Spielstand wird in diesem Browser gespeichert. Für Satellitenkarte und maritime Routen ist eine Internetverbindung nötig.</p>
 </div></div>
@@ -52,10 +53,10 @@
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="./js/data.js"></script>
-<script src="./js/core.js?v=save-slots-20261012"></script>
+<script src="./js/core.js?v=save-slot-screen-20261012"></script>
 <script src="./js/waterways.js"></script>
 <script src="./js/loading-screen.js?v=loader-20261012"></script>
-<script src="./js/menus.js?v=save-slots-20261012"></script>
+<script src="./js/menus.js?v=save-slot-screen-20261012"></script>
 <script src="./js/fleet.js?v=bgroute-5322cb14b5"></script>
 <script src="./js/roadmap.js?v=roundcurves-ac90957104"></script>
 <script src="./js/shipyard.js?v=shipmarkerperf-20261011"></script>
