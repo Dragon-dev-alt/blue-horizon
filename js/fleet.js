@@ -105,7 +105,7 @@ function cacheContractEligibility(key,result){
 function isContractEligibilityPending(s){return !!s&&contractEligibilityPending.has(contractEligibilityKey(s))}
 // Alle Schiffe teilen sich eine langsame Auftragswarteschlange. So laufen nicht
 // mehrere teure Routenprüfungen gleichzeitig, wenn mehrere Schiffe geliefert werden.
-const CONTRACT_ROUTE_STEP_DELAY=120;
+const CONTRACT_ROUTE_STEP_DELAY=200;
 const contractGenerationQueue=[];
 let routeCalculationWorker=null;
 let routeCalculationWorkerId=0;
@@ -144,8 +144,11 @@ function calculateSeaRouteInBackground(connection){
 let contractGenerationWorkerRunning=false;
 function yieldToBrowser(){
  return new Promise(resolve=>{
+  // Routenprüfung nur in kleinen, zeitlich getrennten Schritten starten.
+  // Die eigentliche Seerouten-Suche läuft im Worker; der Abstand schützt
+  // zusätzlich vor UI-Spitzen bei Hafen-/Flussprüfungen und schwächeren Geräten.
   const resume=()=>setTimeout(resolve,CONTRACT_ROUTE_STEP_DELAY);
-  if(typeof window.requestIdleCallback==='function')window.requestIdleCallback(resume,{timeout:250});
+  if(typeof window.requestIdleCallback==='function')window.requestIdleCallback(resume,{timeout:500});
   else resume();
  });
 }
