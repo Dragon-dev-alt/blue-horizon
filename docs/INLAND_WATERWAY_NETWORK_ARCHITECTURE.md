@@ -1,10 +1,12 @@
-# Blue Horizon – Ausbauplan für das weltweite Hafen- und Wasserstraßennetz
+# Blue Horizon – Architektur für das gesamte weltweite Hafen-, Gewässer- und Routennetz
 
 Stand: 12.10.2026
 
-## Ziel
+## Ziel und Geltungsbereich
 
-Das Netz soll wiederholt und regional erweitert werden können, ohne die Routensuche oder das Spiel bei jeder Erweiterung umzubauen. Häfen, Wasserwege und die Verbindungen dazwischen werden als getrennte Datenebenen geführt. Neue Regionen sollen als zusätzliche Datendateien hinzukommen können.
+Diese Architektur gilt ausdrücklich für **alle Häfen und alle Transportwege**, nicht nur für Binnenhäfen: internationale Seehäfen, regionale Seehäfen, Binnenhäfen, Küstenhäfen, Flussmündungen, Kanäle, offene Seestrecken und explizite Umschlag- oder Fährverbindungen. Das gesamte globale Hafennetz soll wiederholt erweitert werden können, ohne die Routensuche oder das Spiel bei jeder Erweiterung umzubauen.
+
+Häfen, Hafenanlagen, Wasserweg-Geometrien, schiffbare Netzwerksegmente und mögliche Verbindungen werden als getrennte Datenebenen geführt. Regionale Dateien und gemeinsame IDs erlauben, das Netz schrittweise auszubauen. Die aktuelle Datei `data/inland-waterways.json` bleibt vorerst ein Kompatibilitätsbestandteil, aber nicht die langfristige Architektur für sämtliche Routen.
 
 ## Wichtig: Geometrie ist nicht gleich Schiffbarkeit
 
@@ -21,24 +23,41 @@ Quellen zur späteren Datenerfassung:
 - WaterwayMap, OSM-Wasserwege und Hinweise zur Verarbeitung: https://github.com/amandasaurus/waterwaymap.org
 - OpenStreetMap Copyright/ODbL: https://www.openstreetmap.org/copyright
 
-## Vorgeschlagene Repository-Struktur
+## Vorgeschlagene Repository-Struktur für das gesamte Netz
 
 ```text
 data/
-  ports.json                         # Hafenstammdaten und stabile Hafen-IDs
-  waterways/
-    manifest.json                    # Datenschema-Version, Quellen, Regionen
+  network/
+    manifest.json                    # globale Schema-Version, Quellen und Regionen
+    ports.json                       # alle Hafenstammdaten mit stabilen IDs
+    terminals.json                   # optionale Terminals/Anleger pro Hafen
+    connections.json                 # explizite Verbindungen und Übergänge
     regions/
-      europe-west.geojson            # Rhein, Seine, Kanäle usw.
-      europe-danube.geojson          # Donau und Nebenwasserwege
-      north-america.geojson          # Mississippi-System
-      east-asia.geojson              # Jangtse-System
-    connections.json                 # Fähr-/Mündungs-/Umschlag-Verbindungen
+      europe-north.geojson           # Nordsee, Ostsee, Häfen und Wasserwege
+      europe-west.geojson            # Atlantikküste, Rhein, Seine, Kanäle
+      europe-danube.geojson          # Donau-System und zugehörige Häfen
+      north-america.geojson          # Küstenrouten und Mississippi-System
+      east-asia.geojson              # Küstenrouten und Jangtse-System
+      south-america.geojson          # Häfen und Gewässer Südamerikas
+      africa.geojson                 # Häfen und Gewässer Afrikas
+      oceania.geojson                # Häfen und Gewässer Ozeaniens
+    sea-lanes/                       # optional getrennte maritime Routennetze
+      global.geojson
 ```
 
 Die Struktur ist ein Zielbild, noch nicht die Behauptung, dass diese Dateien bereits mit echten Daten gefüllt sind. Die bestehende Datei `data/inland-waterways.json` bleibt vorerst kompatible Laufzeitquelle, bis der Loader für das modulare Format eingebaut ist.
 
 ## Datenmodell
+
+Jeder Hafen sollte mindestens enthalten:
+
+- `id`: dauerhafte, weltweit eindeutige ID; bestehende IDs wie `ham`, `rot` oder `nyc` bleiben stabil.
+- `name`, optional `alternateNames`, `countryCode` und `regionId`.
+- `coordinates`: eindeutige Hafenposition in `[longitude, latitude]`.
+- `portType`: `international`, `regional`, `coastal` oder `inland` – ohne daraus automatisch die Schiffbarkeit jeder Route abzuleiten.
+- `connections`: IDs der tatsächlich angeschlossenen Wasserweg-Knoten oder explizite Übergänge.
+- `source`, `sourceUrl`, `license`, `attribution` und `retrievedAt`.
+- optionale, belegte Angaben zu Liegeplätzen, Umschlagarten, Tiefgang und zugelassenen Schiffsklassen.
 
 Jede Wasserweg-Geometrie sollte mindestens enthalten:
 
@@ -51,21 +70,37 @@ Jede Wasserweg-Geometrie sollte mindestens enthalten:
 - `source`, `sourceUrl`, `license`, `attribution` und `retrievedAt`.
 - optionale Betriebsdaten: Mindesttiefe, maximale Breite/Länge, Durchfahrtshöhe, Schleusen, Einbahnregelung und saisonale Einschränkungen – nur wenn diese Angaben aus belastbaren Quellen stammen.
 
-Häfen werden mit einer stabilen ID an den nächstgelegenen geeigneten Wasserweg angebunden. Eine Verbindung darf nur dann als routbar gelten, wenn die Geometrie topologisch angeschlossen ist oder eine explizite, dokumentierte Anschlusskante existiert. Ein bloß nahe gelegener Fluss ist nicht automatisch ein Hafenanschluss.
+Alle Hafentypen werden über stabile IDs an das gemeinsame Routennetz angebunden. Für Seehäfen sind Küstenzugänge und maritime Routen relevant; für Binnenhäfen Fluss- und Kanalnetze; für Häfen an Flussmündungen können beide Netze über explizite Übergangsknoten verbunden sein. Eine Verbindung darf nur dann als routbar gelten, wenn die Geometrie topologisch angeschlossen ist oder eine explizite, dokumentierte Anschlusskante existiert. Ein bloß nahe gelegener Fluss oder eine nahe Seeroute ist nicht automatisch ein Hafenanschluss.
+
+## Gemeinsames Routingmodell
+
+Das Routing soll nicht aus separaten, voneinander isolierten Listen für Binnen- und Seehäfen bestehen. Es nutzt einen gemeinsamen Graphen aus:
+
+- **Hafenknoten** für sämtliche vorhandenen und später hinzukommenden Häfen.
+- **Wasserwegsegmenten** mit echter Geometrie und Typ (`sea`, `river`, `canal`, `estuary`).
+- **Anschlusskanten** zwischen Hafen und Wasserweg.
+- **Übergangskanten** für Mündungen, Schleusen, Kanäle, Hafenbecken oder andere belegte Verbindungen.
+- **Schiffsklassen-Regeln**, die bestimmen, welche Segmente ein konkretes Schiff nutzen darf.
+
+So kann eine Route etwa von einem Binnenhafen über Fluss und Kanal zu einem Seehafen und anschließend über maritime Strecken zu einem internationalen Hafen führen – sofern alle Übergänge tatsächlich im Datensatz verbunden und für das Schiff zulässig sind. Das Vorhandensein einer Route darf nicht allein von der Kategorie des Start- oder Zielhafens abhängen.
 
 ## Ausbau in Stufen
 
-1. **Netzwerk-Kern:** IDs, Schema-Versionierung, Quellenangaben und regionale Dateien einführen. Bestehende Hafen-IDs bleiben unverändert, damit gespeicherte Spielstände nicht brechen.
-2. **Reale Geometrien:** pro Region Fluss- und Kanal-Linien aus geeigneten Quellen importieren, vereinfachen und in kleine Dateien teilen. Große globale Datensätze nicht ungefiltert in `main` legen.
-3. **Topologie:** Linienenden und Kreuzungen verbinden, Lücken markieren und Verbindungen über Schleusen/Kanäle explizit abbilden. Geometrisch nahe, aber getrennte Wasserwege nicht automatisch verbinden.
-4. **Schiffbarkeit:** Flussgeometrie und erlaubte Schiffsklasse getrennt halten. HydroRIVERS allein reicht nicht als Schiffbarkeitsnachweis.
-5. **Tests:** pro Region definierte Hafenpaare, erwartete Routen, keine unverbundenen Sprünge und keine Routen über Land prüfen. Jede Erweiterung bekommt einen kleinen automatisierten Datentest.
-6. **Performance:** Daten nach Region laden, vereinfachte Linien für Übersichtskarten nutzen und detaillierte Linien erst bei Bedarf laden. Rohdaten getrennt von spieloptimierten Dateien halten.
+1. **Globaler Kern:** einheitliche IDs, Hafenregister, Schema-Versionierung, Quellen und regionale Indizes anlegen; bestehende Hafen-IDs bleiben unverändert.
+2. **Bestehende Häfen anbinden:** alle aktuellen See- und Binnenhäfen ins gemeinsame Modell übernehmen, nicht nur neue Häfen.
+3. **Maritime Geometrien:** Küstenzugänge und Seerouten regionsweise importieren und topologisch anbinden.
+4. **Binnengeometrien:** reale Fluss- und Kanal-Linien ergänzen; HydroRIVERS nur als hydrographische Grundlage, nicht als automatischen Schiffbarkeitsnachweis nutzen.
+5. **Übergänge verbinden:** Flussmündungen, Kanäle, Schleusen und Hafenanschlüsse explizit modellieren.
+6. **Schiffbarkeit:** erlaubte Schiffsklassen und belegte Beschränkungen getrennt von der Geometrie halten.
+7. **Tests:** Hafenpaare über verschiedene Regionen und Verkehrstypen prüfen; keine unverbundenen Sprünge und keine Routen über Land zulassen.
+8. **Performance:** regionale Daten bei Bedarf laden, Linien für Übersichtskarten vereinfachen und Detailgeometrien nur für Routing laden. Rohdaten getrennt von optimierten Spieldaten halten.
 
 ## Regeln für spätere Erweiterungen
 
 - Keine bestehenden Hafen-IDs umbenennen oder wiederverwenden.
-- Neue Häfen immer mit Koordinaten, Typ, Region, Quelle und eindeutiger ID ergänzen.
+- Neue See-, Küsten- und Binnenhäfen immer mit Koordinaten, Typ, Region, Quelle und eindeutiger ID ergänzen.
+- Neue Häfen müssen an das gemeinsame Routennetz angeschlossen werden; bloß das Hinzufügen eines Markers reicht nicht.
+- Erweiterungen dürfen maritime Routen und Binnenrouten nicht versehentlich voneinander trennen, wenn ein realer Übergang existiert.
 - Neue Wasserwege mit Herkunft, Lizenz und Datenstand dokumentieren.
 - Keine künstlichen Luftlinien als Ersatz für fehlende Flussabschnitte tarnen. Falls ein Abschnitt noch nicht erfasst ist, ihn als unvollständig kennzeichnen oder die Route ablehnen.
 - Nach jedem Import prüfen: JSON/GeoJSON parsebar, Koordinaten gültig, keine doppelten IDs, Hafenanschlüsse vorhanden, Dateigröße und Ladezeit vertretbar.
@@ -73,7 +108,9 @@ Häfen werden mit einer stabilen ID an den nächstgelegenen geeigneten Wasserweg
 
 ## Aktueller Status
 
-- Vorhanden: `data/inland-waterways.json` mit Links und fünf groben Korridoren.
-- Vorhanden: `js/waterways.js` lädt diese Datei und nutzt sie für einige Binnenrouten.
-- Noch nicht vorhanden: globaler, quellengestützter und topologisch geprüfter Binnenwasserstraßen-Datensatz.
-- Noch nicht vorhanden: vollständige Prüfung von Schleusen, Tiefgang, Brückenhöhen und Schiffsklassen.
+- Vorhanden: das Spiel besitzt bereits eine bestehende Liste verschiedener See- und Binnenhäfen sowie ein maritimes Routing-System.
+- Vorhanden: `data/inland-waterways.json` mit Links und fünf groben Binnenkorridoren.
+- Vorhanden: `js/waterways.js` lädt diese Datei für einige Binnenrouten.
+- Noch nicht vorhanden: ein einheitliches, globales Register aller Häfen und ein gemeinsamer, topologisch geprüfter Graph, der alle Hafenklassen und Übergänge umfasst.
+- Noch nicht vorhanden: vollständig quellengestützte Geometrien und einheitliche Prüfung von Schiffsklassen, Schleusen, Tiefgang und Brückenhöhen.
+- Die Dokumentation beschreibt die Zielarchitektur; sie behauptet nicht, dass die vollständige Migration des laufenden Routings bereits umgesetzt wurde.
