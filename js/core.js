@@ -230,7 +230,30 @@ let selectedShipId='s1';
 
 function buyShip(typeId){const t=shipType(typeId),d=DIFFICULTIES[game.difficulty];if(!t)return;if(game.cash<t.price*d.cost){toast('Nicht genug Geld für dieses Schiff.');return}game.cash-=Math.round(t.price*d.cost);const id='s'+game.nextShipId++;const home=port(randomShipPort(typeId));game.ships.push({id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null,condition:100,range:randomShipRange(typeId)});selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'.');saveGame();renderUI();renderShips(id);openShipyard();toast('Neues Schiff gekauft: '+t.name+'.')}
 function openShipyard(){if(!game)return;$('shipyard').classList.remove('hidden');renderShipyard()}
-function closeShipyard(){$('shipyard').classList.add('hidden')}
+let shipyardExitLoading=false;
+function closeShipyard(){
+ const yard=$('shipyard'),overlay=$('loadingScreen');
+ if(!yard)return;
+ yard.classList.add('hidden');
+ // Kurzer, vorhandener Lade-Overlay: zwei Frames für Layout/Marker und dann
+ // eine kurze Atempause, damit der Browser den Spielbildschirm sauber zeichnet.
+ if(shipyardExitLoading||!game||!overlay)return;
+ shipyardExitLoading=true;
+ try{
+  if(typeof window.setLoadingScreen==='function')window.setLoadingScreen('Lädt … Hafenkarte und Flotte werden aktualisiert',68);
+  overlay.classList.remove('hidden');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+   window.setTimeout(()=>{
+    overlay.classList.add('hidden');
+    shipyardExitLoading=false;
+   },260);
+  }));
+ }catch(error){
+  overlay.classList.add('hidden');
+  shipyardExitLoading=false;
+  console.warn('Kurzer Werft-Ladescreen konnte nicht angezeigt werden:',error);
+ }
+}
 
 function advanceGameDay(){if(!game)return;game.day++;const d=DIFFICULTIES[game.difficulty];let expenses=0;game.ships.forEach(s=>{expenses+=shipType(s.type).upkeep*d.upkeep/7;if(s.trip){const tr=s.trip;tr.daysElapsed++;tr.progress=Math.min(1,tr.daysElapsed/tr.days);if(tr.progress>=1){const c=allContracts().find(x=>x.id===tr.contractId);const lateUrgent=tr.contractType==='urgent'&&tr.deadline!=null&&tr.daysElapsed>tr.deadline;const netRevenue=Math.round(tr.revenue*(lateUrgent ? 0.8 : 1))-tr.cost;game.cash+=netRevenue;game.rep=Math.max(0,Math.min(100,game.rep+(lateUrgent?-3:1)));game.completed++;addLog(s.name+' erreicht '+port(tr.to).name+(lateUrgent?' verspätet. 20 % Vergütungsabzug und 3 Rufpunkte verloren.':' pünktlich/erfolgreich')+'. Nettoerlös: '+money(netRevenue)+'.');if(c&&c.assignedShipId&&Array.isArray(game.generatedContracts))game.generatedContracts=game.generatedContracts.filter(x=>x.id!==c.id);s.port=tr.to;s.trip=null;s.status='idle'}}});game.cash-=expenses;game.cash-=18000*d.cost;if(game.day%7===0){game.cash-=180000*d.upkeep;addLog('Wöchentliche Verwaltungskosten: '+money(180000*d.upkeep)+'.')}if(game.cash<0)game.rep=Math.max(0,game.rep-2);(game.buildOrders||[]).forEach(o=>{o.remaining--;if(o.remaining<=0){game.ships.push({id:o.id,name:o.name,type:o.type,port:o.port,trip:null,condition:100,deliveryRemaining:0});addLog('Neubau ausgeliefert: '+o.name+' (100 % Zustand).')}});game.buildOrders=(game.buildOrders||[]).filter(o=>o.remaining>0);(game.repairOrders||[]).forEach(o=>{o.remaining--;if(o.remaining<=0){const ship=game.ships.find(x=>x.id===o.shipId);if(ship){ship.condition=o.target;ship.inYard=false;addLog(ship.name+' ist nach der Überholung wieder einsatzbereit ('+ship.condition+' %).')}}});game.repairOrders=(game.repairOrders||[]).filter(o=>o.remaining>0);saveGame();renderUI();renderShips();showSelectedShipRoute(false)}
 function nextDay(){if(!game)return;advanceGameDay();}
