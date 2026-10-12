@@ -63,7 +63,14 @@ function renderShips(onlyShipId=null){
   }else{
    const current=m.getLatLng();
    if(Math.abs(current.lat-pos.lat)>1e-7||Math.abs(current.lng-pos.lon)>1e-7)m.setLatLng([pos.lat,pos.lon]);
-   m.setIcon(iconForShip(s,s.trip?s.trip.angle||0:0));
+   // Leaflet-Icons nicht bei jedem UI-Refresh neu bauen: das spart DOM-Arbeit,
+   // besonders bei größeren Flotten.
+   const angle=s.trip?Math.round((s.trip.angle||0)/3)*3:0;
+   const iconKey=[s.type,map.getZoom(),String(s.id)===String(selectedShipId)?1:0,angle].join('|');
+   if(m._bhIconKey!==iconKey){
+    m.setIcon(iconForShip(s,angle));
+    m._bhIconKey=iconKey;
+   }
   }
   const el=m.getElement();
   if(el){
