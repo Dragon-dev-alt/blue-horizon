@@ -2,6 +2,21 @@
 /* Startvorgang: Formular, Spielzustand und UI sicher initialisieren.
    Wichtig: Dieser Code muss innerhalb des Script-Blocks bleiben. */
 let pendingNewGameSlot=null;
+function showNewGame(){
+ hideSetups();
+ $('menuActions').classList.add('hidden');
+ $('newGameSetup').classList.add('visible');
+ $('menuHeading').textContent='Neue Runde';
+ $('menuDescription').textContent='Benenne deine Reederei, wähle den Hauptsitzhafen und den Schwierigkeitsgrad.';
+ $('companyInput').value='';
+ const hq=$('hqPort');
+ if(hq){
+  hq.innerHTML=PORTS.map(p=>'<option value="'+p.id+'">'+p.name+' — '+p.country+(p.river?' · Binnenhafen':'')+'</option>').join('');
+  hq.value='ham';
+ }
+ chooseDifficulty('easy');
+}
+
 function renderNewGameSaveSlots(){
  const list=$('newGameSaveList');
  if(!list)return;
