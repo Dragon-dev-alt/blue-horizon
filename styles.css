@@ -113,7 +113,8 @@
 /* Auftragstypen für Blue Horizon v0.2 */
 .contract-type{display:inline-block;margin-bottom:7px;padding:4px 7px;border:1px solid #6f8b9a;border-radius:5px;font-size:9px;font-weight:800;letter-spacing:.8px;color:#d8e9f0;background:#173044}.contract-type-large{color:#ffe0a3;border-color:#9b7435;background:#3a2b16}.contract-type-urgent{color:#ffc0c8;border-color:#b94b5b;background:#401c27}
 
-/* Die Flottenliste wird nicht mehr dauerhaft rechts eingeblendet. Aufträge erscheinen nach Auswahl eines Schiffs. */
+
+/* Korrektur: Das Inline-display:flex am Auftragsfenster übersteuern. */
 .side>.panel:first-child{display:none!important}
-.side>.panel:nth-child(2){display:none}
-.side.orders-open>.panel:nth-child(2){display:flex}
+.side>.panel:nth-child(2){display:none!important}
+.side.orders-open>.panel:nth-child(2){display:flex!important}
