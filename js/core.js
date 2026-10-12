@@ -12,37 +12,39 @@ function addLog(msg){game.log.unshift('Tag '+game.day+' · '+msg);game.log=game.
 function haversine(a,b){const r=6371,rad=x=>x*Math.PI/180,d1=rad(b.lat-a.lat),d2=rad(b.lon-a.lon),q=Math.sin(d1/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(d2/2)**2;return 2*r*Math.asin(Math.sqrt(q))*0.539957}
 /* Karte und Häfen */
 function bindShipDocumentFallback(){if(window.__blueHorizonShipFallbackBound)return;window.__blueHorizonShipFallbackBound=true;document.addEventListener('click',ev=>{const target=ev.target&&typeof ev.target.closest==='function'?ev.target.closest('.ship-icon[data-ship-id]'):null;if(target&&target.dataset.shipId)queueShipSelection(target.dataset.shipId)},true)}
-let navigableWaterVisible=false,shippingLaneLayer=null,shippingLaneLoading=false,shippingLaneError=null;
-const SHIPPING_LANES_GEOJSON_URL='https://raw.githubusercontent.com/newzealandpaul/Shipping-Lanes/master/data/Shipping_Lanes_v1.geojson';
-async function loadShippingLaneLayer(){
- if(shippingLaneLayer||shippingLaneLoading)return;
- shippingLaneLoading=true;shippingLaneError=null;
- try{
-  const response=await fetch(SHIPPING_LANES_GEOJSON_URL,{cache:'force-cache'});
-  if(!response.ok)throw new Error('HTTP '+response.status);
-  const data=await response.json();
-  if(!data||!Array.isArray(data.features))throw new Error('GeoJSON-Format unerwartet');
-  shippingLaneLayer=L.geoJSON(data,{style:function(feature){
-   const type=String(feature&&feature.properties&&feature.properties.Type||'Minor').toLowerCase();
-   if(type==='major')return{color:'#40f5c2',weight:2.6,opacity:.95};
-   if(type==='middle')return{color:'#41c9f5',weight:1.8,opacity:.85};
-   return{color:'#b5e8ff',weight:1.1,opacity:.7};
-  },interactive:false}).addTo(map);
-  toast('Globale Schifffahrtsrouten wurden eingeblendet.');
- }catch(error){
-  shippingLaneError=error;console.error('Schifffahrtsrouten konnten nicht geladen werden:',error);
-  toast('Schifffahrtsrouten konnten nicht geladen werden. Bitte Internetverbindung prüfen.');
- }finally{shippingLaneLoading=false;}
-}
+/* Basiskarten: Satellitenbild und thematische Wasserkarte.
+   Die Wasserkarte nutzt gerenderte Gewässerflächen und Flusslinien statt einer
+   selbst konstruierten Weltmaske. Dadurch werden Küsten, Seen und Flüsse nicht
+   anhand ungenauer Umrisse über Land gemalt. */
+let navigableWaterVisible=false;
+let satelliteBaseLayer=null,waterBaseLayer=null;
 function toggleNavigableWater(){
  navigableWaterVisible=!navigableWaterVisible;
  const toggle=$('waterViewToggle');
- if(toggle)toggle.setAttribute('aria-pressed',String(navigableWaterVisible));
+ if(toggle){
+  toggle.setAttribute('aria-pressed',String(navigableWaterVisible));
+  toggle.textContent=navigableWaterVisible?'🛰️ Satellitenansicht':'🌊 Wasserkarte';
+ }
  if(!map)return;
- if(navigableWaterVisible){if(shippingLaneLayer)shippingLaneLayer.addTo(map);else loadShippingLaneLayer();}
- else if(shippingLaneLayer&&map.hasLayer(shippingLaneLayer))map.removeLayer(shippingLaneLayer);
+ if(navigableWaterVisible){
+  if(satelliteBaseLayer&&map.hasLayer(satelliteBaseLayer))map.removeLayer(satelliteBaseLayer);
+  if(waterBaseLayer&&!map.hasLayer(waterBaseLayer))waterBaseLayer.addTo(map);
+  toast('Wasserkarte aktiviert: Meere, Küstengewässer und größere Flüsse sind blau dargestellt.');
+ }else{
+  if(waterBaseLayer&&map.hasLayer(waterBaseLayer))map.removeLayer(waterBaseLayer);
+  if(satelliteBaseLayer&&!map.hasLayer(satelliteBaseLayer))satelliteBaseLayer.addTo(map);
+ }
 }
-function initMap(){map=L.map('map',{zoomControl:true,worldCopyJump:true}).setView([22,8],2);L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,attribution:'Tiles © Esri'}).addTo(map);PORTS.forEach(p=>{const marker=L.circleMarker([p.lat,p.lon],{radius:6,color:'#fff0b8',weight:2,fillColor:'#f5bd59',fillOpacity:.95,interactive:true,keyboard:true}).bindTooltip(p.name+' · '+p.country+' · Klicken für Hafeninfos',{direction:'top'});marker.on('click',()=>showPortInfo(p.id,marker));marker.addTo(map);portMarkers.push(marker)});map.on('zoomend',()=>{renderShips();renderPorts();if(navigableWaterVisible)drawNavigableWaterOverlay()});map.on('click',ev=>{if(ev.originalEvent&&ev.originalEvent.defaultPrevented)return;selectedShipId=null;previewedRouteShipId=null;previewedRouteContractId=null;renderUI();renderShips();showSelectedShipRoute(false)});bindShipDocumentFallback();}
+function initMap(){
+ map=L.map('map',{zoomControl:true,worldCopyJump:true}).setView([22,8],2);
+ satelliteBaseLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,attribution:'Tiles © Esri'});
+ waterBaseLayer=L.tileLayer('https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:19,attribution:'© OpenStreetMap-Mitwirkende · © CARTO'});
+ satelliteBaseLayer.addTo(map);
+ PORTS.forEach(p=>{const marker=L.circleMarker([p.lat,p.lon],{radius:6,color:'#fff0b8',weight:2,fillColor:'#f5bd59',fillOpacity:.95,interactive:true,keyboard:true}).bindTooltip(p.name+' · '+p.country+' · Klicken für Hafeninfos',{direction:'top'});marker.on('click',()=>showPortInfo(p.id,marker));marker.addTo(map);portMarkers.push(marker)});
+ map.on('zoomend',()=>{renderShips();renderPorts()});
+ map.on('click',ev=>{if(ev.originalEvent&&ev.originalEvent.defaultPrevented)return;selectedShipId=null;previewedRouteShipId=null;previewedRouteContractId=null;renderUI();renderShips();showSelectedShipRoute(false)});
+ bindShipDocumentFallback();
+}
 function renderPorts(){portMarkers.forEach(m=>{if(portsVisible){if(!map.hasLayer(m))m.addTo(map)}else if(map.hasLayer(m))map.removeLayer(m)})}
 function togglePorts(){portsVisible=!portsVisible;renderPorts()}
 function showPortInfo(portId,marker){
