@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#07131f"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%23071f30%22/%3E%3Cpath d=%22M8 38 Q20 28 32 38 T56 38%22 fill=%22none%22 stroke=%22%2347d8d0%22 stroke-width=%226%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M8 48 Q20 38 32 48 T56 48%22 fill=%22none%22 stroke=%22%2347d8d0%22 stroke-width=%224%22 stroke-linecap=%22round%22/%3E%3C/svg%3E"><title>Blue Horizon — Reederei-Manager</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="preload" as="image" href="./assets/Blauer%20Horizont%20%C3%BCber%20dem%20Containerhafen.png?v=loader-png-20261012"><link rel="stylesheet" href="./styles.css?v=menu-bg-custom-20261012">
+<link rel="preload" as="image" href="./assets/Blauer%20Horizont%20%C3%BCber%20dem%20Containerhafen.png?v=loader-png-20261012"><link rel="stylesheet" href="./styles.css?v=update-notice-20261012">
 </head>
 <body>
 <div class="app" id="gameApp">
@@ -39,7 +39,7 @@
  <div class="setup" id="newGameSaveSetup"><h2>Speicherplatz auswählen</h2><div id="newGameSaveList"></div><div id="overwriteConfirm" class="overwrite-confirm hidden"><p id="overwriteConfirmText">Möchtest du diesen Spielstand überschreiben?</p><div class="overwrite-actions"><button type="button" onclick="cancelSaveOverwrite()">Abbrechen</button><button type="button" class="danger-confirm" onclick="confirmSaveOverwrite()">Ja, überschreiben</button></div></div><button style="width:100%;margin-top:10px" onclick="hideSetups();$('newGameSetup').classList.add('visible');$('menuHeading').textContent='Neue Runde';$('menuDescription').textContent='Benenne deine Reederei, wähle den Hauptsitzhafen und den Schwierigkeitsgrad.'">Zurück zur Firmengründung</button></div>
  <div class="setup" id="savesSetup"><h2>Gespeicherte Spielstände</h2><div id="saveList"></div><button style="width:100%;margin-top:10px" onclick="showMenuHome()">Zurück zum Hauptmenü</button></div>
  <p class="notice" style="margin-top:22px">Der Spielstand wird in diesem Browser gespeichert. Für Satellitenkarte und maritime Routen ist eine Internetverbindung nötig.</p>
-</div></div>
+</div><button id="refreshUpdateButton" type="button" onclick="window.location.reload()">↻ Aktualisieren</button></div>
 <div class="overlay hidden" id="shipyard"><div class="menu-card"><div class="menu-brand"><div class="logo">⚓</div><div><h1>WERFT</h1><p>SCHIFFSKAUF & FLOTTE</p></div></div><div id="yardContent"></div><button style="width:100%;margin-top:12px" onclick="closeShipyard()">Zurück zum Spiel</button></div></div>
 <div id="loadingScreen" class="loading-screen hidden" role="status" aria-live="polite" aria-atomic="true">
  <div class="loading-card">
@@ -61,5 +61,26 @@
 <script src="./js/roadmap.js?v=roundcurves-ac90957104"></script>
 <script src="./js/shipyard.js?v=shipmarkerperf-20261011"></script>
 <script type="module" src="./js/sea-routing.js?v=coastbatch-41376d3065"></script>
+
+<script>
+(() => {
+  const button = document.getElementById("refreshUpdateButton");
+  const stylesheet = document.querySelector('link[rel="stylesheet"][href*="styles.css"]');
+  if (!button || !stylesheet) return;
+  const loadedVersion = new URL(stylesheet.href, location.href).searchParams.get("v") || "";
+  async function checkForUpdate() {
+    try {
+      const response = await fetch("./index.html?version-check=" + Date.now(), { cache: "no-store" });
+      if (!response.ok) return;
+      const latestHtml = await response.text();
+      const match = latestHtml.match(/styles\.css\?v=([^"'&\s]+)/);
+      if (match && decodeURIComponent(match[1]) !== loadedVersion) button.classList.add("update-ready");
+    } catch (_) {}
+  }
+  window.setTimeout(checkForUpdate, 12000);
+  window.setInterval(checkForUpdate, 30000);
+})();
+</script>
+
 </body>
 </html>
