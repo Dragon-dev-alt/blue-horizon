@@ -1,42 +1,52 @@
 'use strict';
 /* Startvorgang: Formular, Spielzustand und UI sicher initialisieren.
    Wichtig: Dieser Code muss innerhalb des Script-Blocks bleiben. */
-let confirmedOverwriteSlot=null;
-function handleSaveSlotChange(select){
- const slot=select?.value;
- if(slot==null||slot===''){confirmedOverwriteSlot=null;return;}
- if(slotExists(Number(slot))){
-  if(window.confirm('Dieser Speicherplatz ist bereits belegt. Möchtest du den vorhandenen Spielstand wirklich überschreiben? Der alte Spielstand geht dabei verloren.')){
-   confirmedOverwriteSlot=Number(slot);
-  }else{
-   confirmedOverwriteSlot=null;
-   const freeOption=Array.from(select.options).find(option=>option.value!==''&&!slotExists(Number(option.value)));
-   select.value=freeOption?freeOption.value:'';
-  }
- }else confirmedOverwriteSlot=null;
+let pendingNewGameSlot=null;
+function renderNewGameSaveSlots(){
+ const list=$('newGameSaveList');
+ if(!list)return;
+ list.innerHTML=Array.from({length:5},(_,i)=>{
+  const g=loadSlot(i);
+  const summary=g?'<b>'+escapeHtml(g.company)+'</b><small>'+DIFFICULTIES[g.difficulty]?.label+' · Tag '+g.day+' · Kontostand: '+money(g.cash)+'</small>':'<b>Speicherplatz '+(i+1)+'</b><small>Leer</small>';
+  const action=g?'<button type="button" onclick="requestSaveOverwrite('+i+')">Auswählen</button>':'<button type="button" class="primary" onclick="chooseNewGameSlot('+i+')">Auswählen</button>';
+  return '<div class="save-row"><span>'+summary+'</span>'+action+'</div>';
+ }).join('');
+ $('overwriteConfirm')?.classList.add('hidden');
 }
-function showNewGame(){
+function startNewGame(){
+ if(newGameStartupInProgress)return;
+ const hq=$('hqPort')?.value||'ham';
+ if(!port(hq)){toast('Der gewählte Hauptsitzhafen ist nicht verfügbar.');return;}
+ renderNewGameSaveSlots();
  hideSetups();
- $('menuActions').classList.add('hidden');
- $('newGameSetup').classList.add('visible');
- $('menuHeading').textContent='Neue Runde';
- $('menuDescription').textContent='Benenne deine Firma, wähle einen freien Speicherplatz, den Hauptsitzhafen und den Schwierigkeitsgrad.';
- $('companyInput').value='';
- const slotSelect=$('saveSlotChoice');
- if(slotSelect){
-  slotSelect.innerHTML=Array.from({length:5},(_,i)=>{
-   const saved=loadSlot(i);
-   return '<option value="'+i+'" '+(saved?'disabled':'')+'>Speicherplatz '+(i+1)+(saved?' — belegt':' — frei')+'</option>';
-  }).join('');
-  slotSelect.value=Array.from({length:5},(_,i)=>i).find(i=>!slotExists(i))?.toString()||'';
- }
- const hq=$('hqPort');
- if(hq){
-  hq.innerHTML=PORTS.map(p=>'<option value="'+p.id+'">'+p.name+' — '+p.country+(p.river?' · Binnenhafen':'')+'</option>').join('');
-  hq.value='ham';
- }
- chooseDifficulty('easy');
+ $('newGameSaveSetup').classList.add('visible');
+ $('menuHeading').textContent='Speicherplatz auswählen';
+ $('menuDescription').textContent='Wähle einen freien Speicherplatz oder bestätige das Überschreiben eines vorhandenen Spielstands.';
 }
+function chooseNewGameSlot(slot){
+ if(!Number.isInteger(slot)||slot<0||slot>4)return;
+ if(slotExists(slot)){requestSaveOverwrite(slot);return;}
+ startNewGameInChosenSlot(slot);
+}
+function requestSaveOverwrite(slot){
+ if(!Number.isInteger(slot)||slot<0||slot>4||!slotExists(slot))return;
+ pendingNewGameSlot=slot;
+ const g=loadSlot(slot);
+ $('overwriteConfirmText').textContent='„'+(g?.company||('Speicherplatz '+(slot+1)))+'“ auf Speicherplatz '+(slot+1)+' wird dauerhaft ersetzt. Möchtest du fortfahren?';
+ $('overwriteConfirm')?.classList.remove('hidden');
+}
+function cancelSaveOverwrite(){
+ pendingNewGameSlot=null;
+ $('overwriteConfirm')?.classList.add('hidden');
+}
+function confirmSaveOverwrite(){
+ if(pendingNewGameSlot==null||!slotExists(pendingNewGameSlot)){toast('Dieser Spielstand ist nicht mehr vorhanden.');renderNewGameSaveSlots();return;}
+ const slot=pendingNewGameSlot;
+ pendingNewGameSlot=null;
+ $('overwriteConfirm')?.classList.add('hidden');
+ startNewGameInChosenSlot(slot);
+}
+
 let newGameStartupInProgress=false;
 window.addEventListener('water-route-loading-progress',event=>{
  if(!newGameStartupInProgress||!event.detail)return;
@@ -96,14 +106,11 @@ function animateLoadingProgress(from,to,duration,message){
  });
 }
 
-async function startNewGame(){
+async function startNewGameInChosenSlot(slot){
  if(newGameStartupInProgress)return;
  const name=($('companyInput')?.value||'').trim()||'Blue Horizon Shipping';
  const hq=$('hqPort')?.value||'ham';
- const chosenSlot=$('saveSlotChoice')?.value;
- if(chosenSlot==null||chosenSlot===''||!Number.isInteger(Number(chosenSlot))||Number(chosenSlot)<0||Number(chosenSlot)>4){toast('Bitte wähle einen freien Speicherplatz aus.');return;}
- if(slotExists(Number(chosenSlot))&&confirmedOverwriteSlot!==Number(chosenSlot)){toast('Bitte bestätige zuerst, dass du diesen Spielstand überschreiben möchtest.');return;}
- confirmedOverwriteSlot=null;
+ if(!Number.isInteger(slot)||slot<0||slot>4)return;
  if(!port(hq)){toast('Der gewählte Hauptsitzhafen ist nicht verfügbar.');return;}
  newGameStartupInProgress=true;
  const startupStartedAt=performance.now();
@@ -114,7 +121,7 @@ async function startNewGame(){
   await waitForPaint();
   await animateLoadingProgress(5,18,450,'Lädt … Startkapital und Firmendaten');
   game=makeGame(name,selectedDifficulty,hq);
-  activeSlot=Number(chosenSlot);
+  activeSlot=Number(slot);
   selectedShipId=game.ships[0]?.id||null;
   saveGame();
   await waitForPaint();
