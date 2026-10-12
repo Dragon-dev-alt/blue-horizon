@@ -141,14 +141,15 @@ function calculateSeaRouteInBackground(connection){
   catch(error){routeCalculationRequests.delete(id);reject(error)}
  });
 }
-let contractGenerationWorkerRunning=false;
+let contractGenerationWorkersRunning=0;
+const MAX_PARALLEL_CONTRACT_JOBS=3;
 function yieldToBrowser(){
  return new Promise(resolve=>{
-  // Routenprüfung nur in kleinen, zeitlich getrennten Schritten starten.
-  // Die eigentliche Seerouten-Suche läuft im Worker; der Abstand schützt
-  // zusätzlich vor UI-Spitzen bei Hafen-/Flussprüfungen und schwächeren Geräten.
+  // Kurze UI-Pausen zwischen Routen, ohne die gesamte Warteschlange auszubremsen.
+  // Teure Seerouten werden im Worker berechnet; mehrere Schiffe können daher
+  // gleichzeitig vorbereitet werden, ohne den Hauptthread mit der Suche zu blockieren.
   const resume=()=>setTimeout(resolve,CONTRACT_ROUTE_STEP_DELAY);
-  if(typeof window.requestIdleCallback==='function')window.requestIdleCallback(resume,{timeout:500});
+  if(typeof window.requestIdleCallback==='function')window.requestIdleCallback(resume,{timeout:250});
   else resume();
  });
 }
@@ -158,16 +159,13 @@ function eligibilityStateIsCurrent(s,key){
  return !!live&&contractEligibilityKey(live)===key;
 }
 async function processContractGenerationQueue(){
- if(contractGenerationWorkerRunning)return;
- contractGenerationWorkerRunning=true;
- try{
-  while(contractGenerationQueue.length){
-   const job=contractGenerationQueue.shift();
-   try{await job.run()}catch(error){job.fail(error)}
-  }
- }finally{
-  contractGenerationWorkerRunning=false;
-  if(contractGenerationQueue.length)processContractGenerationQueue();
+ while(contractGenerationWorkersRunning<MAX_PARALLEL_CONTRACT_JOBS&&contractGenerationQueue.length){
+  const job=contractGenerationQueue.shift();
+  contractGenerationWorkersRunning++;
+  Promise.resolve().then(()=>job.run()).catch(error=>job.fail(error)).finally(()=>{
+   contractGenerationWorkersRunning=Math.max(0,contractGenerationWorkersRunning-1);
+   processContractGenerationQueue();
+  });
  }
 }
 function loadHarborConnectionCatalog(){
