@@ -244,8 +244,8 @@ function buyShip(typeId){
  runShipPurchaseWithLoading(()=>{
   if(!game||game.cash<t.price*d.cost)return;
   game.cash-=Math.round(t.price*d.cost);const id='s'+game.nextShipId++;const range=randomShipRange(typeId);const home=port(randomShipPort(typeId,range));
-  game.ships.push({id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null,condition:100,range,deliveryRemaining:1});
-  selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'. Lieferung in 1 Spieltag.');saveGame();renderUI();renderShips(id);toast('Schiff gekauft – Lieferung in 1 Spieltag.');
+  game.ships.push({id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null,condition:100,range,deliveryRemaining:4});
+  selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'. Lieferung in 4 Spieltagen.');saveGame();renderUI();renderShips(id);toast('Schiff gekauft – Lieferung in 4 Spieltagen.');
  });
 }
 function openShipyard(){if(!game)return;$('shipyard').classList.remove('hidden');renderShipyard()}
