@@ -243,8 +243,8 @@ function buyShip(typeId){
  if(game.cash<t.price*d.cost){toast('Nicht genug Geld für dieses Schiff.');return}
  runShipPurchaseWithLoading(()=>{
   if(!game||game.cash<t.price*d.cost)return;
-  game.cash-=Math.round(t.price*d.cost);const id='s'+game.nextShipId++;const home=port(randomShipPort(typeId));
-  game.ships.push({id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null,condition:100,range:randomShipRange(typeId)});
+  game.cash-=Math.round(t.price*d.cost);const id='s'+game.nextShipId++;const range=randomShipRange(typeId);const home=port(randomShipPort(typeId,range));
+  game.ships.push({id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null,condition:100,range});
   selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'.');saveGame();renderUI();renderShips(id);toast('Neues Schiff gekauft: '+t.name+'.');
  });
 }
