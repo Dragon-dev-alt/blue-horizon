@@ -65,6 +65,389 @@ const PORTS=[
 {id:'nou',name:'Nouakchott',country:'Mauretanien',lat:18.07,lon:-15.97,demand:.9},
 {id:'lud',name:'Lüderitz',country:'Namibia',lat:-26.65,lon:15.15,demand:.88}
 ];
+
+// Hafenklassifikation und technische Schiffszulassung.
+// Binnenhäfen sind in dieser Spielversion ausschließlich für Binnenschiffe zugelassen.
+const PORT_CATEGORY_INFO={
+ global_hub:{label:'Globales Drehkreuz',symbol:'✦',color:'#ffca55'},
+ international_port:{label:'Internationaler Seehafen',symbol:'⚓',color:'#45b8ff'},
+ regional_seaport:{label:'Regionaler Seehafen',symbol:'◉',color:'#57d6b0'},
+ river_hub:{label:'Binnen-Drehkreuz',symbol:'◆',color:'#c39bff'},
+ inland_port:{label:'Binnenhafen',symbol:'▰',color:'#85c98d'}
+};
+const PORT_CATEGORY_ASSIGNMENTS={
+  "ham": {
+    "category": "global_hub",
+    "river": false
+  },
+  "rot": {
+    "category": "global_hub",
+    "river": false
+  },
+  "lon": {
+    "category": "global_hub",
+    "river": false
+  },
+  "ant": {
+    "category": "global_hub",
+    "river": false
+  },
+  "osl": {
+    "category": "international_port",
+    "river": false
+  },
+  "nyc": {
+    "category": "global_hub",
+    "river": false
+  },
+  "mia": {
+    "category": "international_port",
+    "river": false
+  },
+  "hou": {
+    "category": "international_port",
+    "river": false
+  },
+  "van": {
+    "category": "international_port",
+    "river": false
+  },
+  "sao": {
+    "category": "global_hub",
+    "river": false
+  },
+  "dur": {
+    "category": "international_port",
+    "river": false
+  },
+  "dub": {
+    "category": "global_hub",
+    "river": false
+  },
+  "mum": {
+    "category": "global_hub",
+    "river": false
+  },
+  "sin": {
+    "category": "global_hub",
+    "river": false
+  },
+  "sha": {
+    "category": "global_hub",
+    "river": false
+  },
+  "tyo": {
+    "category": "international_port",
+    "river": false
+  },
+  "syd": {
+    "category": "international_port",
+    "river": false
+  },
+  "ist": {
+    "category": "international_port",
+    "river": false
+  },
+  "mar": {
+    "category": "international_port",
+    "river": false
+  },
+  "lis": {
+    "category": "international_port",
+    "river": false
+  },
+  "dui": {
+    "category": "river_hub",
+    "river": true
+  },
+  "cgn": {
+    "category": "inland_port",
+    "river": true
+  },
+  "bas": {
+    "category": "inland_port",
+    "river": true
+  },
+  "str": {
+    "category": "inland_port",
+    "river": true
+  },
+  "fra": {
+    "category": "inland_port",
+    "river": true
+  },
+  "nue": {
+    "category": "river_hub",
+    "river": true
+  },
+  "reg": {
+    "category": "inland_port",
+    "river": true
+  },
+  "vie": {
+    "category": "river_hub",
+    "river": true
+  },
+  "bra": {
+    "category": "inland_port",
+    "river": true
+  },
+  "bud": {
+    "category": "inland_port",
+    "river": true
+  },
+  "bel": {
+    "category": "inland_port",
+    "river": true
+  },
+  "gal": {
+    "category": "river_hub",
+    "river": true
+  },
+  "par": {
+    "category": "inland_port",
+    "river": true
+  },
+  "rou": {
+    "category": "inland_port",
+    "river": true
+  },
+  "sev": {
+    "category": "international_port",
+    "river": false
+  },
+  "mem": {
+    "category": "river_hub",
+    "river": true
+  },
+  "stl": {
+    "category": "river_hub",
+    "river": true
+  },
+  "wuh": {
+    "category": "river_hub",
+    "river": true
+  },
+  "chq": {
+    "category": "river_hub",
+    "river": true
+  },
+  "plz": {
+    "category": "international_port",
+    "river": false
+  },
+  "cpt": {
+    "category": "international_port",
+    "river": false
+  },
+  "mpm": {
+    "category": "international_port",
+    "river": false
+  },
+  "mby": {
+    "category": "international_port",
+    "river": false
+  },
+  "kar": {
+    "category": "international_port",
+    "river": false
+  },
+  "goa": {
+    "category": "international_port",
+    "river": false
+  },
+  "col": {
+    "category": "international_port",
+    "river": false
+  },
+  "jak": {
+    "category": "international_port",
+    "river": false
+  },
+  "man": {
+    "category": "international_port",
+    "river": false
+  },
+  "bru": {
+    "category": "international_port",
+    "river": false
+  },
+  "mel": {
+    "category": "international_port",
+    "river": false
+  },
+  "bri": {
+    "category": "international_port",
+    "river": false
+  },
+  "adl": {
+    "category": "international_port",
+    "river": false
+  },
+  "per": {
+    "category": "international_port",
+    "river": false
+  },
+  "akl": {
+    "category": "international_port",
+    "river": false
+  },
+  "rio": {
+    "category": "international_port",
+    "river": false
+  },
+  "bar": {
+    "category": "international_port",
+    "river": false
+  },
+  "gen": {
+    "category": "international_port",
+    "river": false
+  },
+  "por": {
+    "category": "international_port",
+    "river": false
+  },
+  "naw": {
+    "category": "international_port",
+    "river": false
+  },
+  "sea": {
+    "category": "international_port",
+    "river": false
+  },
+  "sfo": {
+    "category": "international_port",
+    "river": false
+  },
+  "bos": {
+    "category": "international_port",
+    "river": false
+  },
+  "mus": {
+    "category": "international_port",
+    "river": false
+  },
+  "gwa": {
+    "category": "international_port",
+    "river": false
+  },
+  "che": {
+    "category": "international_port",
+    "river": false
+  },
+  "dar": {
+    "category": "international_port",
+    "river": false
+  },
+  "wel": {
+    "category": "international_port",
+    "river": false
+  },
+  "nag": {
+    "category": "international_port",
+    "river": false
+  },
+  "kao": {
+    "category": "international_port",
+    "river": false
+  },
+  "dkr": {
+    "category": "international_port",
+    "river": false
+  },
+  "wvb": {
+    "category": "international_port",
+    "river": false
+  },
+  "ger": {
+    "category": "international_port",
+    "river": false
+  },
+  "bun": {
+    "category": "international_port",
+    "river": false
+  },
+  "tul": {
+    "category": "inland_port",
+    "river": true
+  },
+  "nov": {
+    "category": "inland_port",
+    "river": true
+  },
+  "cgr": {
+    "category": "inland_port",
+    "river": true
+  },
+  "pad": {
+    "category": "inland_port",
+    "river": true
+  },
+  "dyb": {
+    "category": "inland_port",
+    "river": true
+  },
+  "yue": {
+    "category": "inland_port",
+    "river": true
+  },
+  "ful": {
+    "category": "inland_port",
+    "river": true
+  },
+  "nas": {
+    "category": "international_port",
+    "river": false
+  },
+  "klg": {
+    "category": "international_port",
+    "river": false
+  },
+  "qdo": {
+    "category": "international_port",
+    "river": false
+  },
+  "izm": {
+    "category": "international_port",
+    "river": false
+  },
+  "sby": {
+    "category": "international_port",
+    "river": false
+  },
+  "ceb": {
+    "category": "international_port",
+    "river": false
+  },
+  "lax": {
+    "category": "global_hub",
+    "river": false
+  },
+  "hkg": {
+    "category": "global_hub",
+    "river": false
+  },
+  "nou": {
+    "category": "international_port",
+    "river": false
+  },
+  "lud": {
+    "category": "international_port",
+    "river": false
+  }
+};
+PORTS.forEach(p=>{
+ const assigned=PORT_CATEGORY_ASSIGNMENTS[p.id]||{category:p.river?'inland_port':'regional_seaport',river:!!p.river};
+ const info=PORT_CATEGORY_INFO[assigned.category];
+ p.category=assigned.category;
+ p.categoryLabel=info.label;
+ p.symbol=info.symbol;
+ p.color=info.color;
+ p.allowedShipTypes=assigned.river?['river']:SHIP_TYPES.filter(t=>t.id!=='river').map(t=>t.id);
+ p.allowedShipTypeLabels=assigned.river?['Binnenschiff']:['Coastal','Mitteldistanz','Langstrecke','Spezialschiffe'];
+});
+
 const CARGO=[
 {id:'containers',name:'Standardcontainer',icon:'📦',fee:500,capacity:1,speed:1,handling:1,types:['coastal','medium','long','ultra']},
 {id:'electronics',name:'Elektronik',icon:'💻',fee:750,capacity:.75,speed:1,handling:1,types:['coastal','medium','long','ultra']},
