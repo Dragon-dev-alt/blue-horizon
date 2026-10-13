@@ -4,6 +4,17 @@ const SHIP_RANGE_BANDS={
  coastal:[800,1800], medium:[2500,5000], long:[10000,30000], ultra:[15000,30000],
  tanker:[8000,30000], bulk:[4000,20000], 'ro-ro':[2500,7000], river:[250,800]
 };
+let portDestinationIndex=null;
+let portDestinationIndexPromise=null;
+function loadPortDestinationIndex(){
+ if(portDestinationIndex)return Promise.resolve(portDestinationIndex);
+ if(portDestinationIndexPromise)return portDestinationIndexPromise;
+ portDestinationIndexPromise=fetch('./data/port-destinations.json?v=ship-offer-registry-v1-20261013',{cache:'force-cache'})
+  .then(response=>{if(!response.ok)throw new Error('HTTP '+response.status);return response.json()})
+  .then(data=>{if(!data||data.v!==1||!data.origins)throw new Error('Ungültiges Zielhafenregister');portDestinationIndex=data;return data})
+  .catch(error=>{portDestinationIndexPromise=null;throw error});
+ return portDestinationIndexPromise;
+}
 function randomShipRange(typeId){const b=SHIP_RANGE_BANDS[typeId]||[500,shipType(typeId).range];return Math.round((b[0]+Math.random()*(b[1]-b[0]))/100)*100}
 function portAllowsShip(candidate,typeId){return !!candidate&&Array.isArray(candidate.allowedShipTypes)&&candidate.allowedShipTypes.includes(typeId);}
 function randomShipPortHasOption(candidate,typeId,range){
@@ -241,26 +252,23 @@ async function computeEligibleContractsAsync(s,key){
  if(!window.waterRouteDataReady||typeof routeForContract!=='function')return[];
  await loadHarborConnectionCatalog();
  if(!eligibilityStateIsCurrent(s,key))return null;
- const candidates=(harborConnectionsByOrigin.get(String(s.port))||[])
-  .filter(connection=>connection.shipTypes.includes(s.type)&&port(connection.to))
-  .map(connection=>({connection,airKm:haversine({lat:port(connection.from).lat,lon:port(connection.from).lon},{lat:port(connection.to).lat,lon:port(connection.to).lon})*1.852}))
-  .filter(item=>item.airKm<=Number(s.range||0)+1)
-  .sort((a,b)=>{
-   const target=({coastal:.62,medium:.68,long:.78,ultra:.82,tanker:.7,bulk:.65,'ro-ro':.65,river:.55})[s.type]||.65;
-   const score=item=>Math.abs(item.airKm-Number(s.range||0)*target);
-   return score(a)-score(b);
-  });
+ const registry=await loadPortDestinationIndex();
+ if(!eligibilityStateIsCurrent(s,key))return null;
+ const registeredTargets=registry.origins[String(s.port)]?.[s.type]||[];
+ const candidates=registeredTargets
+  .filter(entry=>Array.isArray(entry)&&entry.length>=4&&Number(entry[2])<=Number(s.range||0)+1)
+  .map(entry=>{
+   const connection=(harborConnectionsByOrigin.get(String(s.port))||[]).find(item=>String(item.to)===String(entry[0])&&item.shipTypes.includes(s.type));
+   return connection?{connection,estimatedKm:Number(entry[2])}:null;
+  }).filter(Boolean);
+ // Nicht immer dieselben Ziele bevorzugen: zufällige Reihenfolge aus dem
+ // typgerechten Register; jedes Ziel wird danach noch real über Wasser geprüft.
+ for(let i=candidates.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[candidates[i],candidates[j]]=[candidates[j],candidates[i]];}
  const valid=[];
  const seen=new Set();
  let routeFailures=0;
- // Bei jedem neuen Schiff werden 1 bis 3 Aufträge vollständig vorbereitet,
- // bevor die Lieferzeit abläuft. Falls weniger passende sichere Routen existieren,
- // werden alle verfügbaren passenden Routen genutzt.
  const targetCount=1+Math.floor(Math.random()*3);
- for(let i=0;i<candidates.length;i++){
-  // Don't insert a UI-idle wait for every route: that multiplied the delay
-  // across each ship. Yield only after a small batch, while route searches
-  // themselves run in the dedicated worker pool.
+ for(let i=0;i<candidates.length&&valid.length<targetCount;i++){
   if(i>0&&i%3===0)await yieldToBrowser();
   if(!eligibilityStateIsCurrent(s,key))return null;
   const connection=candidates[i].connection;
@@ -281,7 +289,6 @@ async function computeEligibleContractsAsync(s,key){
   seen.add(routeKey);
   const contract=createContractFromRoute(s,connection,route,i);
   if(contract)valid.push(contract);
-  if(valid.length>=targetCount)break;
  }
  if(!eligibilityStateIsCurrent(s,key))return null;
  // A transient worker/network failure is not the same as a genuinely empty
