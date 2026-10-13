@@ -321,7 +321,10 @@ async function computeEligibleContractsAsync(s,key){
   }else{
    try{route=await calculateSeaRouteInBackground(connection)}
    catch(error){console.warn('Hintergrund-Routenberechnung fehlgeschlagen:',error);routeFailures++;route=null}
-   if(!route){try{route=routeForContract({from:connection.from,to:connection.to},s)}catch(error){route=null}}
+   // Kein synchroner Fallback auf den Hauptthread: Seerouten werden ausschließlich
+   // vom neuen Route-Worker berechnet. Ein fehlgeschlagener Workerpfad wird verworfen,
+   // statt beim Erzeugen von Aufträgen die alte Hauptthread-Routensuche aufzurufen.
+   if(!route)route=null;
    if(route&&typeof window.cachePrecomputedContractRoute==='function'){
     window.cachePrecomputedContractRoute(connection.from,connection.to,s.type,route);
     if(typeof window.markWaterRouteVerified==='function')window.markWaterRouteVerified(route);
