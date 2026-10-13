@@ -30,7 +30,7 @@ function toggleNavigableWater(){
 function initMap(){
  map=L.map('map',{zoomControl:true,worldCopyJump:true}).setView([22,8],2);
  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,attribution:'Tiles © Esri'}).addTo(map);
- PORTS.forEach(p=>{const marker=L.circleMarker([p.lat,p.lon],{radius:6,color:'#fff0b8',weight:2,fillColor:'#f5bd59',fillOpacity:.95,interactive:true,keyboard:true}).bindTooltip(p.name+' · '+p.country+' · Klicken für Hafeninfos',{direction:'top'});marker.on('click',()=>showPortInfo(p.id,marker));marker.addTo(map);portMarkers.push(marker)});
+ PORTS.forEach(p=>{const info=PORT_CATEGORY_INFO[p.category]||PORT_CATEGORY_INFO.regional_seaport;const marker=L.circleMarker([p.lat,p.lon],{radius:p.category==='global_hub'?8:p.category==='river_hub'?7:6,color:info.color,weight:2,fillColor:info.color,fillOpacity:.95,interactive:true,keyboard:true}).bindTooltip(info.symbol+' '+p.name+' · '+p.categoryLabel+' · '+(p.river?'Nur Binnenschiffe':'Seeschiffe, keine Binnenschiffe')+' · Klicken für Hafeninfos',{direction:'top'});marker.on('click',()=>showPortInfo(p.id,marker));marker.addTo(map);portMarkers.push(marker)});
  map.on('zoomend',()=>{renderShips();renderPorts()});
  map.on('click',ev=>{if(ev.originalEvent&&ev.originalEvent.defaultPrevented)return;selectedShipId=null;previewedRouteShipId=null;previewedRouteContractId=null;renderUI();renderShips();showSelectedShipRoute(false)});
  bindShipDocumentFallback();
@@ -40,9 +40,9 @@ function togglePorts(){portsVisible=!portsVisible;renderPorts()}
 function showPortInfo(portId,marker){
  const p=port(portId);if(!p||!marker)return;
  const stationed=game?game.ships.filter(s=>String(s.port)===String(p.id)&&!s.trip&&!s.inYard):[];
- const type=p.river?'Binnenhafen':(p.type==='international'||p.level===3?'Internationaler Hafen':'Seehafen');
+ const type=p.categoryLabel|| (p.river?'Binnenhafen':'Regionaler Seehafen');const shipAccess=p.river?'Zugelassen: nur Binnenschiffe':'Zugelassen: Coastal, Mitteldistanz, Langstrecke, Ultra, Tanker, Bulk Carrier und Ro-Ro';
  const rows=stationed.length?stationed.map(s=>'<button type="button" onclick="selectShip(\''+escapeHtml(s.id)+'\')" style="width:100%;margin-top:6px;text-align:left">🚢 '+escapeHtml(s.name)+' auswählen</button>').join(''):'<p style="margin:6px 0 0;color:#8faaba">Derzeit liegt hier kein einsatzbereites Schiff.</p>';
- marker.bindPopup('<div><strong>'+escapeHtml(p.name)+'</strong><br><span>'+escapeHtml(p.country)+' · '+type+'</span>'+rows+'</div>',{maxWidth:260}).openPopup();
+ marker.bindPopup('<div><strong>'+escapeHtml(p.symbol||'⚓')+' '+escapeHtml(p.name)+'</strong><br><span>'+escapeHtml(p.country)+' · '+escapeHtml(type)+'</span><br><span>'+escapeHtml(shipAccess)+'</span>'+rows+'</div>',{maxWidth:260}).openPopup();
 }
 function selectShipAtPort(portId){
  if(!game)return;
