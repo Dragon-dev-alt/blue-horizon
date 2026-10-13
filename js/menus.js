@@ -129,11 +129,13 @@ async function startNewGameInChosenSlot(slot){
  if(!port(hq)){toast('Der gewählte Hauptsitzhafen ist nicht verfügbar.');return;}
  newGameStartupInProgress=true;
  const startupStartedAt=performance.now();
+ let startupStage='Ladescreen vorbereiten';
  try{
   // Cover the setup screen before creating any game state so the browser can
   // paint the loader rather than appearing frozen during initialization.
   window.setLoadingScreen('Lädt … Reederei wird gegründet',5);
   await waitForPaint();
+  startupStage='Firmendaten und Schiffsangebote erstellen';
   await animateLoadingProgress(5,18,450,'Lädt … Startkapital und Firmendaten');
   game=makeGame(name,selectedDifficulty,hq);
   activeSlot=Number(slot);
@@ -141,6 +143,7 @@ async function startNewGameInChosenSlot(slot){
   saveGame();
   await waitForPaint();
 
+  startupStage='Wasserwege laden';
   await animateLoadingProgress(18,38,550,'Lädt … Wasserwege und Landdaten');
   // Let routing load while the bar visibly advances. If routing takes longer,
   // wait for the real task before moving to the next stage.
@@ -155,6 +158,7 @@ async function startNewGameInChosenSlot(slot){
   // Der versionierte Hafenverbindungskatalog wird geladen; echte Routen werden
   // erst für passende Aufträge berechnet, damit der Spielstart nicht unnötig blockiert.
   if(routingReady){
+   startupStage='Hafenverbindungen laden';
    window.setLoadingScreen('Lädt … Hafenverbindungen werden geladen',72);
    try{await loadHarborConnectionCatalog()}catch(_){}
   }
@@ -172,6 +176,7 @@ async function startNewGameInChosenSlot(slot){
    await animateLoadingProgress(68,90,700,'Lädt … letzte Vorbereitungen');
   }
 
+  startupStage='Spieloberfläche aufbauen';
   $('mainMenu').classList.add('hidden');
   renderUI();
   if(map){
@@ -180,6 +185,7 @@ async function startNewGameInChosenSlot(slot){
    renderShips();
    showSelectedShipRoute(false);
   }
+  startupStage='Spielstand speichern und Start abschließen';
   updateHudStats();
   saveGame();
   await animateLoadingProgress(90,100,500,'Alles bereit – deine Reederei startet …');
@@ -188,10 +194,11 @@ async function startNewGameInChosenSlot(slot){
   if(routingReady)toast('Firma gegründet – kaufe dein erstes Schiff in der Werft.');
   else toast('Firma gegründet. Wasserwege konnten nicht geladen werden; prüfe die Internetverbindung.');
  }catch(e){
-  console.error('Fehler beim Gründen der Firma:',e);
+  console.error('Fehler beim Gründen der Firma ('+startupStage+'):',e);
   $('loadingScreen')?.classList.add('hidden');
   $('mainMenu').classList.remove('hidden');
-  toast('Die Firma konnte nicht gestartet werden. Bitte erneut versuchen.');
+  const detail=e&&e.message?String(e.message):String(e);
+  toast('Startfehler bei „'+startupStage+'“: '+detail.slice(0,110));
  }finally{
   newGameStartupInProgress=false;
  }
