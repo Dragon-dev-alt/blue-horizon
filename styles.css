@@ -181,3 +181,58 @@
 #contractsPanel .order .bonus{grid-column:3}
 #contractsPanel .contract-actions{grid-column:4}
 @media(max-width:820px){#contractsPanel .order{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+
+
+/* Auftragsfenster an die Referenz angepasst: links Auftragskarten, rechts vollständige Routendetails. */
+.top-actions .orders-launch{background:linear-gradient(180deg,#147fd0,#075ca7);border-color:#48a7f2;color:#fff;font-weight:800}
+.contract-overlay{z-index:2100;padding:clamp(10px,3.3vw,52px);align-items:center;justify-content:center;background:rgba(2,12,23,.62)!important;backdrop-filter:blur(5px)}
+.contract-window{width:min(1334px,100%);height:min(922px,calc(100dvh - 100px));min-height:500px;border:1px solid #3f7ba6;border-radius:20px;background:linear-gradient(135deg,#071c2e 0%,#061827 55%,#041421 100%);box-shadow:0 22px 80px #000a,inset 0 1px 0 #b7e2ff12}
+.contract-window-head{min-height:90px;padding:18px 24px;gap:18px;background:linear-gradient(100deg,#112d46,#0a2034);border-bottom:1px solid #254d6b}
+.contract-title-icon{width:48px;height:48px;flex-basis:48px;border:0;background:transparent;box-shadow:none;font-size:30px}
+.contract-heading h2{font-size:27px;letter-spacing:-.4px}.contract-heading p{font-size:14px;color:#9ec5e8;margin-top:4px}
+.contract-close{margin-left:auto;width:40px;height:40px;border-radius:10px;font-size:26px;background:#102b43;border-color:#294c6a;color:#cce5fb}
+.contract-tabs{display:flex;align-items:stretch;gap:12px;margin:0 24px;border-bottom:1px solid #193b55;min-height:69px;flex-shrink:0}
+.contract-tabs button{position:relative;display:flex;align-items:center;gap:10px;padding:0 18px;border:0;border-radius:0;background:transparent;color:#a6c6e7;font-size:15px;white-space:nowrap}
+.contract-tabs button.active{color:#49baff;font-weight:800}
+.contract-tabs button.active:after{content:"";position:absolute;bottom:-1px;left:0;right:0;height:4px;border-radius:5px 5px 0 0;background:#18a8ff}
+.contract-tabs button span{display:inline-grid;place-items:center;min-width:26px;height:26px;padding:0 6px;border-radius:10px;background:#203b53;color:#f4f9ff;font-size:12px}
+.contract-tabs button.active span{background:#0966c2}
+.contract-window-body{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(340px,.9fr);gap:24px;min-height:0;flex:1;padding:0 22px 0 22px}
+.contract-list-column{display:flex;flex-direction:column;min-height:0;overflow:hidden;padding-top:14px}
+.contract-list-intro{padding:0 0 10px;color:#9abbd9;font-size:12px;min-height:24px}
+#contractsPanel .order-list{display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;overflow:auto;border:0;background:transparent;padding:0 0 12px;scrollbar-color:#235778 #071a2a}
+#contractsPanel .order{position:relative;display:grid;grid-template-columns:58px minmax(0,1fr) 112px;grid-template-rows:auto auto auto;align-items:center;gap:3px 14px;min-height:98px;margin:0;padding:14px 16px;border:1px solid #214863;border-radius:13px;background:linear-gradient(110deg,#0d2941,#0b2237);box-shadow:none}
+#contractsPanel .order:hover{background:linear-gradient(110deg,#133858,#0d2943);border-color:#2c9de4;transform:none}
+#contractsPanel .order .contract-type{grid-column:2;grid-row:1;color:#65c3ff;font-size:9px;letter-spacing:.8px;margin:0 0 3px}
+#contractsPanel .order h3{grid-column:2;grid-row:2;font-size:14px;line-height:1.35;margin:0;color:#eff7ff}
+#contractsPanel .order p:first-of-type{grid-column:2;grid-row:3;margin:4px 0 0;font-size:12px;line-height:1.5;color:#a9cbea}
+#contractsPanel .order p:nth-of-type(2){display:none}
+#contractsPanel .order:before{content:"▤";grid-column:1;grid-row:1/4;display:grid;place-items:center;width:54px;height:54px;border-radius:50%;background:#123e67;color:#6fc8ff;border:1px solid #28659a;font-size:24px}
+#contractsPanel .order .bonus{grid-column:3;grid-row:1/3;justify-self:stretch;align-self:center;text-align:center;max-width:none;margin:0;padding:7px 8px;border:1px solid #087c59;border-radius:99px;background:#07523f;color:#b8ffe2;font-size:11px;overflow-wrap:anywhere}
+#contractsPanel .contract-actions{grid-column:3;grid-row:3;display:flex;gap:0;justify-content:flex-end}
+#contractsPanel .contract-actions .route-preview-button{display:none}
+#contractsPanel .contract-actions button{width:100%!important;min-width:0;padding:9px 7px;border-radius:8px;font-size:12px;white-space:normal}
+#contractsPanel .contract-actions button.primary:before{content:"";display:inline-block}
+.contract-detail-panel{display:flex;flex-direction:column;min-height:0;align-self:center;width:100%;max-height:calc(100% - 16px);overflow:auto;padding:16px;border:1px solid #28577a;border-radius:18px;background:linear-gradient(180deg,#0b263e,#071b2e);box-shadow:inset 0 1px 0 #ffffff0a}
+.detail-image-placeholder{height:138px;flex-shrink:0;display:grid;place-items:center;border:1px solid #264d6a;border-radius:12px;background:linear-gradient(140deg,#153c5b,#0a2034);color:#9ad6ff;font-size:44px;margin-bottom:16px}
+.contract-detail-panel h3{font-size:19px;margin:0 0 7px;color:#f1f8ff}
+.contract-detail-panel>p{font-size:12px;color:#a7c7e4;line-height:1.6;margin:0 0 14px}
+.contract-detail-panel .detail-note{margin-top:auto;padding:12px;border-left:3px solid #39b7f8;background:#0a2940;color:#a8cde8;font-size:11px;line-height:1.6}
+.contract-detail-panel .detail-row{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:start;padding:9px 0;border-bottom:1px solid #20445e;color:#9dc4e5;font-size:12px}
+.contract-detail-panel .detail-row b{display:block;color:#edf7ff;font-weight:500;margin-top:3px}
+.contract-detail-panel .accept-selected{margin-top:10px;width:100%;min-height:40px;background:linear-gradient(180deg,#168bf0,#0865c3);border-color:#258fe9;color:white}
+.contract-window-footer{min-height:48px;display:flex;align-items:center;justify-content:flex-start;gap:24px;padding:10px 22px;border-top:1px solid #183b54;background:#061827;color:#8db2d6;font-size:10px}
+.contract-window-footer .footer-note{margin-left:auto}
+.status-dot{background:#17d88a}
+.ship-route-info{width:min(350px,calc(100vw - 28px));margin-left:auto;margin-right:18px;align-self:center;max-height:calc(100dvh - 32px);overflow:auto;border:1px solid #387ba6;border-radius:15px;background:linear-gradient(150deg,#0b263d,#061725);box-shadow:0 18px 65px #000b;padding:17px}
+#shipRouteInfoOverlay{z-index:1900;justify-content:flex-end;padding:16px;background:rgba(1,10,18,.18);backdrop-filter:none;pointer-events:none}
+#shipRouteInfoOverlay .ship-route-info{pointer-events:auto}
+.ship-route-info>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid #244861;padding-bottom:12px;margin-bottom:10px}
+.ship-route-info h2{font-size:18px;margin:0 0 4px}.ship-route-info header p{font-size:11px;color:#9bbbd6;margin:0}
+.ship-route-info header button{padding:2px 10px;font-size:22px}
+.route-info-stat{display:flex;justify-content:space-between;gap:15px;padding:10px 0;border-bottom:1px solid #193b53;font-size:12px}
+.route-info-stat span{color:#94b5d2}.route-info-stat b{text-align:right;color:#eff8ff;font-weight:650}
+.route-info-hint{font-size:11px;line-height:1.55;color:#a2c5e2;background:#0a2b42;border-radius:8px;padding:10px;margin:12px 0}
+.route-info-close{width:100%;background:#123c5b;border-color:#2d6386}
+@media(max-width:900px){.contract-window{height:calc(100dvh - 20px);min-height:0}.contract-window-body{grid-template-columns:minmax(0,1fr) minmax(230px,.8fr);gap:10px;padding:0 10px}.contract-tabs{margin:0 10px;gap:0}.contract-tabs button{font-size:12px;padding:0 8px}.contract-heading h2{font-size:21px}.contract-heading p{font-size:11px}.contract-detail-panel{padding:10px}.detail-image-placeholder{height:100px}.contract-window-footer{gap:10px;padding:8px 10px}.contract-window-footer .footer-note{display:none}}
+@media(max-width:620px){.contract-window-body{grid-template-columns:1fr}.contract-detail-panel{display:none}.contract-tabs{overflow-x:auto}.contract-tabs button{font-size:11px}.contract-window-head{padding:12px}.contract-title-icon{display:none}#contractsPanel .order{grid-template-columns:40px minmax(0,1fr) 88px;gap:3px 9px;padding:10px}#contractsPanel .order:before{width:38px;height:38px;font-size:18px}.contract-window-footer span:nth-child(2),.contract-window-footer span:nth-child(3){display:none}.ship-route-info{margin:0 auto}}
