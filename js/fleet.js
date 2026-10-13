@@ -76,7 +76,7 @@ function makeGame(name,difficulty,hq){
  * für mögliche Verbindungen. Erst wenn ein Schiff Aufträge benötigt, werden
  * die passenden Routen berechnet, sicherheitsgeprüft und daraus Aufträge gebaut.
  */
-let harborConnectionCatalog=null;
+let harborConnectionCatalog=null,harborConnectionsByPair=new Map();
 let harborConnectionsByOrigin=new Map();
 let harborCatalogLoadPromise=null;
 const contractEligibilityCache=new Map();
@@ -122,8 +122,9 @@ function isContractEligibilityPending(s){return !!s&&contractEligibilityPending.
 const CONTRACT_ROUTE_STEP_DELAY=0;
 const contractGenerationQueue=[];
 const contractGenerationRetryCounts=new Map();
-const MAX_CONTRACT_GENERATION_RETRIES=Infinity;
-const ROUTE_WORKER_POOL_SIZE=3;
+// Ein Worker hält Seekarte und Landmaske dauerhaft im Speicher.
+// Mehrere Instanzen vervielfachen den RAM-Verbrauch unnötig.
+const ROUTE_WORKER_POOL_SIZE=1;
 const routeCalculationWorkers=[];
 let routeCalculationWorkerId=0;
 let routeCalculationWorkerCursor=0;
@@ -169,7 +170,8 @@ function calculateSeaRouteInBackground(connection){
  });
 }
 let contractGenerationWorkersRunning=0;
-const MAX_PARALLEL_CONTRACT_JOBS=3;
+// Routen sind CPU-intensiv; ein Auftragslauf zur Zeit verhindert Lastspitzen.
+const MAX_PARALLEL_CONTRACT_JOBS=1;
 function yieldToBrowser(){
  return new Promise(resolve=>{
   // Kurze UI-Pausen zwischen Routen, ohne die gesamte Warteschlange auszubremsen.
@@ -204,10 +206,12 @@ function loadHarborConnectionCatalog(){
    if(!data||data.schemaVersion!==1||!Array.isArray(data.connections))throw new Error('Ungültiger Hafenverbindungskatalog.');
    harborConnectionCatalog=data;
    harborConnectionsByOrigin=new Map();
+   harborConnectionsByPair=new Map();
    data.connections.forEach(connection=>{
     if(!connection||!connection.from||!connection.to||!Array.isArray(connection.shipTypes))return;
     if(!harborConnectionsByOrigin.has(connection.from))harborConnectionsByOrigin.set(connection.from,[]);
     harborConnectionsByOrigin.get(connection.from).push(connection);
+    harborConnectionsByPair.set(String(connection.from)+'>'+String(connection.to),connection);
    });
    window.dispatchEvent(new Event('harbor-connection-catalog-ready'));
    console.info('Hafenverbindungskatalog geladen:',data.ports?.length||0,'Häfen,',data.connections.length,'gerichtete Verbindungen.');
@@ -280,8 +284,8 @@ async function computeEligibleContractsAsync(s,key){
  const candidates=registeredTargets
   .filter(entry=>Array.isArray(entry)&&entry.length>=4&&Number(entry[2])<=Number(s.range||0)+1)
   .map(entry=>{
-   const connection=(harborConnectionsByOrigin.get(String(s.port))||[]).find(item=>String(item.to)===String(entry[0])&&item.shipTypes.includes(s.type));
-   return connection?{connection,estimatedKm:Number(entry[2])}:null;
+   const connection=harborConnectionsByPair.get(String(s.port)+'>'+String(entry[0]));
+   return connection&&connection.shipTypes.includes(s.type)?{connection,estimatedKm:Number(entry[2])}:null;
   }).filter(Boolean);
  // Nicht immer dieselben Ziele bevorzugen: zufällige Reihenfolge aus dem
  // typgerechten Register; jedes Ziel wird danach noch real über Wasser geprüft.
@@ -317,18 +321,20 @@ async function computeEligibleContractsAsync(s,key){
   if(contract)valid.push(contract);
  }
  if(!eligibilityStateIsCurrent(s,key))return null;
- // A transient worker/network failure is not the same as a genuinely empty
- // harbor. Return a retryable result instead of permanently caching no offers.
- if(!valid.length)return null;
- if(!Array.isArray(game.generatedContracts))game.generatedContracts=[];
- const activeContractId=game.ships.find(item=>String(item.id)===String(s.id))?.trip?.contractId;
- game.generatedContracts=game.generatedContracts.filter(c=>
-  String(c.id)===String(activeContractId)||
-  String(c.assignedShipId)!==String(s.id)||String(c.from)!==String(s.port)
- );
- valid.forEach(c=>game.generatedContracts.push(c));
- if(valid.length)game.nextContractId=(game.nextContractId||1)+valid.length;
- saveGame();
+ // Nur echte Workerfehler erneut versuchen. Ein Hafen ohne sichere Route
+ // wird leer gecacht, statt endlos CPU-Zeit zu verbrauchen.
+ if(!valid.length&&routeFailures>0)return null;
+ if(valid.length){
+  if(!Array.isArray(game.generatedContracts))game.generatedContracts=[];
+  const activeContractId=game.ships.find(item=>String(item.id)===String(s.id))?.trip?.contractId;
+  game.generatedContracts=game.generatedContracts.filter(c=>
+   String(c.id)===String(activeContractId)||
+   String(c.assignedShipId)!==String(s.id)||String(c.from)!==String(s.port)
+  );
+  valid.forEach(c=>game.generatedContracts.push(c));
+  game.nextContractId=(game.nextContractId||1)+valid.length;
+  saveGame();
+ }
  return valid;
 }
 function scheduleContractEligibility(s,key){
@@ -350,19 +356,11 @@ function scheduleContractEligibility(s,key){
        if(!contractEligibilityPending.has(currentKey))scheduleContractEligibility(live,currentKey);
       }else{
        const attempts=contractGenerationRetryCounts.get(key)||0;
-       if(attempts<MAX_CONTRACT_GENERATION_RETRIES){
-        contractGenerationRetryCounts.set(key,attempts+1);
-        setTimeout(()=>{
-         const current=game&&game.ships.find(item=>String(item.id)===String(s.id));
-         if(current&&contractEligibilityKey(current)===key&&!contractEligibilityPending.has(key))scheduleContractEligibility(current,key);
-        },Math.min(1500,250*(attempts+1)));
-       }else{
-        contractGenerationRetryCounts.set(key,attempts+1);
-        setTimeout(()=>{
-         const current=game&&game.ships.find(item=>String(item.id)===String(s.id));
-         if(current&&contractEligibilityKey(current)===key&&!contractEligibilityPending.has(key))scheduleContractEligibility(current,key);
-        },Math.min(10000,500*Math.pow(2,Math.min(attempts,5))));
-       }
+       contractGenerationRetryCounts.set(key,attempts+1);
+       setTimeout(()=>{
+        const current=game&&game.ships.find(item=>String(item.id)===String(s.id));
+        if(current&&contractEligibilityKey(current)===key&&!contractEligibilityPending.has(key))scheduleContractEligibility(current,key);
+       },Math.min(10000,500*Math.pow(2,Math.min(attempts,5))));
       }
      }
      return;
@@ -377,20 +375,16 @@ function scheduleContractEligibility(s,key){
     console.warn('Routenbasierte Aufträge konnten nicht erstellt werden:',error);
     const live=game&&game.ships.find(item=>String(item.id)===String(s.id));
     const attempts=contractGenerationRetryCounts.get(key)||0;
-    if(live&&contractEligibilityKey(live)===key&&attempts<MAX_CONTRACT_GENERATION_RETRIES){
-     contractGenerationRetryCounts.set(key,attempts+1);
+    if(live&&contractEligibilityKey(live)===key){
+     const nextAttempt=attempts+1;
+     contractGenerationRetryCounts.set(key,nextAttempt);
      setTimeout(()=>{
       const current=game&&game.ships.find(item=>String(item.id)===String(s.id));
       if(current&&contractEligibilityKey(current)===key&&!contractEligibilityPending.has(key))scheduleContractEligibility(current,key);
-     },Math.min(1500,250*(attempts+1)));
+     },Math.min(10000,500*Math.pow(2,Math.min(nextAttempt,5))));
     }else if(live){
      const currentKey=contractEligibilityKey(live);
-     const nextAttempt=attempts+1;
-     contractGenerationRetryCounts.set(currentKey,nextAttempt);
-     setTimeout(()=>{
-      const current=game&&game.ships.find(item=>String(item.id)===String(s.id));
-      if(current&&contractEligibilityKey(current)===currentKey&&!contractEligibilityPending.has(currentKey))scheduleContractEligibility(current,currentKey);
-     },Math.min(10000,500*Math.pow(2,Math.min(nextAttempt,5))));
+     if(!contractEligibilityPending.has(currentKey))scheduleContractEligibility(live,currentKey);
     }
    }finally{contractEligibilityPending.delete(key)}
   },
