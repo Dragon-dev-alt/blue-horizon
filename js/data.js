@@ -444,7 +444,7 @@ PORTS.forEach(p=>{
  p.categoryLabel=info.label;
  p.symbol=info.symbol;
  p.color=info.color;
- p.allowedShipTypes=assigned.river?['river']:SHIP_TYPES.filter(t=>t.id!=='river').map(t=>t.id);
+ p.allowedShipTypes=assigned.river?['river']:['coastal','medium','long','ultra','tanker','bulk','ro-ro'];
  p.allowedShipTypeLabels=assigned.river?['Binnenschiff']:['Coastal','Mitteldistanz','Langstrecke','Spezialschiffe'];
 });
 
