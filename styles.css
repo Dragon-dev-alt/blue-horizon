@@ -253,3 +253,28 @@
 #contractsPanel .order.selected{border-color:#2aa9ff;background:linear-gradient(110deg,#123a5b,#0b2942);box-shadow:0 0 0 1px #168de655}
 .contract-detail-panel{align-self:stretch;max-height:none;min-height:0;overflow-y:auto}
 @media(max-width:760px){.contract-window{height:calc(100dvh - 16px)}.contract-window-body{grid-template-columns:1fr;overflow:hidden;padding:0 10px}.contract-detail-panel{display:none}}
+
+
+/* Schiff anklicken: ausschließlich das Info-Panel rechts anzeigen, niemals die Karte abdunkeln/verdecken. */
+#shipRouteInfoOverlay.overlay{
+ position:fixed!important;inset:0!important;z-index:1900!important;
+ display:flex;align-items:center;justify-content:flex-end;
+ padding:16px!important;
+ background:transparent!important;
+ background-color:transparent!important;
+ background-image:none!important;
+ backdrop-filter:none!important;
+ -webkit-backdrop-filter:none!important;
+ pointer-events:none!important;
+}
+#shipRouteInfoOverlay.overlay.hidden{display:none!important}
+#shipRouteInfoOverlay .ship-route-info{
+ pointer-events:auto!important;
+ margin:0 10px 0 0;
+ max-height:calc(100dvh - 32px);
+ background:linear-gradient(150deg,rgba(11,38,61,.97),rgba(6,23,37,.97));
+}
+@media(max-width:620px){
+ #shipRouteInfoOverlay.overlay{justify-content:center;padding:10px!important}
+ #shipRouteInfoOverlay .ship-route-info{margin:0;max-height:calc(100dvh - 20px)}
+}
