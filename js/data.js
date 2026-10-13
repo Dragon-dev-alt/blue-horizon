@@ -447,6 +447,29 @@ PORTS.forEach(p=>{
  p.allowedShipTypes=assigned.river?['river']:['coastal','medium','long','ultra','tanker','bulk','ro-ro'];
  p.allowedShipTypeLabels=assigned.river?['Binnenschiff']:['Coastal','Mitteldistanz','Langstrecke','Spezialschiffe'];
 });
+// Individuelle, recherchierte Ausnahmen: gemischte See-/Binnenhäfen und Fluss-See-Korridore.
+const PORT_SHIP_ACCESS_OVERRIDES={
+ ham:{allowRiver:true,note:'See- und Binnenhafen; Elbe und angeschlossene Kanäle verbinden den Hafen mit dem Binnenwasserstraßennetz.',source:'https://www.hamburg-port-authority.de/en/waterway/inland-waterway-shipping'},
+ rot:{allowRiver:true,note:'Seehafen mit ausgewiesenen Liegeplätzen und Diensten für die Binnenschifffahrt.',source:'https://www.portofrotterdam.com/en/inland-shipping'},
+ ant:{allowRiver:true,note:'See- und Binnenverkehr; die Hafenbehörde führt eigene Regeln und Dienste für die Binnenschifffahrt.',source:'https://www.portofantwerpbruges.com/en/faq/where-can-i-find-facts-figures-and-statistics-about-port'},
+ sha:{allowRiver:true,note:'Seehafen mit Verbindungen zum chinesischen Binnenwasserstraßennetz und Fluss-See-Transport.',source:'https://english.shanghai.gov.cn/en-Latest-WhatsNew/20260803/2b7583f524ec4cf98184d692d35584fa.html'},
+ par:{allowRiver:true,note:'Binnenhafen am Seine-System; nur Binnen- und geeignete Flussschiffe, keine Hochseeschiffe.',source:'https://www.haropaport.com/'},
+ rou:{allowRiver:true,note:'Seine-Hafen mit Binnen- und Seeschifffahrt; die konkrete Reichweite hängt vom Schiff und Abschnitt ab.',source:'https://www.haropaport.com/'},
+ mem:{allowRiver:true,note:'Hafen am Mississippi-Binnenschifffahrtskorridor; im Spiel nur für Binnenschiffe zugelassen.',source:'https://www.mvm.usace.army.mil/'},
+ stl:{allowRiver:true,note:'Hafen am Mississippi-Binnenschifffahrtskorridor; im Spiel nur für Binnenschiffe zugelassen.',source:'https://www.mvs.usace.army.mil/'},
+ cgn:{allowRiver:true,note:'Rheinhafen; Binnenschiffe nutzen den Rhein, Hochseeschiffe können Köln nicht als Seehafen anlaufen.',source:'https://www.wsv.de/'}
+};
+Object.entries(PORT_SHIP_ACCESS_OVERRIDES).forEach(([id,override])=>{
+ const p=PORTS.find(port=>port.id===id);if(!p)return;
+ p.allowedShipTypes=override.allowRiver?['coastal','medium','long','ultra','tanker','bulk','ro-ro','river']:p.allowedShipTypes;
+ p.allowedShipTypeLabels=override.allowRiver?['Seeschiffe (routenabhängig)','Binnenschiffe']:p.allowedShipTypeLabels;
+ p.shipAccessNote=override.note;p.shipAccessSource=override.source;p.shipAccessException=true;
+});
+PORTS.forEach(p=>{
+ if(!p.allowedShipTypes)p.allowedShipTypes=p.river?['river']:['coastal','medium','long','ultra','tanker','bulk','ro-ro'];
+ if(!p.allowedShipTypeLabels)p.allowedShipTypeLabels=p.river?['Binnenschiff']:['Seeschiffklassen'];
+});
+});
 
 const CARGO=[
 {id:'containers',name:'Standardcontainer',icon:'📦',fee:500,capacity:1,speed:1,handling:1,types:['coastal','medium','long','ultra']},
