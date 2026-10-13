@@ -512,7 +512,11 @@ function renderContractWindow(){
  const ac=document.getElementById('availableCount'),sc=document.getElementById('contractShipCount');
  if(ac)ac.textContent=available.length;if(sc)sc.textContent=game.ships.length;
  if(tab==='ships'){
-  list.innerHTML=game.ships.length?game.ships.map(s=>'<article class="order"><span class="contract-type">'+esc(shipType(s.type)?.name||s.type)+'</span><h3>'+esc(s.name)+'</h3><p>'+(s.trip?'Unterwegs nach '+esc(port(s.trip.to)?.name||s.trip.to):'Hafen: '+esc(port(s.port)?.name||s.port))+'</p><span class="bonus">'+(s.trip?'Unterwegs':'Bereit')+'</span><div class="contract-actions"><button type="button" onclick="selectShip(\''+String(s.id).replace(/'/g,"\\'")+'\');renderUI()">Schiff auswählen</button></div></article>').join(''):'<p class="notice">Noch keine Schiffe. Kaufe zuerst ein Schiff in der Werft.</p>';
+  list.innerHTML=game.ships.length?game.ships.map(s=>{
+   const status=Number(s.deliveryRemaining)>0?'Wird ausgeliefert':s.inYard?'In der Werft':s.trip?'Unterwegs':'Bereit';
+   const location=Number(s.deliveryRemaining)>0?'Auslieferung in '+Number(s.deliveryRemaining)+' Spieltag'+(Number(s.deliveryRemaining)===1?'':'en'):s.trip?'Unterwegs nach '+esc(port(s.trip.to)?.name||s.trip.to):'Hafen: '+esc(port(s.port)?.name||s.port);
+   return '<article class="order"><span class="contract-type">'+esc(shipType(s.type)?.name||s.type)+'</span><h3>'+esc(s.name)+'</h3><p>'+location+'</p><span class="bonus">'+status+'</span><div class="contract-actions"><button type="button" onclick="selectShip(\''+String(s.id).replace(/'/g,"\\'")+'\');renderUI()">Schiff auswählen</button></div></article>';
+  }).join(''):'<p class="notice">Noch keine Schiffe. Kaufe zuerst ein Schiff in der Werft.</p>';
   panel.innerHTML='<div class="detail-image-placeholder">🚢</div><h3>Deine Flotte</h3><p>Wähle ein Schiff aus deiner Flotte, um passende Aufträge zu sehen.</p>';return;
  }
  if(tab==='completed'){
