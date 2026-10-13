@@ -134,6 +134,7 @@ async function startNewGameInChosenSlot(slot){
   // Cover the setup screen before creating any game state so the browser can
   // paint the loader rather than appearing frozen during initialization.
   window.setLoadingScreen('Lädt … Reederei wird gegründet',5);
+   if(typeof window.preloadRouteWorkers==='function')window.preloadRouteWorkers().catch(error=>console.warn('Routen-Worker-Vorladen fehlgeschlagen:',error));
   await waitForPaint();
   startupStage='Firmendaten und Schiffsangebote erstellen';
   await animateLoadingProgress(5,18,450,'Lädt … Startkapital und Firmendaten');
