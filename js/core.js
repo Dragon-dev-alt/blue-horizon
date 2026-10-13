@@ -51,48 +51,53 @@ function selectShipAtPort(portId){
  selectShip(ship.id);
 }
 function iconForShip(s,angle=0){const t=shipType(s.type),z=map.getZoom(),size=Math.max(16,Math.min(25,22-(z-2)*.35)),hitSize=Math.max(40,size+18),shipHeight=Math.max(8,size*.48),selected=String(s.id)===String(selectedShipId);return L.divIcon({className:'ship-icon',html:'<div class="ship-hit-area'+(selected?' selected-ship-marker':'')+'" style="width:'+hitSize+'px;height:'+hitSize+'px;display:flex;align-items:center;justify-content:center;pointer-events:auto;cursor:pointer;box-sizing:border-box"><div class="ship-shape" style="width:'+size+'px;height:'+shipHeight+'px;flex:none;background:'+t.color+';transform:rotate('+(angle-90)+'deg)"></div></div>',iconSize:[hitSize,hitSize],iconAnchor:[hitSize/2,hitSize/2]})}
+function updateShipMarker(s){
+ if(!map||!game||!s)return;
+ ensureShipStats(s);
+ let pos=port(s.port);
+ if(s.trip&&s.trip.coords){const p=pointAlong(s.trip.coords,s.trip.progress);pos={lat:p[1],lon:p[0]}}
+ if(!pos)return;
+ let m=shipMarkers[s.id];
+ const isNew=!m;
+ const angle=s.trip?Math.round((s.trip.angle||0)/3)*3:0;
+ if(isNew){
+  m=L.marker([pos.lat,pos.lon],{icon:iconForShip(s,angle),interactive:true,keyboard:true,riseOnHover:true,zIndexOffset:2000,autoPanOnFocus:false}).addTo(map);
+  shipMarkers[s.id]=m;
+  m.on('click',()=>queueShipSelection(s.id));
+  m.bindTooltip(s.name+' · '+shipType(s.type).name,{direction:'top'});
+  m._bhIconKey=[s.type,map.getZoom(),String(s.id)===String(selectedShipId)?1:0,angle].join('|');
+ }else{
+  const current=m.getLatLng();
+  if(Math.abs(current.lat-pos.lat)>1e-7||Math.abs(current.lng-pos.lon)>1e-7)m.setLatLng([pos.lat,pos.lon]);
+  const iconKey=[s.type,map.getZoom(),String(s.id)===String(selectedShipId)?1:0,angle].join('|');
+  if(m._bhIconKey!==iconKey){m.setIcon(iconForShip(s,angle));m._bhIconKey=iconKey;}
+ }
+ const el=m.getElement();
+ if(el){
+  el.style.pointerEvents='auto';el.style.cursor='pointer';el.dataset.shipId=String(s.id);
+  el.setAttribute('role','button');el.setAttribute('tabindex','0');el.setAttribute('aria-label','Schiff auswählen: '+s.name);
+  if(isNew){
+   el.onclick=function(ev){ev.preventDefault();ev.stopPropagation();queueShipSelection(el.dataset.shipId);return false};
+   el.onpointerup=function(ev){if(ev.button!==0&&ev.pointerType!=='touch')return;ev.stopPropagation();queueShipSelection(el.dataset.shipId)};
+   el.onpointerdown=function(ev){if(ev.button!==0&&ev.pointerType!=='touch')return;ev.stopPropagation()};
+   el.onkeydown=function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();ev.stopPropagation();queueShipSelection(el.dataset.shipId)}};
+  }
+ }
+}
 function renderShips(onlyShipId=null){
  if(!map||!game)return;
+ // Beim Kauf oder Neubau ausschließlich den betroffenen Marker anfassen.
+ // Keine Flottenprüfung und kein Durchlauf über alle übrigen Schiffe.
+ if(onlyShipId!=null){
+  const ship=game.ships.find(s=>String(s.id)===String(onlyShipId));
+  if(ship)updateShipMarker(ship);
+  return;
+ }
  const alive=new Set(game.ships.map(s=>String(s.id)));
  Object.keys(shipMarkers).forEach(id=>{
   if(!alive.has(String(id))){map.removeLayer(shipMarkers[id]);delete shipMarkers[id]}
  });
- game.ships.forEach(s=>{
-  if(onlyShipId!=null&&String(s.id)!==String(onlyShipId))return;
-  ensureShipStats(s);
-  let pos=port(s.port);
-  if(s.trip&&s.trip.coords){const p=pointAlong(s.trip.coords,s.trip.progress);pos={lat:p[1],lon:p[0]}}
-  let m=shipMarkers[s.id];
-  const isNew=!m;
-  if(isNew){
-   m=L.marker([pos.lat,pos.lon],{icon:iconForShip(s,s.trip?s.trip.angle||0:0),interactive:true,keyboard:true,riseOnHover:true,zIndexOffset:2000,autoPanOnFocus:false}).addTo(map);
-   shipMarkers[s.id]=m;
-   m.on('click',()=>queueShipSelection(s.id));
-   m.bindTooltip(s.name+' · '+shipType(s.type).name,{direction:'top'});
-  }else{
-   const current=m.getLatLng();
-   if(Math.abs(current.lat-pos.lat)>1e-7||Math.abs(current.lng-pos.lon)>1e-7)m.setLatLng([pos.lat,pos.lon]);
-   // Leaflet-Icons nicht bei jedem UI-Refresh neu bauen: das spart DOM-Arbeit,
-   // besonders bei größeren Flotten.
-   const angle=s.trip?Math.round((s.trip.angle||0)/3)*3:0;
-   const iconKey=[s.type,map.getZoom(),String(s.id)===String(selectedShipId)?1:0,angle].join('|');
-   if(m._bhIconKey!==iconKey){
-    m.setIcon(iconForShip(s,angle));
-    m._bhIconKey=iconKey;
-   }
-  }
-  const el=m.getElement();
-  if(el){
-   el.style.pointerEvents='auto';el.style.cursor='pointer';el.dataset.shipId=String(s.id);
-   el.setAttribute('role','button');el.setAttribute('tabindex','0');el.setAttribute('aria-label','Schiff auswählen: '+s.name);
-   if(isNew){
-    el.onclick=function(ev){ev.preventDefault();ev.stopPropagation();queueShipSelection(el.dataset.shipId);return false};
-    el.onpointerup=function(ev){if(ev.button!==0&&ev.pointerType!=='touch')return;ev.stopPropagation();queueShipSelection(el.dataset.shipId)};
-    el.onpointerdown=function(ev){if(ev.button!==0&&ev.pointerType!=='touch')return;ev.stopPropagation()};
-    el.onkeydown=function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();ev.stopPropagation();queueShipSelection(el.dataset.shipId)}};
-   }
-  }
- });
+ game.ships.forEach(updateShipMarker);
 }
 function getRouteMetrics(coords){
  if(!Array.isArray(coords)||coords.length<2)return{cumulative:[0],total:0};
