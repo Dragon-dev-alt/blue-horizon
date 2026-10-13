@@ -244,14 +244,12 @@ let selectedShipId='s1';
 
 function buyShip(typeId){
  const t=shipType(typeId);if(!game||!t)return;
- const d=DIFFICULTIES[game.difficulty];
- if(game.cash<t.price*d.cost){toast('Nicht genug Geld für dieses Schiff.');return}
- runShipPurchaseWithLoading(()=>{
-  if(!game||game.cash<t.price*d.cost)return;
-  game.cash-=Math.round(t.price*d.cost);const id='s'+game.nextShipId++;const range=randomShipRange(typeId);const home=port(randomShipPort(typeId,range));
-  game.ships.push({id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null,condition:100,range,deliveryRemaining:6});
-  selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'. Lieferung in 6 Spieltagen.');saveGame();renderUI();renderShips(id);toast('Schiff gekauft – Lieferung in 6 Spieltagen.');
- });
+ const d=DIFFICULTIES[game.difficulty],price=Math.round(t.price*d.cost);
+ if(game.cash<price){toast('Nicht genug Geld für dieses Schiff.');return}
+ game.cash-=price;const id='s'+game.nextShipId++;const range=randomShipRange(typeId);const home=port(randomShipPort(typeId,range));
+ const ship={id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null,condition:100,range,deliveryRemaining:6};
+ game.ships.push(ship);selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'. Lieferung in 6 Spieltagen.');
+ saveGame();renderShips(id);renderUI({purchaseOnly:true,ship});toast('Schiff gekauft – Lieferung in 6 Spieltagen.');
 }
 function openShipyard(){if(!game)return;$('shipyard').classList.remove('hidden');renderShipyard()}
 let shipyardExitLoading=false;
@@ -261,42 +259,7 @@ function waitForPurchasedShipReady(){
  // sobald die normale Spielansicht erneut gerendert wird.
 }
 function runShipPurchaseWithLoading(purchase){
- const overlay=$('loadingScreen'),yard=$('shipyard');
- if(shipyardExitLoading||!overlay){if(yard)yard.classList.add('hidden');purchase();return}
- shipyardExitLoading=true;
- const hideOverlay=()=>{
-  overlay.classList.add('hidden');
-  overlay.style.removeProperty('display');overlay.style.removeProperty('visibility');
-  overlay.setAttribute('aria-hidden','true');
-  shipyardExitLoading=false;
- };
- try{
-  if(yard)yard.classList.add('hidden');
-  if(typeof window.setLoadingScreen==='function')window.setLoadingScreen('Lädt … Schiff wird übernommen',72);
-  overlay.classList.remove('hidden');
-  overlay.style.display='grid';overlay.style.visibility='visible';
-  overlay.setAttribute('aria-hidden','false');
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-   window.setTimeout(()=>{
-    try{
-     purchase();
-     waitForPurchasedShipReady();
-    }catch(error){
-     console.error('Schiffskauf fehlgeschlagen:',error);
-     toast('Der Schiffskauf konnte nicht vollständig abgeschlossen werden.');
-    }finally{
-     // Routen werden absichtlich nicht abgewartet: das Schiff wird ausgeliefert,
-     // während die Auftragsprüfung im Hintergrund weiterläuft.
-     hideOverlay();
-    }
-   },50);
-  }));
- }catch(error){
-  hideOverlay();
-  console.warn('Schiffskauf-Ladescreen konnte nicht angezeigt werden:',error);
-  if(yard)yard.classList.add('hidden');
-  purchase();
- }
+ try{purchase()}catch(error){console.error('Schiffskauf fehlgeschlagen:',error);toast('Der Schiffskauf konnte nicht vollständig abgeschlossen werden.')}
 }
 function closeShipyard(){
  const yard=$('shipyard');
