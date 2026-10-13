@@ -1,6 +1,6 @@
 'use strict';
 /* Zustand und Speicherung */
-let game=null,activeSlot=0,map=null,portMarkers=[],shipMarkers={},routeLayers=[],waterRouteCache=new Map(),simulationSpeed=1,simulationProgress=0,lastFrame=0,lastShipFrame=0,lastHudRefresh=0,animationId=0,portsVisible=true,seaRoutingAvailable=false;
+let game=null,activeSlot=0,map=null,portMarkers=[],shipMarkers={},routeLayers=[],simulationSpeed=1,simulationProgress=0,lastFrame=0,lastShipFrame=0,lastHudRefresh=0,animationId=0,portsVisible=true,seaRoutingAvailable=false;
 const routeMetricsCache=new WeakMap();
 /* Immutable lookup tables avoid repeated linear scans during marker updates,
    route generation and simulation ticks. */
@@ -163,88 +163,6 @@ function smoothWaterRoute(coords){
  if(window.isWaterRouteSafe(twice))return twice;
  if(window.isWaterRouteSafe(once))return once;
  return coords;
-}
-/* Bounded LRU cache: prevent route geometry for every port pair from
-   accumulating indefinitely during a long play session. */
-const MAX_CACHED_WATER_ROUTES=520;
-function cacheWaterRoute(key,coords){
- if(waterRouteCache.has(key))waterRouteCache.delete(key);
- waterRouteCache.set(key,coords);
- if(waterRouteCache.size>MAX_CACHED_WATER_ROUTES){
-  const oldest=waterRouteCache.keys().next().value;
-  waterRouteCache.delete(oldest);
- }
- return coords;
-}
-function baseComputeWaterRoute(a,b){
- const routeFn=window.searoute;
- if(!seaRoutingAvailable||!window.waterRouteDataReady||typeof routeFn!=='function'||
-    typeof window.isWaterRouteSafe!=='function'||!a||!b)return null;
- const key=String(a.id)+'>'+String(b.id);
- if(waterRouteCache.has(key)){
-  const cached=waterRouteCache.get(key);
-  // Refresh this entry's position in the LRU order.
-  waterRouteCache.delete(key);
-  waterRouteCache.set(key,cached);
-  return cached;
- }
-
- const origin=[a.lon,a.lat],destination=[b.lon,b.lat];
- const isUsableRoute=result=>{
-  const coords=result&&result.geometry&&result.geometry.coordinates;
-  const properties=result&&result.properties;
-  if(!Array.isArray(coords)||coords.length<2)return null;
-  if(properties&&((Number.isFinite(properties.originSnapKm)&&properties.originSnapKm>100)||
-      (Number.isFinite(properties.destinationSnapKm)&&properties.destinationSnapKm>100)))return null;
-  return coords;
- };
- try{
-  // In den meisten Fällen reicht der Standardpfad. K-Alternativen sind deutlich teurer
-  // und werden daher nur berechnet, wenn die erste Route tatsächlich Land schneidet.
-  const primary=routeFn(origin,destination);
-  const primaryCoords=isUsableRoute(primary);
-  if(primaryCoords&&window.isWaterRouteSafe(primaryCoords)){
-   const smooth=smoothWaterRoute(primaryCoords);
-   // Router-Snapping darf die Route nicht vor dem eigentlichen Hafen enden lassen.
-   const exact=smooth.map(point=>[point[0],point[1]]);
-   exact[0]=origin.slice();
-   exact[exact.length-1]=destination.slice();
-   if(window.isWaterRouteSafe(exact)){
-    cacheWaterRoute(key,exact);
-    return exact;
-   }
-  }
-
-  if(typeof window.searouteAlternatives==='function'){
-   const generated=window.searouteAlternatives(origin,destination,{k:3});
-   const candidates=Array.isArray(generated)?generated:
-     generated&&Array.isArray(generated.features)?generated.features:
-     generated?[generated]:[];
-   for(const result of candidates){
-    if(result===primary)continue;
-    const coords=isUsableRoute(result);
-    if(!coords||coords===primaryCoords)continue;
-    // Eine Alternative, die dieselben Koordinaten wie die geprüfte Hauptroute liefert,
-    // darf keine zweite aufwendige Landprüfung auslösen.
-    if(primaryCoords&&coords.length===primaryCoords.length&&
-       coords.every((p,i)=>p[0]===primaryCoords[i][0]&&p[1]===primaryCoords[i][1]))continue;
-    if(!window.isWaterRouteSafe(coords))continue;
-    const smooth=smoothWaterRoute(coords);
-    const exact=smooth.map(point=>[point[0],point[1]]);
-    exact[0]=origin.slice();
-    exact[exact.length-1]=destination.slice();
-    if(!window.isWaterRouteSafe(exact))continue;
-    cacheWaterRoute(key,exact);
-    return exact;
-   }
-  }
-  cacheWaterRoute(key,null);
-  return null;
- }catch(e){
-  cacheWaterRoute(key,null);
-  console.warn('Keine sichere Wasserroute gefunden:',e);
-  return null;
- }
 }
 /* Flotte, Aufträge und Fahrten */
 function selectedShip(){if(!game)return null;if(selectedShipId==null)return null;return game.ships.find(s=>String(s.id)===String(selectedShipId))||null}
@@ -496,8 +414,8 @@ function frame(now){
  animationId=requestAnimationFrame(frame);
 }
 /* Initialisierung */
-function init(){initMap();seaRoutingAvailable=typeof window.searoute==='function'&&window.waterRouteDataReady===true;if(!seaRoutingAvailable)console.info('Wasserwege werden geladen und auf Landkreuzungen geprüft.');const active=Number(localStorage.getItem(CONFIG.activeKey));$('continueHint').textContent=Number.isInteger(active)&&slotExists(active)?'Letzten Spielstand fortsetzen':'Noch kein Spielstand vorhanden';requestAnimationFrame(frame)}
-window.addEventListener('water-route-data-ready',()=>{seaRoutingAvailable=typeof window.searoute==='function'&&typeof window.isWaterRouteSafe==='function'&&window.waterRouteDataReady===true;waterRouteCache.clear();if(game){revalidateExistingTripRoutes();renderUI();renderShips();showSelectedShipRoute(true);saveGame()}console.info('Wasserwege und Landprüfung sind bereit.');if(!game)toast('Wasserwege geladen – Routen werden auf Land geprüft.')});
+function init(){initMap();seaRoutingAvailable=window.waterRouteDataReady===true&&typeof window.isWaterRouteSafe==='function';if(!seaRoutingAvailable)console.info('Wasserwege werden geladen und auf Landkreuzungen geprüft.');const active=Number(localStorage.getItem(CONFIG.activeKey));$('continueHint').textContent=Number.isInteger(active)&&slotExists(active)?'Letzten Spielstand fortsetzen':'Noch kein Spielstand vorhanden';requestAnimationFrame(frame)}
+window.addEventListener('water-route-data-ready',()=>{seaRoutingAvailable=typeof window.isWaterRouteSafe==='function'&&window.waterRouteDataReady===true;if(game){revalidateExistingTripRoutes();renderUI();renderShips();showSelectedShipRoute(true);saveGame()}console.info('Wasserwege und Landprüfung sind bereit.');if(!game)toast('Wasserwege geladen – Routen werden auf Land geprüft.')});
 window.addEventListener('water-route-data-error',()=>{seaRoutingAvailable=false;console.error('Routen bleiben deaktiviert, bis die Landprüfung verfügbar ist.');toast('Wasserprüfung nicht geladen. Bitte Internetverbindung prüfen.')});
 window.addEventListener('load',init);
 
