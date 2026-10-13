@@ -278,3 +278,8 @@
  #shipRouteInfoOverlay.overlay{justify-content:center;padding:10px!important}
  #shipRouteInfoOverlay .ship-route-info{margin:0;max-height:calc(100dvh - 20px)}
 }
+
+.ship-info-actions{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}
+.ship-info-actions button{width:100%;min-height:42px;font-weight:750}
+.ship-info-actions .ship-info-primary{background:linear-gradient(135deg,#0787df,#0664bc);border-color:#29a9ff;color:#fff}
+.ship-info-actions .ship-info-secondary{background:#12384f;border-color:#3c7597;color:#eaf7ff}
