@@ -107,8 +107,10 @@ function cacheContractEligibility(key,result){
 function isContractEligibilityPending(s){return !!s&&contractEligibilityPending.has(contractEligibilityKey(s))}
 // Bis zu drei Schiffe werden parallel für Aufträge vorbereitet. Die eigentliche
 // Karten-/Routenberechnung läuft im Web Worker, damit die Oberfläche bedienbar bleibt.
-const CONTRACT_ROUTE_STEP_DELAY=200;
+const CONTRACT_ROUTE_STEP_DELAY=0;
 const contractGenerationQueue=[];
+const contractGenerationRetryCounts=new Map();
+const MAX_CONTRACT_GENERATION_RETRIES=3;
 const ROUTE_WORKER_POOL_SIZE=3;
 const routeCalculationWorkers=[];
 let routeCalculationWorkerId=0;
@@ -249,12 +251,16 @@ async function computeEligibleContractsAsync(s,key){
   });
  const valid=[];
  const seen=new Set();
+ let routeFailures=0;
  // Bei jedem neuen Schiff werden 1 bis 3 Aufträge vollständig vorbereitet,
  // bevor die Lieferzeit abläuft. Falls weniger passende sichere Routen existieren,
  // werden alle verfügbaren passenden Routen genutzt.
  const targetCount=1+Math.floor(Math.random()*3);
  for(let i=0;i<candidates.length;i++){
-  await yieldToBrowser();
+  // Don't insert a UI-idle wait for every route: that multiplied the delay
+  // across each ship. Yield only after a small batch, while route searches
+  // themselves run in the dedicated worker pool.
+  if(i>0&&i%3===0)await yieldToBrowser();
   if(!eligibilityStateIsCurrent(s,key))return null;
   const connection=candidates[i].connection;
   let route;
@@ -262,7 +268,7 @@ async function computeEligibleContractsAsync(s,key){
    route=routeForContract({from:connection.from,to:connection.to},s);
   }else{
    try{route=await calculateSeaRouteInBackground(connection)}
-   catch(error){console.warn('Hintergrund-Routenberechnung fehlgeschlagen:',error);route=null}
+   catch(error){console.warn('Hintergrund-Routenberechnung fehlgeschlagen:',error);routeFailures++;route=null}
    if(route&&typeof window.cachePrecomputedContractRoute==='function'){
     window.cachePrecomputedContractRoute(connection.from,connection.to,s.type,route);
     if(typeof window.markWaterRouteVerified==='function')window.markWaterRouteVerified(route);
@@ -277,6 +283,9 @@ async function computeEligibleContractsAsync(s,key){
   if(valid.length>=targetCount)break;
  }
  if(!eligibilityStateIsCurrent(s,key))return null;
+ // A transient worker/network failure is not the same as a genuinely empty
+ // harbor. Return a retryable result instead of permanently caching no offers.
+ if(!valid.length&&routeFailures>0)return null;
  if(!Array.isArray(game.generatedContracts))game.generatedContracts=[];
  const activeContractId=game.ships.find(item=>String(item.id)===String(s.id))?.trip?.contractId;
  game.generatedContracts=game.generatedContracts.filter(c=>
@@ -299,15 +308,30 @@ function scheduleContractEligibility(s,key){
     const result=await computeEligibleContractsAsync(s,key);
     const live=game&&game.ships.find(item=>String(item.id)===String(s.id));
     if(result===null){
-     // Schiff oder Route hat sich während der Berechnung geändert: aktuellen Zustand
-     // erneut einplanen, damit keine Flotte dauerhaft ohne Aufträge zurückbleibt.
+     // Schiffzustand geändert oder temporärer Workerfehler: mit begrenzten
+     // Wiederholungen neu planen. Nie eine leere Liste als dauerhaften Erfolg cachen.
      if(live){
       const currentKey=contractEligibilityKey(live);
-      if(currentKey!==key&&!contractEligibilityPending.has(currentKey))scheduleContractEligibility(live,currentKey);
+      if(currentKey!==key){
+       if(!contractEligibilityPending.has(currentKey))scheduleContractEligibility(live,currentKey);
+      }else{
+       const attempts=contractGenerationRetryCounts.get(key)||0;
+       if(attempts<MAX_CONTRACT_GENERATION_RETRIES){
+        contractGenerationRetryCounts.set(key,attempts+1);
+        setTimeout(()=>{
+         const current=game&&game.ships.find(item=>String(item.id)===String(s.id));
+         if(current&&contractEligibilityKey(current)===key&&!contractEligibilityPending.has(key))scheduleContractEligibility(current,key);
+        },Math.min(1500,250*(attempts+1)));
+       }else{
+        cacheContractEligibility(key,[]);
+        contractGenerationRetryCounts.delete(key);
+       }
+      }
      }
      return;
     }
     if(!live)return;
+    contractGenerationRetryCounts.delete(key);
     const finalKey=contractEligibilityKey(live);
     cacheContractEligibility(finalKey,result);
     if(finalKey!==key)cacheContractEligibility(key,result);
@@ -315,7 +339,17 @@ function scheduleContractEligibility(s,key){
    }catch(error){
     console.warn('Routenbasierte Aufträge konnten nicht erstellt werden:',error);
     const live=game&&game.ships.find(item=>String(item.id)===String(s.id));
-    if(live)cacheContractEligibility(contractEligibilityKey(live),[]);
+    const attempts=contractGenerationRetryCounts.get(key)||0;
+    if(live&&contractEligibilityKey(live)===key&&attempts<MAX_CONTRACT_GENERATION_RETRIES){
+     contractGenerationRetryCounts.set(key,attempts+1);
+     setTimeout(()=>{
+      const current=game&&game.ships.find(item=>String(item.id)===String(s.id));
+      if(current&&contractEligibilityKey(current)===key&&!contractEligibilityPending.has(key))scheduleContractEligibility(current,key);
+     },Math.min(1500,250*(attempts+1)));
+    }else if(live){
+     cacheContractEligibility(contractEligibilityKey(live),[]);
+     contractGenerationRetryCounts.delete(key);
+    }
    }finally{contractEligibilityPending.delete(key)}
   },
   fail:error=>{console.warn('Auftragswarteschlange fehlgeschlagen:',error);contractEligibilityPending.delete(key)}
