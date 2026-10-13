@@ -4,14 +4,14 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#07131f"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%23071f30%22/%3E%3Cpath d=%22M8 38 Q20 28 32 38 T56 38%22 fill=%22none%22 stroke=%22%2347d8d0%22 stroke-width=%226%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M8 48 Q20 38 32 48 T56 48%22 fill=%22none%22 stroke=%22%2347d8d0%22 stroke-width=%224%22 stroke-linecap=%22round%22/%3E%3C/svg%3E"><title>Blue Horizon — Reederei-Manager</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="preload" as="image" href="./assets/Blauer%20Horizont%20%C3%BCber%20dem%20Containerhafen.png?v=loader-png-20261012"><link rel="stylesheet" href="./styles.css?v=contracts-template-match-v3-20261013">
+<link rel="preload" as="image" href="./assets/Blauer%20Horizont%20%C3%BCber%20dem%20Containerhafen.png?v=loader-png-20261012"><link rel="stylesheet" href="./styles.css?v=orders-reference-layout-v4-20261013">
 </head>
 <body>
 <div class="app" id="gameApp">
 <header class="topbar">
  <div class="brand"><div class="logo">⚓</div><div><strong id="companyLabel">BLUE HORIZON</strong><small>SHIPPING COMPANY SIMULATOR</small></div></div>
  <div class="stat"><small>Kontostand</small><b class="money" id="cashStat">€ 0</b></div><div class="stat"><small>Flotte</small><b id="fleetStat">0 Schiffe</b></div><div class="stat"><small>Spieltag</small><b id="dayStat">Tag 1</b></div><div class="stat"><small>Reputation</small><b id="repStat">★ 50</b></div>
- <div class="top-actions"><button type="button" onclick="openShipyard()">⚓ Werft</button><div class="playback-controls" role="group" aria-label="Simulationssteuerung"><button type="button" id="pauseBtn" onclick="setSpeed(0)" aria-pressed="false" title="Simulation pausieren"><span class="control-icon" aria-hidden="true">Ⅱ</span><span>Pause</span></button><button type="button" id="playBtn" class="active" onclick="setSpeed(1)" aria-pressed="true" title="Simulation mit normaler Geschwindigkeit"><span class="control-icon" aria-hidden="true">▶</span><span>Play</span></button><button type="button" id="fastBtn" onclick="setSpeed(1.5)" aria-pressed="false" title="Simulation 1,5-fach beschleunigen"><span class="control-icon" aria-hidden="true">⏩</span><span>1,5×</span></button></div><button type="button" onclick="openFleetWindow()">🚢 Flotte</button><button type="button" onclick="openMainMenu()">☰ Menü</button></div>
+ <div class="top-actions"><button type="button" onclick="openShipyard()">⚓ Werft</button><button type="button" class="orders-launch" onclick="openContractsWindow()">⚓ Aufträge</button><div class="playback-controls" role="group" aria-label="Simulationssteuerung"><button type="button" id="pauseBtn" onclick="setSpeed(0)" aria-pressed="false" title="Simulation pausieren"><span class="control-icon" aria-hidden="true">Ⅱ</span><span>Pause</span></button><button type="button" id="playBtn" class="active" onclick="setSpeed(1)" aria-pressed="true" title="Simulation mit normaler Geschwindigkeit"><span class="control-icon" aria-hidden="true">▶</span><span>Play</span></button><button type="button" id="fastBtn" onclick="setSpeed(1.5)" aria-pressed="false" title="Simulation 1,5-fach beschleunigen"><span class="control-icon" aria-hidden="true">⏩</span><span>1,5×</span></button></div><button type="button" onclick="openFleetWindow()">🚢 Flotte</button><button type="button" onclick="openMainMenu()">☰ Menü</button></div>
 </header>
 <main class="workspace"><div id="map" class="map"></div>
  <div class="map-tools"><div class="map-label"><strong>🌐 WELTWEITER BETRIEB</strong><small>Weltweite Seekarte · zoomen & Karte ziehen</small></div><button onclick="map.setView([22,8],2)">🌐 Welt</button><button onclick="map.setView([49,12],4)">🇪🇺 Europa</button><button onclick="togglePorts()">⚑ Häfen</button></div>
@@ -21,7 +21,7 @@
  <section class="bottom-log"><div class="log-head">📜 LEITSTAND <span id="dateLabel" class="muted" style="float:right">Jahr 1 · Tag 1</span></div><div id="logLines" class="log-lines">Willkommen bei Blue Horizon.</div></section>
 </main>
 </div>
-<div class="overlay contract-overlay hidden" id="contractsOverlay" role="dialog" aria-modal="true" aria-labelledby="contractsTitle"><section id="contractsPanel" class="contract-window"><header class="contract-window-head"><div class="contract-title-icon" aria-hidden="true">⚓</div><div class="contract-heading"><h2 id="contractsTitle">Firmenaufträge</h2><p>Verfügbare Frachtaufträge für deine Schiffe</p></div><span class="contract-ship-label muted" id="selectedShipLabel"></span><button type="button" class="contract-close" onclick="closeContractsWindow()" aria-label="Auftragsfenster schließen">×</button></header><div class="contract-window-body"><div class="contract-list-intro" id="ordersHelp">Wähle einen passenden Auftrag für dein ausgewähltes Schiff.</div><div class="contract-table-head" aria-hidden="true"><span>Unternehmen</span><span>Route & Fracht</span><span>Bonus</span><span>Aktion</span></div><div id="ordersList" class="order-list"></div></div><footer class="contract-window-footer"><span><i class="status-dot"></i> Sichere Routen</span><span>Blue Horizon · Firmenaufträge</span></footer></section></div><div class="game-version" aria-label="Spielversion 0.1">Version 0.1</div>
+<div class="overlay contract-overlay hidden" id="contractsOverlay" role="dialog" aria-modal="true" aria-labelledby="contractsTitle"><section id="contractsPanel" class="contract-window"><header class="contract-window-head"><div class="contract-title-icon" aria-hidden="true">🚢</div><div class="contract-heading"><h2 id="contractsTitle">Firmenaufträge</h2><p>Hier findest du alle verfügbaren Aufträge für deine Schiffe. Wähle einen Auftrag aus, um Details zu sehen.</p></div><button type="button" class="contract-close" onclick="closeContractsWindow()" aria-label="Auftragsfenster schließen">×</button></header><div class="contract-tabs" role="tablist"><button class="active" data-contract-tab="available" onclick="switchContractTab('available')">🚢 Verfügbare Aufträge <span id="availableCount">0</span></button><button data-contract-tab="ships" onclick="switchContractTab('ships')">🚢 Meine Schiffe <span id="contractShipCount">0</span></button><button data-contract-tab="completed" onclick="switchContractTab('completed')">✓ Abgeschlossene Aufträge</button></div><div class="contract-window-body"><div class="contract-list-column"><div id="ordersHelp" class="contract-list-intro">Wähle einen passenden Auftrag für deine Schiffe.</div><div id="ordersList" class="order-list"></div></div><aside class="contract-detail-panel" id="contractDetailPanel"><div class="detail-image-placeholder">⚓</div><h3>Deine nächste Route</h3><p>Wähle einen Auftrag aus der Liste, um die Details zu sehen und ihn deinem Schiff zuzuweisen.</p><div class="detail-note">Nur geprüfte Wasserwege und passende Schiffe werden berücksichtigt.</div></aside></div><footer class="contract-window-footer"><span><i class="status-dot"></i> Verfügbar</span><span>◷ Wird vorbereitet</span><span>☑ Bereit</span><span class="footer-note">ⓘ Einige Aufträge können nur von bestimmten Schiffstypen ausgeführt werden.</span></footer></section></div><div class="overlay hidden" id="shipRouteInfoOverlay" role="dialog" aria-modal="false" aria-labelledby="shipRouteInfoTitle"><section class="ship-route-info"><header><div><h2 id="shipRouteInfoTitle">Routeninformationen</h2><p id="shipRouteInfoSubtitle">Schiff und aktuelle Route</p></div><button type="button" onclick="closeShipRouteInfo()" aria-label="Fenster schließen">×</button></header><div id="shipRouteInfoBody"></div><button type="button" class="route-info-close" onclick="closeShipRouteInfo()">Zurück zur Karte</button></section></div><div class="game-version" aria-label="Spielversion 0.1">Version 0.1</div>
 <div class="overlay" id="mainMenu"><div class="menu-card">
  <div class="menu-brand menu-brand-centered"><div class="logo logo-emblem" aria-hidden="true"><svg viewBox="0 0 64 64" role="img"><circle cx="32" cy="32" r="29" fill="none" stroke="currentColor" stroke-width="2.5" opacity=".65"/><circle cx="32" cy="32" r="23" fill="none" stroke="currentColor" stroke-width="1" opacity=".35"/><path d="M32 10v35M23 20h18M25 19l-2 7m18-7 2 7M19 34l-7 5 5 8c4 5 9 7 15 7s11-2 15-7l5-8-7-5M19 34c2 5 6 8 13 8s11-3 13-8M32 10l-5 6m5-6 5 6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="menu-brand-copy"><h1>BLUE HORIZON</h1><p>SHIPPING COMPANY SIMULATOR</p></div></div>
  <h2 id="menuHeading">Deine Reederei beginnt hier</h2><p id="menuDescription">Baue ein internationales Schifffahrtsunternehmen auf, bediene geprüfte Hafenrouten und erweitere deine Flotte.</p>
@@ -58,44 +58,20 @@
 <script src="./js/loading-screen.js?v=loader-20261012"></script>
 <script src="./js/dev-budget.js?v=device-budget-v1-20261012"></script>
 <script src="./js/menus.js?v=cleanup-performance-v1-20261012"></script>
-<script src="./js/fleet.js?v=three-route-workers-v1-20261013"></script>
+<script src="./js/fleet.js?v=parallel-contracts-and-reference-ui-v4-20261013"></script>
 <script src="./js/roadmap.js?v=roadmap-cleanup-v1-20261013"></script>
 <script src="./js/shipyard.js?v=fix-contracts-and-spawn-v2-20261012"></script>
 <script type="module" src="./js/sea-routing.js?v=background-route-worker-v1-20261012"></script>
 
 <script>
-// Auftragsfenster erst nach einer bewussten Schiffsauswahl öffnen; Flottenliste bleibt aus der Kartenansicht.
-(() => {
-  document.addEventListener("click", event => {
-    const target = event.target && typeof event.target.closest === "function"
-      ? event.target.closest(".ship-icon[data-ship-id], .ship-row[data-ship-id]")
-      : null;
-    if (target) {
-      if (typeof window.openContractsWindow === "function") window.openContractsWindow();
-      else document.getElementById("contractsOverlay")?.classList.remove("hidden");
-    }
-  }, true);
-})();
-window.openContractsWindow = function () { document.getElementById("contractsOverlay")?.classList.remove("hidden"); };
-window.closeContractsWindow = function () { document.getElementById("contractsOverlay")?.classList.add("hidden"); };
-document.addEventListener("keydown", event => { if (event.key === "Escape") window.closeContractsWindow(); });
-(() => {
-  const button = document.getElementById("refreshUpdateButton");
-  const stylesheet = document.querySelector('link[rel="stylesheet"][href*="styles.css"]');
-  if (!button || !stylesheet) return;
-  const loadedVersion = new URL(stylesheet.href, location.href).searchParams.get("v") || "";
-  async function checkForUpdate() {
-    try {
-      const response = await fetch("./index.html?version-check=" + Date.now(), { cache: "no-store" });
-      if (!response.ok) return;
-      const latestHtml = await response.text();
-      const match = latestHtml.match(/styles\.css\?v=([^"'&\s]+)/);
-      if (match && decodeURIComponent(match[1]) !== loadedVersion) button.classList.add("update-ready");
-    } catch (_) {}
-  }
-  window.setTimeout(checkForUpdate, 12000);
-  window.setInterval(checkForUpdate, 30000);
-})();
+window.openContractsWindow=function(){document.getElementById("contractsOverlay")?.classList.remove("hidden");if(typeof window.renderUI==="function")window.renderUI();};
+window.closeContractsWindow=function(){document.getElementById("contractsOverlay")?.classList.add("hidden");};
+window.switchContractTab=function(tab){document.querySelectorAll("[data-contract-tab]").forEach(b=>b.classList.toggle("active",b.dataset.contractTab===tab));const help=document.getElementById("ordersHelp");if(tab==="ships"){if(help)help.textContent="Wähle ein Schiff, um seine aktuelle Route und Einsatzbereitschaft zu sehen.";document.getElementById("ordersList")?.querySelectorAll("[data-contract-id]").forEach(el=>el.classList.add("hidden"));}else if(tab==="completed"){if(help)help.textContent="Abgeschlossene Aufträge erscheinen hier, sobald sie im Spielverlauf vorliegen.";document.getElementById("ordersList")?.querySelectorAll("[data-contract-id]").forEach(el=>el.classList.add("hidden"));}else{if(help)help.textContent="Verfügbare Frachtaufträge für deine Schiffe.";document.getElementById("ordersList")?.querySelectorAll("[data-contract-id]").forEach(el=>el.classList.remove("hidden"));}};
+window.openShipRouteInfo=function(shipId){const s=window.game&&window.game.ships&&window.game.ships.find(x=>String(x.id)===String(shipId));if(!s)return;if(typeof window.selectShip==="function")window.selectShip(s.id);const esc=v=>String(v??"—").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));const body=document.getElementById("shipRouteInfoBody");const type=window.shipType?window.shipType(s.type):null;const destination=s.trip&&window.port?window.port(s.trip.to):null;const km=s.trip&&Array.isArray(s.trip.coords)&&window.getRouteMetrics?Math.round(window.getRouteMetrics(s.trip.coords).total*1.852):null;document.getElementById("shipRouteInfoTitle").textContent=s.name||"Schiff";document.getElementById("shipRouteInfoSubtitle").textContent=(type?.name||s.type)+" · "+(s.trip?"Unterwegs":"Im Hafen");body.innerHTML='<div class="route-info-stat"><span>Schiffstyp</span><b>'+esc(type?.name||s.type)+'</b></div><div class="route-info-stat"><span>Aktueller Standort</span><b>'+esc(window.port?.(s.trip?s.trip.from:s.port)?.name||"Unbekannt")+'</b></div><div class="route-info-stat"><span>Zielhafen</span><b>'+esc(destination?.name||(s.trip?"Unbekannt":"Noch kein Auftrag"))+'</b></div><div class="route-info-stat"><span>Entfernung</span><b>'+(km==null?"—":km.toLocaleString("de-DE")+" km")+'</b></div><div class="route-info-stat"><span>Fortschritt</span><b>'+(s.trip?Math.round((s.trip.progress||0)*100)+" %":"Nicht unterwegs")+'</b></div><p class="route-info-hint">'+(s.trip?"Die aktive Route ist auf der Karte türkis markiert.":"Die Karte bleibt sichtbar. Wähle einen Auftrag im Auftragsfenster, um eine Routenvorschau zu sehen.")+'</p>';document.getElementById("shipRouteInfoOverlay")?.classList.remove("hidden");};
+window.closeShipRouteInfo=function(){document.getElementById("shipRouteInfoOverlay")?.classList.add("hidden");};
+document.addEventListener("click",event=>{const target=event.target&&typeof event.target.closest==="function"?event.target.closest(".ship-icon[data-ship-id], .ship-row[data-ship-id]"):null;if(target&&target.dataset.shipId)window.openShipRouteInfo(target.dataset.shipId);},true);
+document.addEventListener("keydown",event=>{if(event.key==="Escape"){window.closeContractsWindow();window.closeShipRouteInfo();}});
+(()=>{const button=document.getElementById("refreshUpdateButton");const stylesheet=document.querySelector('link[rel="stylesheet"][href*="styles.css"]');if(!button||!stylesheet)return;const loadedVersion=new URL(stylesheet.href,location.href).searchParams.get("v")||"";async function checkForUpdate(){try{const response=await fetch("./index.html?version-check="+Date.now(),{cache:"no-store"});if(!response.ok)return;const latestHtml=await response.text();const match=latestHtml.match(/styles\.css\?v=([^"'&\s]+)/);if(match&&decodeURIComponent(match[1])!==loadedVersion)button.classList.add("update-ready");}catch(_){}}window.setTimeout(checkForUpdate,12000);window.setInterval(checkForUpdate,30000);})();
 </script>
 
 </body>
