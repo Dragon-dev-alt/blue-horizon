@@ -78,7 +78,13 @@ function riverRoute(from,to){
  if(coords.some(p=>!p))return null;
  return coords.length>=3&&typeof smoothWaterRoute==='function'?smoothWaterRoute(coords):coords;
 }
-function resolveWaterRoute(a,b){if(!a||!b)return null;if(a.river&&b.river){const r=riverRoute(a.id,b.id);if(r&&r.length>1)return r}return baseComputeWaterRoute(a,b)}
+function resolveWaterRoute(a,b){
+ if(!a||!b)return null;
+ if(a.river&&b.river){const route=riverRoute(a.id,b.id);return route&&route.length>1?route:null}
+ // Seerouten werden ausschließlich im route-worker.js berechnet.
+ // Diese synchrone Funktion darf niemals einen zweiten Router im Hauptthread starten.
+ return null;
+}
 
 /* Korrekturen für V1-Aufträge und Hafenklassen */
 function portLevel(p){if(p.type==='international'||p.level===3)return 3;if(p.type==='regional'||p.level===2)return 2;if(p.river||p.type==='inland')return 1;return p.level||2}
