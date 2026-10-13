@@ -538,7 +538,31 @@ function previewContractRoute(contractId){
 }
 const _renderUIBeforeFleetModal=baseRenderUI;
 
-function renderUI(){
+function renderUI(options={}){
+ if(options&&options.purchaseOnly){
+  if(!game)return;
+  const ship=options.ship||selectedShip();
+  const setText=(id,value)=>{const el=$(id);if(el)el.textContent=value};
+  setText('companyLabel',game.company.toUpperCase());setText('cashStat',money(game.cash));
+  setText('fleetStat',game.ships.length+' Schiffe');setText('fleetCount',game.ships.length+' Schiffe');
+  setText('dayStat','Tag '+game.day);setText('repStat','★ '+game.rep);
+  setText('dateLabel','Jahr '+(Math.floor((game.day-1)/360)+1)+' · Tag '+game.day);
+  const log=$('logLines');if(log)log.innerHTML=game.log.slice(0,6).map(x=>'<div>'+escapeHtml(x)+'</div>').join('');
+  setText('selectedShipLabel',ship?ship.name:'');
+  setText('ordersHelp','Dein Schiff muss noch ausgeliefert werden.');
+  const orders=$('ordersList');if(orders)orders.innerHTML='<div class="order"><h3>🚢 Schiff wird ausgeliefert</h3><p>Verbleibende Lieferzeit: '+Number(ship&&ship.deliveryRemaining||0)+' Spieltage.</p></div>';
+  const list=$('fleetList');
+  if(list&&ship){
+   const row=document.createElement('button');row.type='button';row.className='ship-row selected';row.dataset.shipId=String(ship.id);
+   row.style.cssText='width:100%;text-align:left;display:flex;cursor:pointer;pointer-events:auto;position:relative;z-index:1';
+   row.innerHTML='<span class="ship-dot" style="background:'+shipType(ship.type).color+'"></span><span><b>'+escapeHtml(ship.name)+'</b><small>'+shipType(ship.type).name+' · Zustand '+(ship.condition??100)+' % · Hafen: '+escapeHtml(port(ship.port)?.name||'Unbekannt')+'</small></span>';
+   row.onclick=()=>selectShip(ship.id);list.appendChild(row);list.classList.remove('hidden');
+  }
+  const modal=$('fleetWindowList');
+  if(modal&&ship){const row=document.createElement('button');row.type='button';row.className='ship-row selected';row.style.cssText='width:100%;text-align:left;display:flex';row.innerHTML='<span class="ship-dot" style="background:'+shipType(ship.type).color+'"></span><span><b>'+escapeHtml(ship.name)+'</b><small>'+shipType(ship.type).name+' · Zustand '+(ship.condition??100)+' % · Hafen: '+escapeHtml(port(ship.port)?.name||'Unbekannt')+'</small></span>';row.onclick=()=>selectShip(ship.id);modal.appendChild(row)}
+  return;
+ }
+
  if(!game)return;
  game.ships.forEach(ensureShipStats);
  prepareContractsForAllShips();
