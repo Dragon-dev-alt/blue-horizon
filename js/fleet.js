@@ -496,14 +496,32 @@ function renderUI(){
  const list=$('fleetList');
  if(list){
   list.classList.remove('hidden');
-  list.innerHTML=game.ships.length?game.ships.map(s=>'<button type="button" class="ship-row '+(String(s.id)===String(selectedShipId)?'selected':'')+'" data-ship-id="'+escapeHtml(s.id)+'" onclick="selectShip(\''+String(s.id).replace(/'/g,'&#39;')+'\')" style="width:100%;text-align:left;display:flex;cursor:pointer;pointer-events:auto;position:relative;z-index:1"><span class="ship-dot" style="background:'+shipType(s.type).color+'"></span><span><b>'+escapeHtml(s.name)+'</b><small>'+shipType(s.type).name+' · Zustand '+(s.condition??100)+' % · '+(s.inYard?'In der Werft':s.trip?'Unterwegs nach '+port(s.trip.to).name:'Hafen: '+port(s.port).name)+'</small></span></button>').join(''):'<div class="panel-body notice">Noch keine Schiffe. Öffne die Werft, um ein Schiff zu kaufen.</div>';
+  list.innerHTML=game.ships.length?game.ships.map(s=>'<button type="button" class="ship-row '+(String(s.id)===String(selectedShipId)?'selected':'')+'" data-ship-id="'+escapeHtml(s.id)+'" onclick="selectShip(\''+String(s.id).replace(/'/g,'&#39;')+'\')" style="width:100%;text-align:left;display:flex;cursor:pointer;pointer-events:auto;position:relative;z-index:1"><span class="ship-dot" style="background:'+shipType(s.type).color+'"></span><span><b>'+escapeHtml(s.name)+'</b><small>'+shipType(s.type).name+' · Zustand '+(s.condition??100)+' % · '+(s.inYard?'In der Werft':s.trip?'Unterwegs nach '+(port(s.trip.to)?.name||'Zielhafen'):'Hafen: '+(port(s.port)?.name||'Unbekannt'))+'</small></span></button>').join(''):'<div class="panel-body notice">Noch keine Schiffe. Öffne die Werft, um ein Schiff zu kaufen.</div>';
  }
- const count=$('fleetCount');
- if(count)count.textContent=game.ships.length+' Schiffe';
- const modal=$('fleetWindowList');
- if(modal)modal.querySelectorAll('[data-ship-id]').forEach(row=>row.classList.toggle('selected',String(row.dataset.shipId)===String(selectedShipId)));
+ const count=$('fleetCount');if(count)count.textContent=game.ships.length+' Schiffe';
+ const modal=$('fleetWindowList');if(modal)modal.querySelectorAll('[data-ship-id]').forEach(row=>row.classList.toggle('selected',String(row.dataset.shipId)===String(selectedShipId)));
+ renderContractWindow();
 }
-
+function renderContractWindow(){
+ const list=document.getElementById('ordersList'),panel=document.getElementById('contractDetailPanel');if(!list||!panel||!game)return;
+ const tab=document.querySelector('[data-contract-tab].active')?.dataset.contractTab||'available';
+ const ship=selectedShip(),all=allContracts();
+ const esc=v=>String(v??'—').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+ const available=ship?eligibleContracts(ship):[];
+ const ac=document.getElementById('availableCount'),sc=document.getElementById('contractShipCount');
+ if(ac)ac.textContent=available.length;if(sc)sc.textContent=game.ships.length;
+ if(tab==='ships'){
+  list.innerHTML=game.ships.length?game.ships.map(s=>'<article class="order"><span class="contract-type">'+esc(shipType(s.type)?.name||s.type)+'</span><h3>'+esc(s.name)+'</h3><p>'+(s.trip?'Unterwegs nach '+esc(port(s.trip.to)?.name||s.trip.to):'Hafen: '+esc(port(s.port)?.name||s.port))+'</p><span class="bonus">'+(s.trip?'Unterwegs':'Bereit')+'</span><div class="contract-actions"><button type="button" onclick="selectShip(\''+String(s.id).replace(/'/g,"\\'")+'\');renderUI()">Schiff auswählen</button></div></article>').join(''):'<p class="notice">Noch keine Schiffe. Kaufe zuerst ein Schiff in der Werft.</p>';
+  panel.innerHTML='<div class="detail-image-placeholder">🚢</div><h3>Deine Flotte</h3><p>Wähle ein Schiff aus deiner Flotte, um passende Aufträge zu sehen.</p>';return;
+ }
+ if(tab==='completed'){
+  const done=all.filter(x=>x.completed||x.status==='completed');
+  list.innerHTML=done.length?done.map(x=>'<article class="order"><h3>'+esc(port(x.from)?.name||x.from)+' → '+esc(port(x.to)?.name||x.to)+'</h3><p>'+esc(cargo(x.cargo)?.name||x.cargo)+'</p><span class="bonus">Abgeschlossen</span></article>').join(''):'<p class="notice">Noch keine abgeschlossenen Aufträge.</p>';return;
+ }
+ list.innerHTML=available.length?available.map(x=>'<article class="order" data-contract-id="'+esc(x.id)+'"><span class="contract-type">'+esc(cargo(x.cargo)?.name||x.cargo)+'</span><h3>'+esc(port(x.from)?.name||x.from)+' → '+esc(port(x.to)?.name||x.to)+'</h3><p>♟ '+Math.round((shipType(ship.type)?.capacity||0)*(cargo(x.cargo)?.capacity||0)).toLocaleString('de-DE')+' t　💰 '+money(contractBonus(x))+'　⌁ '+Math.round(Number(x.routeDistanceKm)||0).toLocaleString('de-DE')+' km</p><span class="bonus">Verfügbar</span><div class="contract-actions"><button type="button" class="route-preview-button" onclick="renderSelectedContractDetail(\''+String(x.id).replace(/'/g,"\\'")+'\')">Details　›</button></div></article>').join(''):'<p class="notice">'+(ship?'Für dieses Schiff sind momentan keine passenden Aufträge verfügbar.':'Kaufe zuerst ein Schiff in der Werft.')+'</p>';
+ if(available.length){const chosen=available.find(x=>String(x.id)===String(window.selectedContractDetailId))||available[0];window.selectedContractDetailId=chosen.id;renderSelectedContractDetail(chosen.id);}
+ else panel.innerHTML='<div class="detail-image-placeholder">⚓</div><h3>Keine passenden Aufträge</h3><p>Die Aufträge werden anhand von Schiffstyp, Hafen und Reichweite gefiltert.</p>';
+}
 
 /* Kompaktes Routenfenster: Karte bleibt sichtbar und der aktive Schiffsmarker wird hervorgehoben. */
 window.openShipRouteInfo=function(shipId){
