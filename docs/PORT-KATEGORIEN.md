@@ -121,6 +121,27 @@ Dieses Verzeichnis ist die zentrale Übersicht für die Hafen-Kategorien. Die Ka
 - **Yueyang** (China) — ID `yue` — Binnenschiff ausschließlich
 - **Fuling** (China) — ID `ful` — Binnenschiff ausschließlich
 
+## Individuelle Ausnahmen für Binnenschiffe
+
+Die Kategorie allein entscheidet **nicht** über die Zulassung. Die Daten in `PORT_SHIP_ACCESS_OVERRIDES` ergänzen die Standardzulassung pro Hafen.
+
+| Hafen | Zulassung/Ausnahme | Begründung und Quelle |
+|---|---|---|
+| Hamburg | See- und Binnenschiffe | Offiziell ausgewiesener See- und Binnenhafen; Elbe und Kanäle verbinden ihn mit dem Binnenwasserstraßennetz. [Hamburg Port Authority](https://www.hamburg-port-authority.de/en/waterway/inland-waterway-shipping) |
+| Rotterdam | See- und Binnenschiffe | Die Hafenbehörde führt eigene Infrastruktur, Liegeplätze und Regeln für die Binnenschifffahrt. [Port of Rotterdam](https://www.portofrotterdam.com/en/inland-shipping) |
+| Antwerpen | See- und Binnenschiffe | Die Hafenbehörde weist getrennte See- und Binnenverkehrsbereiche aus; Binnenfahrzeuge machen einen großen Anteil der Schiffsbewegungen aus. [Port of Antwerp-Bruges – Zahlen](https://www.portofantwerpbruges.com/en/faq/where-can-i-find-facts-figures-and-statistics-about-port) |
+| Shanghai | See- und Binnenschiffe, abhängig von Wasserweg und Schiffsklasse | Die Stadt beschreibt Verbindungen zwischen Seehafen, Fluss-See-Transport und Binnenwasserstraßen. [Shanghai Municipal Government](https://english.shanghai.gov.cn/en-Latest-WhatsNew/20260803/2b7583f524ec4cf98184d692d35584fa.html) |
+| Rouen | See- und Binnenschiffe, abhängig von Wasserweg und Schiffsklasse | Der Hafen liegt an der Seine und verbindet Seeschifffahrt mit Binnenwasserwegen. [HAROPA PORT](https://www.haropaport.com/) |
+
+**Wichtig:** Eine Hafenfreigabe bedeutet nicht, dass jede Route für jedes Schiff möglich ist. Die Route muss zusätzlich durchgehend schiffbar sein und Tiefgang, Abmessungen, Schleusen, Brücken, Reichweite und Schiffsklasse berücksichtigen. Die hier genannten Ausnahmen bilden zunächst die bestätigten Spielregeln ab; sie ersetzen keine nautische Prüfung einzelner Strecken.
+
+### Geprüfte Gegenbeispiele und Grenzen
+
+- **Nürnberg:** Binnenhafen am Main-Donau-Kanal; im Spiel nur Binnenschiffe. [Stadt Nürnberg – Main-Donau-Kanal](https://www.nuernberg.de/internet/hafen/main_donau_kanal.html)
+- **Duisburg:** großer Binnenhafen am Rhein/Ruhr; im Spiel nur Binnenschiffe, keine Hochseeschiffe. [Stadt Duisburg – Hafen](https://www.duisburg.de/wohnenleben/wasser/hafen)
+- **Bremen:** Offizielle Hafeninformationen bestätigen Seehafen und zugleich Anbindung an das europäische Binnenkanalsystem sowie eigene Binnenverkehrsangebote. Bremen ist derzeit **nicht als eigener Datensatz** in der Spiel-Hafenliste vorhanden; falls wir Bremen später hinzufügen, soll es ebenfalls eine See-/Binnen-Ausnahme bekommen. [Weserport](https://www.weserport.de/terminals/) · [bremenports](https://www.bremenports.de/en/hinterland/inland-shipping)
+- **Amsterdam:** Die Hafenbehörde führt explizite Binnenhafengebühren und Binnenwasserwege. Amsterdam ist derzeit **nicht als eigener Datensatz** vorhanden; bei einer späteren Aufnahme soll eine individuelle See-/Binnenzulassung geprüft werden. [Port of Amsterdam](https://www.portofamsterdam.com/en/shipping/inland-shipping/inland-harbour-dues/direct-debit)
+
 ## Technische Hinweise
 
 - Die Hafen-ID ist der stabile Schlüssel, auf den Aufträge, Spielstände und Routen verweisen.
