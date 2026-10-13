@@ -312,7 +312,7 @@ function baseRenderUI(){
  $('logLines').innerHTML=game.log.slice(0,6).map(x=>'<div>'+escapeHtml(x)+'</div>').join('');
  const s=selectedShip();
  const contractsPanel=$('contractsPanel');if(contractsPanel)contractsPanel.style.display=s?'':'none';const sidePanel=document.querySelector('.side');if(sidePanel)sidePanel.classList.toggle('orders-open',!!s);
- $('selectedShipLabel').textContent=s?s.name:'';
+ const selectedShipLabel=$('selectedShipLabel');if(selectedShipLabel)selectedShipLabel.textContent=s?s.name:'';
  const orders=eligibleContracts(s);
  const underRepair=!!s&&(s.inYard||(game.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)));
  const inDelivery=!!s&&Number(s.deliveryRemaining)>0;
