@@ -240,3 +240,16 @@
 /* Finaler Feinschliff: Details öffnen die rechte Spalte; angenommen wird dort. */
 #contractsPanel .contract-actions .route-preview-button{display:block!important;flex:1;background:linear-gradient(180deg,#1489e8,#0868bf);border-color:#3298e8;color:#fff}
 #contractsPanel .contract-actions button.primary{display:none!important}
+
+
+/* Fix: die Seekarte bleibt durch das Auftragsfenster sichtbar; Layout wie Referenzbild. */
+.contract-overlay{position:fixed;inset:0;z-index:2100;display:flex;align-items:center;justify-content:center;background:rgba(2,12,23,.42)!important;backdrop-filter:blur(2px)!important;padding:clamp(8px,2.5vw,38px)}
+.contract-overlay.hidden{display:none!important}
+.contract-window{width:min(1334px,100%);height:min(922px,calc(100dvh - 48px));min-height:0;display:flex;flex-direction:column;background:linear-gradient(135deg,rgba(7,28,46,.98),rgba(4,20,33,.98));}
+.contract-window-body{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(310px,.9fr);gap:22px;min-height:0;flex:1;padding:0 22px}
+.contract-list-column{min-height:0;display:flex;flex-direction:column;overflow:hidden}
+#contractsPanel .order-list{min-height:0;flex:1;overflow-y:auto}
+#contractsPanel .order{cursor:pointer}
+#contractsPanel .order.selected{border-color:#2aa9ff;background:linear-gradient(110deg,#123a5b,#0b2942);box-shadow:0 0 0 1px #168de655}
+.contract-detail-panel{align-self:stretch;max-height:none;min-height:0;overflow-y:auto}
+@media(max-width:760px){.contract-window{height:calc(100dvh - 16px)}.contract-window-body{grid-template-columns:1fr;overflow:hidden;padding:0 10px}.contract-detail-panel{display:none}}
