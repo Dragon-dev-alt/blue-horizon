@@ -135,7 +135,8 @@ function getRouteCalculationWorkers(){
   const slot=routeCalculationWorkers.length;
   try{
    const worker=new Worker('./js/route-worker.js?v=parallel-routing-pool-v2-20261013',{type:'module'});
-   const record={worker,busy:0,slot};
+   let warmResolve;const record={worker,busy:0,slot,ready:false,preloading:false,warmPromise:new Promise(resolve=>{warmResolve=resolve})};
+    record.resolveWarmup=()=>{record.ready=true;record.preloading=false;warmResolve(true)};
    worker.onmessage=event=>{
     const message=event.data||{},pending=routeCalculationRequests.get(message.id);
     if(!pending)return;
@@ -155,6 +156,11 @@ function getRouteCalculationWorkers(){
  }
  return routeCalculationWorkers;
 }
+function preloadRouteWorkers(){
+ const workers=getRouteCalculationWorkers();
+ workers.forEach(record=>{if(!record.ready&&!record.preloading){record.preloading=true;try{record.worker.postMessage({warmup:true})}catch(_){record.preloading=false}}});
+ return Promise.all(workers.map(record=>record.warmPromise||Promise.resolve()));
+}
 function calculateSeaRouteInBackground(connection){
  const workers=getRouteCalculationWorkers();
  if(!workers.length)return Promise.resolve(null);
@@ -171,7 +177,7 @@ function calculateSeaRouteInBackground(connection){
 }
 let contractGenerationWorkersRunning=0;
 // Routen sind CPU-intensiv; ein Auftragslauf zur Zeit verhindert Lastspitzen.
-const MAX_PARALLEL_CONTRACT_JOBS=1;
+const MAX_PARALLEL_CONTRACT_JOBS=3;
 function yieldToBrowser(){
  return new Promise(resolve=>{
   // Kurze UI-Pausen zwischen Routen, ohne die gesamte Warteschlange auszubremsen.
