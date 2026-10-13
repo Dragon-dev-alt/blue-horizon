@@ -470,3 +470,20 @@ function renderUI(){
  if(modal)modal.querySelectorAll('[data-ship-id]').forEach(row=>row.classList.toggle('selected',String(row.dataset.shipId)===String(selectedShipId)));
 }
 
+
+/* Kompaktes Routenfenster: Karte bleibt sichtbar und der aktive Schiffsmarker wird hervorgehoben. */
+window.openShipRouteInfo=function(shipId){
+ const s=game&&game.ships.find(x=>String(x.id)===String(shipId));if(!s)return;
+ selectedShipId=s.id;
+ if(typeof renderUI==="function")renderUI();
+ if(typeof renderShips==="function")renderShips();
+ if(typeof showSelectedShipRoute==="function")showSelectedShipRoute(false);
+ const esc=v=>String(v??"—").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+ const type=shipType(s.type),destination=s.trip?port(s.trip.to):null;
+ const km=s.trip&&Array.isArray(s.trip.coords)?Math.round(getRouteMetrics(s.trip.coords).total*1.852):null;
+ const body=document.getElementById("shipRouteInfoBody");
+ document.getElementById("shipRouteInfoTitle").textContent=s.name||"Schiff";
+ document.getElementById("shipRouteInfoSubtitle").textContent=(type?.name||s.type)+" · "+(s.trip?"Unterwegs":"Im Hafen");
+ body.innerHTML='<div class="route-info-stat"><span>Schiffstyp</span><b>'+esc(type?.name||s.type)+'</b></div><div class="route-info-stat"><span>Aktueller Standort</span><b>'+esc(port(s.trip?s.trip.from:s.port)?.name||"Unbekannt")+'</b></div><div class="route-info-stat"><span>Zielhafen</span><b>'+esc(destination?.name||(s.trip?"Unbekannt":"Noch kein Auftrag"))+'</b></div><div class="route-info-stat"><span>Entfernung</span><b>'+(km==null?"—":km.toLocaleString("de-DE")+" km")+'</b></div><div class="route-info-stat"><span>Fortschritt</span><b>'+(s.trip?Math.round((s.trip.progress||0)*100)+" %":"Nicht unterwegs")+'</b></div><p class="route-info-hint">'+(s.trip?"Die aktive Route ist auf der Karte türkis markiert.":"Die Karte bleibt sichtbar. Öffne „Aufträge“, um eine passende Routenvorschau zu sehen.")+'</p>';
+ document.getElementById("shipRouteInfoOverlay")?.classList.remove("hidden");
+};
