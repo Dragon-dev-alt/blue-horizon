@@ -109,38 +109,49 @@ function isContractEligibilityPending(s){return !!s&&contractEligibilityPending.
 // Karten-/Routenberechnung läuft im Web Worker, damit die Oberfläche bedienbar bleibt.
 const CONTRACT_ROUTE_STEP_DELAY=200;
 const contractGenerationQueue=[];
-let routeCalculationWorker=null;
+const ROUTE_WORKER_POOL_SIZE=3;
+const routeCalculationWorkers=[];
 let routeCalculationWorkerId=0;
+let routeCalculationWorkerCursor=0;
 const routeCalculationRequests=new Map();
-function getRouteCalculationWorker(){
- if(routeCalculationWorker)return routeCalculationWorker;
- if(typeof Worker!=='function')return null;
- try{
-  routeCalculationWorker=new Worker('./js/route-worker.js?v=background-routing-v1-20261012',{type:'module'});
-  routeCalculationWorker.onmessage=event=>{
-   const message=event.data||{},pending=routeCalculationRequests.get(message.id);
-   if(!pending)return;
-   routeCalculationRequests.delete(message.id);
-   if(message.error)pending.reject(new Error(message.error));else pending.resolve(message.coords||null);
-  };
-  routeCalculationWorker.onerror=event=>{
-   const error=new Error(event.message||'Routen-Worker fehlgeschlagen.');
-   routeCalculationRequests.forEach(p=>p.reject(error));routeCalculationRequests.clear();
-   routeCalculationWorker.terminate();routeCalculationWorker=null;
-  };
-  return routeCalculationWorker;
- }catch(error){console.warn('Hintergrund-Routenworker nicht verfügbar:',error);routeCalculationWorker=null;return null}
+function getRouteCalculationWorkers(){
+ if(typeof Worker!=='function')return [];
+ while(routeCalculationWorkers.length<ROUTE_WORKER_POOL_SIZE){
+  const slot=routeCalculationWorkers.length;
+  try{
+   const worker=new Worker('./js/route-worker.js?v=parallel-routing-pool-v2-20261013',{type:'module'});
+   const record={worker,busy:0,slot};
+   worker.onmessage=event=>{
+    const message=event.data||{},pending=routeCalculationRequests.get(message.id);
+    if(!pending)return;
+    routeCalculationRequests.delete(message.id);
+    record.busy=Math.max(0,record.busy-1);
+    if(message.error)pending.reject(new Error(message.error));else pending.resolve(message.coords||null);
+   };
+   worker.onerror=event=>{
+    const error=new Error(event.message||'Routen-Worker fehlgeschlagen.');
+    for(const [id,pending] of routeCalculationRequests){if(pending.record===record){routeCalculationRequests.delete(id);record.busy=Math.max(0,record.busy-1);pending.reject(error)}}
+    try{worker.terminate()}catch(_){}
+    const index=routeCalculationWorkers.indexOf(record);
+    if(index>=0)routeCalculationWorkers.splice(index,1);
+   };
+   routeCalculationWorkers.push(record);
+  }catch(error){console.warn('Hintergrund-Routenworker nicht verfügbar:',error);break}
+ }
+ return routeCalculationWorkers;
 }
 function calculateSeaRouteInBackground(connection){
- const worker=getRouteCalculationWorker();
- if(!worker)return Promise.resolve(null);
+ const workers=getRouteCalculationWorkers();
+ if(!workers.length)return Promise.resolve(null);
  const a=port(connection.from),b=port(connection.to);
  if(!a||!b)return Promise.resolve(null);
+ const record=workers.reduce((best,item)=>!best||item.busy<best.busy?item:best,null);
  const id=++routeCalculationWorkerId;
  return new Promise((resolve,reject)=>{
-  routeCalculationRequests.set(id,{resolve,reject});
-  try{worker.postMessage({id,from:[a.lon,a.lat],to:[b.lon,b.lat]})}
-  catch(error){routeCalculationRequests.delete(id);reject(error)}
+  routeCalculationRequests.set(id,{resolve,reject,record});
+  record.busy++;
+  try{record.worker.postMessage({id,from:[a.lon,a.lat],to:[b.lon,b.lat]})}
+  catch(error){routeCalculationRequests.delete(id);record.busy=Math.max(0,record.busy-1);reject(error)}
  });
 }
 let contractGenerationWorkersRunning=0;
