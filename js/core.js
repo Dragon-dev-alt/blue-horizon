@@ -311,7 +311,7 @@ function baseRenderUI(){
  $('dateLabel').textContent='Jahr '+(Math.floor((game.day-1)/360)+1)+' · Tag '+game.day;
  $('logLines').innerHTML=game.log.slice(0,6).map(x=>'<div>'+escapeHtml(x)+'</div>').join('');
  const s=selectedShip();
- const contractsPanel=$('contractsPanel');if(contractsPanel)contractsPanel.style.display=s?'':'none';const sidePanel=document.querySelector('.side');if(sidePanel)sidePanel.classList.toggle('orders-open',!!s);
+ const contractsPanel=$('contractsPanel');if(contractsPanel)contractsPanel.style.display='';const sidePanel=document.querySelector('.side');if(sidePanel)sidePanel.classList.toggle('orders-open',!!s);
  const selectedShipLabel=$('selectedShipLabel');if(selectedShipLabel)selectedShipLabel.textContent=s?s.name:'';
  const orders=eligibleContracts(s);
  const underRepair=!!s&&(s.inYard||(game.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)));
