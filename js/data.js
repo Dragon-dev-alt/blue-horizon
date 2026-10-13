@@ -453,12 +453,12 @@ const PORT_SHIP_ACCESS_OVERRIDES={
  rot:{allowRiver:true,note:'Seehafen mit ausgewiesenen Liegeplätzen und Diensten für die Binnenschifffahrt.',source:'https://www.portofrotterdam.com/en/inland-shipping'},
  ant:{allowRiver:true,note:'See- und Binnenverkehr; die Hafenbehörde weist zahlreiche Binnenfahrzeugbewegungen und eigene Binnenverkehrsregeln aus.',source:'https://www.portofantwerpbruges.com/en/faq/where-can-i-find-facts-figures-and-statistics-about-port'},
  sha:{allowRiver:true,note:'Seehafen mit Verbindungen zum chinesischen Binnenwasserstraßennetz und Fluss-See-Transport.',source:'https://english.shanghai.gov.cn/en-Latest-WhatsNew/20260803/2b7583f524ec4cf98184d692d35584fa.html'},
- rou:{allowRiver:true,note:'Seine-Hafen mit See- und Binnenschifffahrt; konkrete Befahrbarkeit hängt von Schiffsklasse und Wasserweg ab.',source:'https://www.haropaport.com/'}
+ rou:{allowRiver:true,allowSea:true,note:'Seine-Hafen mit See- und Binnenschifffahrt; konkrete Befahrbarkeit hängt von Schiffsklasse und Wasserweg ab.',source:'https://www.haropaport.com/'}
 };
 Object.entries(PORT_SHIP_ACCESS_OVERRIDES).forEach(([id,override])=>{
  const p=PORTS.find(port=>port.id===id);if(!p)return;
- p.allowedShipTypes=[...new Set([...(p.allowedShipTypes||[]),'river'])];
- p.allowedShipTypeLabels=[...(p.allowedShipTypeLabels||[]),'Binnenschiffe (Ausnahme)'];
+ p.allowedShipTypes=[...new Set([...(override.allowSea?['coastal','medium','long','ultra','tanker','bulk','ro-ro']:[]),...(p.allowedShipTypes||[]),'river'])];
+ p.allowedShipTypeLabels=[...(override.allowSea?['Seeschiffe (routenabhängig)']:[]),...(p.allowedShipTypeLabels||[]),'Binnenschiffe (Ausnahme)'];
  p.shipAccessNote=override.note;p.shipAccessSource=override.source;p.shipAccessException=true;
 });
 PORTS.forEach(p=>{
