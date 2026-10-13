@@ -86,7 +86,12 @@ function buyUsedShip(typeId,offerId){
   const ship={id,name:currentOffer.name,type:typeId,port:randomShipPort(typeId,currentOffer.range),trip:null,condition:currentOffer.condition,range:currentOffer.range,deliveryRemaining:6,acquisitionPrice:currentOffer.price};
   game.ships.push(ship);selectedShipId=id;
   addLog('Gebrauchtes Schiff gekauft: '+ship.name+' · Zustand '+ship.condition+' % · Reichweite '+ship.range.toLocaleString('de-DE')+' km · Hafen '+port(ship.port).name+'. Lieferung in 6 Spieltagen.');
-  saveGame();renderShips(id);renderUI({purchaseOnly:true,ship});yardMode='used';toast('Schiff gekauft – Lieferung in 6 Spieltagen.');
+  const profile=beginPurchaseProfile('Gebrauchtes Schiff');
+  profile.measure('saveGame / localStorage',()=>saveGame());
+  profile.measure('renderShips / Marker',()=>renderShips(id));
+  profile.measure('renderUI / Kaufansicht',()=>renderUI({purchaseOnly:true,ship}));
+  profile.finish({shipId:id,fleetSize:game.ships.length});
+  yardMode='used';toast('Schiff gekauft – Lieferung in 6 Spieltagen.');
  });
 }
 function selectShip(id){selectShipSafely(id)}
