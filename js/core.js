@@ -14,6 +14,14 @@ const $=id=>document.getElementById(id),
  cargo=id=>CARGO_BY_ID.get(String(id))||null;
 function baseMakeGame(name,difficulty){const d=DIFFICULTIES[difficulty];return{company:name.trim()||'Blue Horizon Shipping',difficulty,cash:d.cash,day:1,rep:50,ships:[{id:'s1',name:'Nordstern',type:'coastal',port:'ham',trip:null,condition:100,range:randomShipRange('coastal')}],nextShipId:2,log:['Willkommen bei '+(name.trim()||'Blue Horizon Shipping')+'. Deine erste Runde beginnt. Du startest mit einem Küstenfrachter und realistischem Firmenkapital.'],completed:0,loans:0,created:Date.now()}}
 function saveGame(){if(!game)return;try{localStorage.setItem(CONFIG.savePrefix+activeSlot,JSON.stringify(game));localStorage.setItem(CONFIG.activeKey,String(activeSlot))}catch(e){toast('Speichern nicht möglich: Browser-Speicher voll.')}}
+/* Temporäre Diagnose für Ruckler beim Schiffskauf. Ausgabe in der Browser-Konsole. */
+function beginPurchaseProfile(kind){
+ const started=performance.now(),steps=[];
+ return {
+  measure(label,fn){const t=performance.now();try{return fn()}finally{steps.push({Schritt:label,'Dauer (ms)':Number((performance.now()-t).toFixed(2))})}},
+  finish(details={}){const total=Number((performance.now()-started).toFixed(2));steps.push({Schritt:'GESAMT','Dauer (ms)':total});window.__blueHorizonLastPurchaseProfile={kind,details,steps:steps.slice()};console.groupCollapsed('[Blue Horizon Performance] '+kind+' · '+total+' ms');console.table(steps);console.log('Details:',details);console.groupEnd()}
+ };
+}
 function loadSlot(slot){try{const raw=localStorage.getItem(CONFIG.savePrefix+slot);if(!raw)return null;const g=JSON.parse(raw);if(!g||!Array.isArray(g.ships)||!g.company)return null;return g}catch(e){return null}}
 function slotExists(slot){return !!loadSlot(slot)}
 function toast(msg){let el=$('toast');if(!el){el=document.createElement('div');el.id='toast';el.style.cssText='position:fixed;z-index:3000;left:50%;bottom:22px;transform:translateX(-50%);background:#071827;border:1px solid #47d8d0;padding:11px 15px;border-radius:10px;box-shadow:0 5px 22px #0008;font-size:12px;max-width:90vw';document.body.appendChild(el)}el.textContent=msg;el.style.display='block';clearTimeout(el._timer);el._timer=setTimeout(()=>el.style.display='none',2800)}
@@ -246,10 +254,18 @@ function buyShip(typeId){
  const t=shipType(typeId);if(!game||!t)return;
  const d=DIFFICULTIES[game.difficulty],price=Math.round(t.price*d.cost);
  if(game.cash<price){toast('Nicht genug Geld für dieses Schiff.');return}
- game.cash-=price;const id='s'+game.nextShipId++;const range=randomShipRange(typeId);const home=port(randomShipPort(typeId,range));
- const ship={id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null,condition:100,range,deliveryRemaining:6};
- game.ships.push(ship);selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'. Lieferung in 6 Spieltagen.');
- saveGame();renderShips(id);renderUI({purchaseOnly:true,ship});toast('Schiff gekauft – Lieferung in 6 Spieltagen.');
+ const profile=beginPurchaseProfile('Neues Schiff');
+ const prep=profile.measure('Schiffsdaten vorbereiten',()=>{
+  game.cash-=price;const id='s'+game.nextShipId++;const range=randomShipRange(typeId);const home=port(randomShipPort(typeId,range));
+  const ship={id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null,condition:100,range,deliveryRemaining:6};
+  game.ships.push(ship);selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'. Lieferung in 6 Spieltagen.');
+  return {id,ship};
+ });
+ profile.measure('saveGame / localStorage',()=>saveGame());
+ profile.measure('renderShips / Marker',()=>renderShips(prep.id));
+ profile.measure('renderUI / Kaufansicht',()=>renderUI({purchaseOnly:true,ship:prep.ship}));
+ profile.finish({shipId:prep.id,fleetSize:game.ships.length});
+ toast('Schiff gekauft – Lieferung in 6 Spieltagen.');
 }
 function openShipyard(){if(!game)return;$('shipyard').classList.remove('hidden');renderShipyard()}
 let shipyardExitLoading=false;
