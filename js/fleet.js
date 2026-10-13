@@ -5,6 +5,7 @@ const SHIP_RANGE_BANDS={
  tanker:[8000,30000], bulk:[4000,20000], 'ro-ro':[2500,7000], river:[250,800]
 };
 function randomShipRange(typeId){const b=SHIP_RANGE_BANDS[typeId]||[500,shipType(typeId).range];return Math.round((b[0]+Math.random()*(b[1]-b[0]))/100)*100}
+function portAllowsShip(candidate,typeId){return !!candidate&&Array.isArray(candidate.allowedShipTypes)&&candidate.allowedShipTypes.includes(typeId);}
 function randomShipPortHasOption(candidate,typeId,range){
  const options=harborConnectionsByOrigin.get(String(candidate.id))||[];
  return !harborConnectionCatalog||options.some(connection=>
@@ -14,10 +15,10 @@ function randomShipPortHasOption(candidate,typeId,range){
 function randomShipPort(typeId,range){
  const catalogReady=!!harborConnectionCatalog&&harborConnectionsByOrigin.size>0;
  const valid=PORTS.filter(p=>{
-  if(typeId==='river'?!p.river:!!p.river)return false;
+  if(!portAllowsShip(p,typeId))return false;
   return !catalogReady||randomShipPortHasOption(p,typeId,range);
  });
- const pool=valid.length?valid:PORTS.filter(p=>typeId==='river'?!!p.river:!p.river);
+ const pool=valid.length?valid:PORTS.filter(p=>portAllowsShip(p,typeId));
  return pool.length?pool[Math.floor(Math.random()*pool.length)].id:(PORTS[0]?.id||'ham');
 }
 function ensureShipStats(s){
@@ -26,14 +27,14 @@ function ensureShipStats(s){
  let current=port(s.port);
  if(!current){
   const hq=port(game?.hq);
-  s.port=hq&&Boolean(hq.river)===(s.type==='river')?hq.id:randomShipPort(s.type);
+  s.port=hq&&portAllowsShip(hq,s.type)?hq.id:randomShipPort(s.type);
   current=port(s.port);
  }
  // Alte Speicherstände können Schiffe am falschen Hafentyp enthalten.
  // Nur ruhende Schiffe verlegen; aktive Fahrten werden nie verschoben.
  const needsRiver=s.type==='river';
- if(!s.trip&&!s.inYard&&current&&(Boolean(current.river)!==needsRiver||!randomShipPortHasOption(current,s.type,s.range))){
-  const candidates=PORTS.filter(p=>Boolean(p.river)===needsRiver&&randomShipPortHasOption(p,s.type,s.range));
+ if(!s.trip&&!s.inYard&&current&&(!portAllowsShip(current,s.type)||!randomShipPortHasOption(current,s.type,s.range))){
+  const candidates=PORTS.filter(p=>portAllowsShip(p,s.type)&&randomShipPortHasOption(p,s.type,s.range));
   candidates.sort((a,b)=>haversine({lat:current.lat,lon:current.lon},{lat:a.lat,lon:a.lon})-haversine({lat:current.lat,lon:current.lon},{lat:b.lat,lon:b.lon}));
   const nearest=candidates[0];
   if(nearest){
