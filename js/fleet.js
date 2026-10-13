@@ -226,25 +226,47 @@ function compatibleCargoes(s){
  const type=shipType(s.type);
  return type?type.allowed.filter(id=>{const item=cargo(id);return item&&Array.isArray(item.types)&&item.types.includes(s.type)}):[];
 }
+/* Auftragspalette: wiederverwendbare Firmenprofile statt immer derselben Zielhafen-Firma. */
+const CONTRACT_COMPANY_PALETTE={
+ containers:['Global Container Lines','BlueWave Shipping','Northstar Cargo','Meridian Freight','OceanBridge Logistics','Atlas Maritime'],
+ electronics:['TechLink Logistics','Nova Electronics Cargo','Circuit Global','Digital Freight Network'],
+ food:['FreshRoute Logistics','Polar Coldchain','Harvest Ocean Cargo','BlueCrate Refrigerated'],
+ cars:['AutoLink Ro-Ro Logistics','DrivePort Shipping','Motorway Maritime','EuroCarriers'],
+ bulk:['TerraBulk Transport','IronCape Commodities','GrainBridge Shipping','RawMaterials Maritime'],
+ oil:['PetroRoute Tankers','BlueCurrent Energy Logistics','Atlantic Liquid Cargo','Meridian Tanker Services'],
+ urgent:['SwiftLine Express','Priority Ocean Freight','RapidPort Logistics','NextWave Cargo']
+};
+const CONTRACT_DESCRIPTIONS={
+ containers:['benötigt einen verlässlichen Containertransport','hat einen neuen Containerauftrag ausgeschrieben','sucht Kapazität für eine planmäßige Containerlieferung'],
+ electronics:['benötigt einen sicheren Transport empfindlicher Elektronik','hat eine Elektroniklieferung zu vergeben'],
+ food:['benötigt einen temperaturgeführten Transport','hat Kühlfracht für den nächsten Umschlag ausgeschrieben'],
+ cars:['sucht einen Ro-Ro-Transport für Fahrzeuge','hat Fahrzeuge zur Verschiffung bereitgestellt'],
+ bulk:['benötigt Transportkapazität für Schüttgut','hat eine Rohstofflieferung ausgeschrieben'],
+ oil:['sucht einen geeigneten Tanker für Flüssigladung','hat eine Flüssigladung für den Weitertransport bereitgestellt'],
+ urgent:['benötigt eine priorisierte Expresslieferung','hat einen zeitkritischen Frachtauftrag ausgeschrieben']
+};
+function pickRandom(items){return items&&items.length?items[Math.floor(Math.random()*items.length)]:null}
 function createContractFromRoute(s,connection,coords,index){
  const origin=port(connection.from),destination=port(connection.to),st=shipType(s.type);
  if(!origin||!destination||!st||!routeFitsShip(coords,s))return null;
  const cargoOptions=compatibleCargoes(s);
  if(!cargoOptions.length)return null;
- const cargoId=cargoOptions[(Math.random()*cargoOptions.length)|0];
+ const cargoId=pickRandom(cargoOptions);
  const freight=cargo(cargoId);
  const distanceNm=routeDistanceNauticalMiles(coords);
  const km=distanceNm*1.852;
  const typeRoll=Math.random();
  const type=typeRoll<.16?'urgent':typeRoll<.34?'large':'normal';
- const id='route_'+String(s.id).replace(/[^a-zA-Z0-9_-]/g,'')+'_'+game.day+'_'+(game.nextContractId||1)+'_'+index;
+ const id='offer_'+String(s.id).replace(/[^a-zA-Z0-9_-]/g,'')+'_'+game.day+'_'+(game.nextContractId||1)+'_'+index+'_'+Math.floor(Math.random()*1000000);
  const deadline=type==='urgent'?Math.max(4,Math.ceil(distanceNm/(st.speed*24*freight.speed)+freight.handling+3)):null;
+ const company=pickRandom(CONTRACT_COMPANY_PALETTE[cargoId]||CONTRACT_COMPANY_PALETTE.containers);
+ const description=pickRandom(CONTRACT_DESCRIPTIONS[cargoId]||CONTRACT_DESCRIPTIONS.containers);
  return {
-  id,type,company:destination.name+' Logistik',from:origin.id,to:destination.id,cargo:cargoId,
+  id,type,company,from:origin.id,to:destination.id,cargo:cargoId,
   bonus:Math.round(Math.max(7000,km*(type==='urgent'?42:type==='large'?34:26))),
-  deadline,desc:'Automatisch aus einer geprüften Hafenverbindung generierter Auftrag.',
+  deadline,desc:(company||'Ein Logistikunternehmen')+' '+(description||'hat einen Transportauftrag ausgeschrieben')+'.',
   assignedShipId:String(s.id),routeKey:connection.from+'>'+connection.to,
-  routeDistanceKm:Math.round(km)
+  routeDistanceKm:Math.round(km),createdDay:Number(game.day)||0
  };
 }
 async function computeEligibleContractsAsync(s,key){
@@ -267,6 +289,9 @@ async function computeEligibleContractsAsync(s,key){
  const valid=[];
  const seen=new Set();
  let routeFailures=0;
+ // Für jedes untätige Schiff werden 1 bis 3 Angebote angestrebt.
+ // Kandidaten werden vorher gemischt; unpassende Routen werden übersprungen,
+ // bis genug sichere Ziele gefunden sind oder die Kandidaten erschöpft sind.
  const targetCount=1+Math.floor(Math.random()*3);
  for(let i=0;i<candidates.length&&valid.length<targetCount;i++){
   if(i>0&&i%3===0)await yieldToBrowser();
