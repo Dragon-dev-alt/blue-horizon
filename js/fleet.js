@@ -122,30 +122,38 @@ function isContractEligibilityPending(s){return !!s&&contractEligibilityPending.
 const CONTRACT_ROUTE_STEP_DELAY=0;
 const contractGenerationQueue=[];
 const contractGenerationRetryCounts=new Map();
-// Ein Worker hält Seekarte und Landmaske dauerhaft im Speicher.
-// Mehrere Instanzen vervielfachen den RAM-Verbrauch unnötig.
-const ROUTE_WORKER_POOL_SIZE=1;
+// Auf leistungsfähigen Geräten zwei echte Routenworker; auf schwächeren Geräten
+// nur einer, damit die doppelte Seekarte/Landmaske nicht unnötig RAM belegt.
+const ROUTE_WORKER_POOL_SIZE=(()=>{
+ const cores=Number(navigator.hardwareConcurrency)||4;
+ const memory=Number(navigator.deviceMemory)||0;
+ return cores>=8&&(memory===0||memory>=4)?2:1;
+})();
 const routeCalculationWorkers=[];
 let routeCalculationWorkerId=0;
-let routeCalculationWorkerCursor=0;
 const routeCalculationRequests=new Map();
 function getRouteCalculationWorkers(){
  if(typeof Worker!=='function')return [];
  while(routeCalculationWorkers.length<ROUTE_WORKER_POOL_SIZE){
   const slot=routeCalculationWorkers.length;
   try{
-   const worker=new Worker('./js/route-worker.js?v=parallel-routing-warmup-v1-20261013',{type:'module'});
-   let warmResolve;const record={worker,busy:0,slot,ready:false,preloading:false,warmPromise:new Promise(resolve=>{warmResolve=resolve})};
-    record.resolveWarmup=()=>{record.ready=true;record.preloading=false;warmResolve(true)};
+   const worker=new Worker('./js/route-worker.js?v=parallel-routing-warmup-v2-20261013',{type:'module'});
+   let warmResolve;
+   const record={worker,busy:0,slot,ready:false,preloading:false,warmPromise:new Promise(resolve=>{warmResolve=resolve})};
+   record.resolveWarmup=ok=>{record.ready=!!ok;record.preloading=false;warmResolve(!!ok)};
    worker.onmessage=event=>{
-    const message=event.data||{},pending=routeCalculationRequests.get(message.id);
-    if(!pending)return;
+    const message=event.data||{};
+    if(message.warmupReady!==undefined){record.resolveWarmup(message.warmupReady);return}
+    if(message.warmupFailed){record.resolveWarmup(false);return}
+    const pending=routeCalculationRequests.get(message.id);
+    if(!pending||pending.record!==record)return;
     routeCalculationRequests.delete(message.id);
     record.busy=Math.max(0,record.busy-1);
     if(message.error)pending.reject(new Error(message.error));else pending.resolve(message.coords||null);
    };
    worker.onerror=event=>{
     const error=new Error(event.message||'Routen-Worker fehlgeschlagen.');
+    record.resolveWarmup(false);
     for(const [id,pending] of routeCalculationRequests){if(pending.record===record){routeCalculationRequests.delete(id);record.busy=Math.max(0,record.busy-1);pending.reject(error)}}
     try{worker.terminate()}catch(_){}
     const index=routeCalculationWorkers.indexOf(record);
@@ -158,8 +166,8 @@ function getRouteCalculationWorkers(){
 }
 function preloadRouteWorkers(){
  const workers=getRouteCalculationWorkers();
- workers.forEach(record=>{if(!record.ready&&!record.preloading){record.preloading=true;try{record.worker.postMessage({warmup:true})}catch(_){record.preloading=false}}});
- return Promise.all(workers.map(record=>record.warmPromise||Promise.resolve()));
+ workers.forEach(record=>{if(!record.ready&&!record.preloading){record.preloading=true;try{record.worker.postMessage({warmup:true})}catch(_){record.resolveWarmup(false)}}});
+ return Promise.all(workers.map(record=>record.warmPromise||Promise.resolve(false)));
 }
 function calculateSeaRouteInBackground(connection){
  const workers=getRouteCalculationWorkers();
