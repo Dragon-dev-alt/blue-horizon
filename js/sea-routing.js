@@ -8,6 +8,7 @@
 window.waterRouteDataReady = false;
 window.waterRouteDataLoading = true;
 window.waterRouteDataError = null;
+let feature = null;
 
 let landPolygons = [];
 let landGrid = new Map();
