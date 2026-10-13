@@ -70,7 +70,7 @@ const PORTS=[
 // Binnenhäfen sind in dieser Spielversion ausschließlich für Binnenschiffe zugelassen.
 const PORT_CATEGORY_INFO={
  global_hub:{label:'Globales Drehkreuz',symbol:'✦',color:'#ffca55'},
- international_port:{label:'Internationaler Seehafen',symbol:'⚓',color:'#45b8ff'},
+ international_port:{label:'Internationaler Seehafen',symbol:'◇',color:'#45b8ff'},
  regional_seaport:{label:'Regionaler Seehafen',symbol:'◉',color:'#57d6b0'},
  river_hub:{label:'Binnen-Drehkreuz',symbol:'◆',color:'#c39bff'},
  inland_port:{label:'Binnenhafen',symbol:'▰',color:'#85c98d'}
