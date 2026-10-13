@@ -422,7 +422,7 @@ async function loadGameSlot(slot){
   const previousSpeed=simulationSpeed;
   setSpeed(0);
   window.setLoadingScreen('Lädt … Spielstand wird vorbereitet',4);
-   if(typeof window.preloadRouteWorkers==='function')window.preloadRouteWorkers().catch(error=>console.warn('Routen-Worker-Vorladen fehlgeschlagen:',error));
+   if(typeof window.preloadRouteWorkers==='function')await window.preloadRouteWorkers().catch(error=>console.warn('Routen-Worker-Vorladen fehlgeschlagen:',error));
   await paint();
   await animate(4,18,400,'Lädt … Spielstand wird vorbereitet');
   const removedStarter=removeLegacyStarterShip(g);
