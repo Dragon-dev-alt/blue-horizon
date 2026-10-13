@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#07131f"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%23071f30%22/%3E%3Cpath d=%22M8 38 Q20 28 32 38 T56 38%22 fill=%22none%22 stroke=%22%2347d8d0%22 stroke-width=%226%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M8 48 Q20 38 32 48 T56 48%22 fill=%22none%22 stroke=%22%2347d8d0%22 stroke-width=%224%22 stroke-linecap=%22round%22/%3E%3C/svg%3E"><title>Blue Horizon — Reederei-Manager</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="preload" as="image" href="./assets/Blauer%20Horizont%20%C3%BCber%20dem%20Containerhafen.png?v=loader-png-20261012"><link rel="stylesheet" href="./styles.css?v=orders-reference-layout-v5-20261013">
+<link rel="preload" as="image" href="./assets/Blauer%20Horizont%20%C3%BCber%20dem%20Containerhafen.png?v=loader-png-20261012"><link rel="stylesheet" href="./styles.css?v=orders-reference-layout-v6-20261013">
 </head>
 <body>
 <div class="app" id="gameApp">
@@ -64,7 +64,7 @@
 <script type="module" src="./js/sea-routing.js?v=background-route-worker-v1-20261012"></script>
 
 <script>
-window.openContractsWindow=function(){document.getElementById("contractsOverlay")?.classList.remove("hidden");if(typeof window.renderUI==="function")window.renderUI();};
+window.openContractsWindow=function(){document.getElementById("contractsOverlay")?.classList.remove("hidden");if(typeof game!=="undefined"&&game&&game.ships.length&&!selectedShipId)selectedShipId=game.ships[0].id;if(typeof window.renderUI==="function")window.renderUI();const n=document.getElementById("contractShipCount");if(n&&typeof game!=="undefined"&&game)n.textContent=game.ships.length;};
 window.closeContractsWindow=function(){document.getElementById("contractsOverlay")?.classList.add("hidden");};
 window.switchContractTab=function(tab){document.querySelectorAll("[data-contract-tab]").forEach(b=>b.classList.toggle("active",b.dataset.contractTab===tab));const help=document.getElementById("ordersHelp");if(tab==="ships"){if(help)help.textContent="Wähle ein Schiff, um seine aktuelle Route und Einsatzbereitschaft zu sehen.";document.getElementById("ordersList")?.querySelectorAll("[data-contract-id]").forEach(el=>el.classList.add("hidden"));}else if(tab==="completed"){if(help)help.textContent="Abgeschlossene Aufträge erscheinen hier, sobald sie im Spielverlauf vorliegen.";document.getElementById("ordersList")?.querySelectorAll("[data-contract-id]").forEach(el=>el.classList.add("hidden"));}else{if(help)help.textContent="Verfügbare Frachtaufträge für deine Schiffe.";document.getElementById("ordersList")?.querySelectorAll("[data-contract-id]").forEach(el=>el.classList.remove("hidden"));}};
 window.closeShipRouteInfo=function(){document.getElementById("shipRouteInfoOverlay")?.classList.add("hidden");};
