@@ -487,3 +487,18 @@ window.openShipRouteInfo=function(shipId){
  body.innerHTML='<div class="route-info-stat"><span>Schiffstyp</span><b>'+esc(type?.name||s.type)+'</b></div><div class="route-info-stat"><span>Aktueller Standort</span><b>'+esc(port(s.trip?s.trip.from:s.port)?.name||"Unbekannt")+'</b></div><div class="route-info-stat"><span>Zielhafen</span><b>'+esc(destination?.name||(s.trip?"Unbekannt":"Noch kein Auftrag"))+'</b></div><div class="route-info-stat"><span>Entfernung</span><b>'+(km==null?"—":km.toLocaleString("de-DE")+" km")+'</b></div><div class="route-info-stat"><span>Fortschritt</span><b>'+(s.trip?Math.round((s.trip.progress||0)*100)+" %":"Nicht unterwegs")+'</b></div><p class="route-info-hint">'+(s.trip?"Die aktive Route ist auf der Karte türkis markiert.":"Die Karte bleibt sichtbar. Öffne „Aufträge“, um eine passende Routenvorschau zu sehen.")+'</p>';
  document.getElementById("shipRouteInfoOverlay")?.classList.remove("hidden");
 };
+
+function renderSelectedContractDetail(contractId){
+ const s=selectedShip();const c=(game?.generatedContracts||[]).find(x=>String(x.id)===String(contractId));
+ const panel=document.getElementById("contractDetailPanel");if(!panel||!c)return;
+ const a=port(c.from),b=port(c.to),st=cargo(c.cargo);
+ const km=Number(c.routeDistanceKm)||0;
+ const esc=v=>String(v??"—").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+ panel.innerHTML='<div class="detail-image-placeholder">⚓</div><h3>'+esc(a?.name||"Hafen")+'　→　'+esc(b?.name||"Hafen")+'</h3><p>'+esc(st?.name||c.cargo)+' · '+esc(c.company)+'</p><div class="detail-row">♟<div>Fracht<b>'+esc(st?.name||c.cargo)+' · '+Math.round((shipType(s?.type)?.capacity||0)*(st?.capacity||0)).toLocaleString("de-DE")+' t</b></div></div><div class="detail-row">💰<div>Vergütung<b>'+money(contractBonus(c))+'</b></div></div><div class="detail-row">⌁<div>Entfernung<b>'+km.toLocaleString("de-DE")+' km</b></div></div><div class="detail-row">◷<div>Geschätzte Dauer<b>'+(c.deadline?c.deadline+" Spieltage Lieferfrist":"Je nach Schiffsgeschwindigkeit")+'</b></div></div><div class="detail-row">⚓<div>Start Hafen<b>'+esc(a?.name||"Unbekannt")+'</b></div></div><div class="detail-row">⚓<div>Ziel Hafen<b>'+esc(b?.name||"Unbekannt")+'</b></div></div><div class="detail-row">🚢<div>Geeignete Schiffe<b>'+esc(shipType(s?.type)?.name||"Wähle ein Schiff")+'</b></div></div><button class="accept-selected" type="button" onclick="acceptOrder(\''+String(c.id).replace(/'/g,"\\'")+'\')">⚓ Auftrag annehmen</button>';
+}
+document.addEventListener("click",event=>{
+ const button=event.target&&event.target.closest?event.target.closest(".route-preview-button"):null;
+ if(!button)return;
+ const match=(button.getAttribute("onclick")||"").match(/previewContractRoute\(['"]([^'"]+)['"]\)/);
+ if(match)window.setTimeout(()=>renderSelectedContractDetail(match[1]),0);
+},true);
