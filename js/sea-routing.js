@@ -8,25 +8,6 @@
 window.waterRouteDataReady = false;
 window.waterRouteDataLoading = true;
 window.waterRouteDataError = null;
-let seaRouteImpl = null;
-let seaRouteAlternativesImpl = null;
-let DEFAULT_MARNET = null;
-let feature = null;
-const SEA_ROUTE_OPTIONS = {
-  units: 'kilometers',
-  antimeridian: 'unwrap',
-  maxSnapDistanceKm: 100
-};
-window.searoute = (origin, destination) => {
-  if (typeof seaRouteImpl !== 'function' || !DEFAULT_MARNET) throw new Error('Das Routennetz ist noch nicht geladen.');
-  return seaRouteImpl(origin, destination, { ...SEA_ROUTE_OPTIONS, network: DEFAULT_MARNET });
-};
-// Alternative Pfade erst anfordern, wenn die normale Route die Landprüfung nicht besteht.
-window.searouteAlternatives = (origin, destination, options = {}) => {
-  if (typeof seaRouteAlternativesImpl !== 'function' || !DEFAULT_MARNET) throw new Error('Alternative Routen sind noch nicht geladen.');
-  const k = Math.max(1, Math.min(6, Math.floor(Number(options.k) || 6)));
-  return seaRouteAlternativesImpl(origin, destination, { ...SEA_ROUTE_OPTIONS, ...options, network: DEFAULT_MARNET, k });
-};
 
 let landPolygons = [];
 let landGrid = new Map();
@@ -104,16 +85,6 @@ async function readStoredLandTopology(){
 async function storeLandTopology(topology){
  const db=await openGeoDataDB();
  try{await new Promise((resolve,reject)=>{const tx=db.transaction(LAND_DATA_STORE,'readwrite');tx.objectStore(LAND_DATA_STORE).put({id:LAND_DATA_KEY,source:'Natural Earth / world-atlas land-10m',version:1,savedAt:Date.now(),topology});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Geodaten konnten nicht gespeichert werden.'));});}
- finally{db.close();}
-}
-async function readStoredSeaNetwork(){
- const db=await openGeoDataDB();
- try{return await new Promise((resolve,reject)=>{const req=db.transaction(LAND_DATA_STORE,'readonly').objectStore(LAND_DATA_STORE).get('searoute-marnet-20km-v1');req.onsuccess=()=>resolve(req.result?.network||null);req.onerror=()=>reject(req.error);});}
- finally{db.close();}
-}
-async function storeSeaNetwork(network){
- const db=await openGeoDataDB();
- try{await new Promise((resolve,reject)=>{const tx=db.transaction(LAND_DATA_STORE,'readwrite');tx.objectStore(LAND_DATA_STORE).put({id:'searoute-marnet-20km-v1',source:'searoute-ts MARNET 20km',version:1,savedAt:Date.now(),network});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Seeroutennetz konnte nicht gespeichert werden.'));});}
  finally{db.close();}
 }
 async function loadLandTopology(){
@@ -275,52 +246,24 @@ window.isWaterRouteSafe = function (coords) {
 
 (async function loadLandMask() {
   try {
-    // Dynamische Imports machen Ladefehler sichtbar statt das Spiel dauerhaft im Ladezustand zu lassen.
-    const imports = Promise.all([
-      import('https://esm.sh/searoute-ts@2.3.0'),
-      import('https://esm.sh/searoute-ts@2.3.0/marnet-20km'),
-      import('https://esm.sh/topojson-client@3.1.0')
+    // Nur Landgeometrie für die Sicherheitsprüfung im Hauptthread laden.
+    // Die Seerouten-Bibliothek und das MARNET-Netz gehören ausschließlich in route-worker.js.
+    const topojson = await Promise.race([
+      import('https://esm.sh/topojson-client@3.1.0'),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Die Landprüfungsbibliothek antwortet nicht rechtzeitig.')), 20000))
     ]);
-    const [router, networkModule, topojson] = await Promise.race([
-      imports,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Die Routing-Bibliotheken antworten nicht rechtzeitig.')), 20000))
-    ]);
-    seaRouteImpl = router.seaRoute;
-    seaRouteAlternativesImpl = router.seaRouteAlternatives;
     feature = topojson.feature;
-    if (typeof seaRouteImpl !== 'function' || typeof seaRouteAlternativesImpl !== 'function' ||
-        !networkModule.DEFAULT_MARNET || typeof feature !== 'function') {
-      throw new Error('Die Routing-Bibliotheken wurden unvollständig geladen.');
-    }
-    // Das eigentliche 20-km-Seeroutennetz ebenfalls lokal persistent halten.
-    // Falls ein Browser das Objekt nicht strukturiert klonen kann, auf das
-    // importierte Original zurückfallen, statt den Spielstart zu blockieren.
-    try {
-      DEFAULT_MARNET = await readStoredSeaNetwork();
-      if (DEFAULT_MARNET) console.info('Seeroutennetz aus lokalem Geodaten-Cache geladen.');
-    } catch (cacheError) {
-      console.warn('Gespeichertes Seeroutennetz nicht lesbar; nutze Originaldaten.', cacheError);
-    }
-    if (!DEFAULT_MARNET) {
-      DEFAULT_MARNET = networkModule.DEFAULT_MARNET;
-      try {
-        await storeSeaNetwork(DEFAULT_MARNET);
-        console.info('Seeroutennetz dauerhaft im lokalen Geodaten-Cache gespeichert.');
-      } catch (cacheError) {
-        console.warn('Seeroutennetz geladen, aber nicht lokal speicherbar.', cacheError);
-      }
-    }
-
+    if (typeof feature !== 'function') throw new Error('Die Landprüfungsbibliothek wurde unvollständig geladen.');
     const landTopology = await loadLandTopology();
     await addLandMask(landTopology);
     window.waterRouteDataLoading = false;
     window.waterRouteDataReady = true;
     window.dispatchEvent(new Event('water-route-data-ready'));
-    console.info('Wasser-Routing bereit: 20-km-Seenetz und 10m-Landprüfung (25-km-Hafenanfahrtstoleranz).');
+    console.info('Landprüfung bereit. Seerouten werden ausschließlich im Hintergrund-Worker berechnet.');
   } catch (error) {
     window.waterRouteDataLoading = false;
     window.waterRouteDataError = error;
-    console.error('Wasser-Routing konnte nicht gestartet werden:', error);
+    console.error('Landprüfung konnte nicht gestartet werden:', error);
     window.dispatchEvent(new Event('water-route-data-error'));
   }
 })();
