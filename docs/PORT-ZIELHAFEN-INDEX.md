@@ -39,3 +39,21 @@ const hamburgLongstrecke = index.origins.ham.long;
 const newYork = hamburgLongstrecke.find(([to]) => to === 'nyc');
 // newYork[2] enthält die ungefähre Routendistanz in km.
 ```
+
+
+## Streckenprofile nach Schiffstyp
+
+Zusätzlich zur technischen Reichweite jedes Schiffstyps enthält `routeBandsKm` das passende Streckenprofil. So werden beispielsweise kurze Verbindungen nicht als Langstreckenauftrag angeboten. Die aktuellen ungefähren Routendistanzen werden nach diesen Bereichen gefiltert:
+
+| Schiffstyp | Routendistanz |
+|---|---:|
+| Coastal | 0–2.200 km |
+| Mitteldistanz | 700–6.000 km |
+| Langstrecke | 5.000–15.000 km |
+| Ultra-Langstrecke | 10.000–30.000 km |
+| Tanker | 2.000–30.000 km |
+| Massengutfrachter | 1.500–20.000 km |
+| Ro-Ro | 500–8.000 km |
+| Binnenschiff | 0–800 km |
+
+Die Profile dürfen sich überschneiden: Ein Zielhafen kann für mehrere Schiffstypen geeignet sein. Ein Langstrecken-Schiff bekommt aber keine sehr kurze Verbindung nur deshalb angeboten, weil seine technische Reichweite groß genug wäre. Die Profile sind Balancing-Regeln und können später angepasst werden.
