@@ -6,12 +6,13 @@ const SHIP_RANGE_BANDS={
 };
 let portDestinationIndex=null;
 let portDestinationIndexPromise=null;
+const SHIP_CATEGORY_IDS={river:1,coastal:2,medium:3,long:4,ultra:5,tanker:6,bulk:7,'ro-ro':8};
 function loadPortDestinationIndex(){
  if(portDestinationIndex)return Promise.resolve(portDestinationIndex);
  if(portDestinationIndexPromise)return portDestinationIndexPromise;
- portDestinationIndexPromise=fetch('./data/port-destinations.json?v=ship-offer-registry-v1-20261013',{cache:'force-cache'})
+ portDestinationIndexPromise=fetch('./data/route-register.json?v=numeric-route-register-v1-20261024',{cache:'force-cache'})
   .then(response=>{if(!response.ok)throw new Error('HTTP '+response.status);return response.json()})
-  .then(data=>{if(!data||data.v!==1||!data.origins)throw new Error('Ungültiges Zielhafenregister');portDestinationIndex=data;return data})
+  .then(data=>{if(!data||data.schemaVersion!==1||!data.register||!data.ports||!data.categories)throw new Error('Ungültiges numerisches Hafenregister');portDestinationIndex=data;return data})
   .catch(error=>{portDestinationIndexPromise=null;throw error});
  return portDestinationIndexPromise;
 }
@@ -305,20 +306,21 @@ async function computeEligibleContractsAsync(s,key){
  if(!eligibilityStateIsCurrent(s,key))return null;
  const registry=await loadPortDestinationIndex();
  if(!eligibilityStateIsCurrent(s,key))return null;
- const registeredTargets=registry.origins[String(s.port)]?.[s.type]||[];
- const candidates=registeredTargets
-  .filter(entry=>{
-   if(!Array.isArray(entry)||entry.length<4||Number(entry[2])>Number(s.range||0)+1)return false;
-   // Seeschiffe dürfen keine Binnenziele aus dem Flussregister erhalten:
-   // MARNET enthält Seerouten, aber keine vollständigen Flusszugänge.
-   // Häfen wie Hamburg/Rotterdam bleiben als echte Seehäfen zulässig.
-   if(s.type!=='river'&&(entry[3]==='r'||port(entry[0])?.river===true))return false;
-   if(s.type==='river'&&entry[3]!=='r'&&port(entry[0])?.river!==true)return false;
-   return true;
-  })
-  .map(entry=>{
-   const connection=harborConnectionsByPair.get(String(s.port)+'>'+String(entry[0]));
-   return connection&&connection.shipTypes.includes(s.type)?{connection,estimatedKm:Number(entry[2])}:null;
+ const startPortId=Object.entries(registry.ports).find(([,p])=>p.code===String(s.port))?.[0];
+ const categoryId=SHIP_CATEGORY_IDS[s.type];
+ const targetPortIds=(startPortId&&categoryId)?(registry.register[startPortId]?.[categoryId]||[]):[];
+ const candidates=targetPortIds
+  .map(targetId=>{
+   const target=registry.ports[String(targetId)];
+   if(!target||target.code===String(s.port))return null;
+   const connection=harborConnectionsByPair.get(String(s.port)+'>'+String(target.code));
+   if(!connection||!connection.shipTypes.includes(s.type))return null;
+   // Der große Register entscheidet ausschließlich über erlaubte Zielhäfen.
+   // Die Distanz wird nur noch für die konkrete Reichweite des Schiffs geprüft.
+   const factor=connection.kind==='river'?1.25:1.15;
+   const estimatedKm=Math.round(Number(connection.directKm)*factor/10)*10;
+   if(!Number.isFinite(estimatedKm)||estimatedKm>Number(s.range||0)+1)return null;
+   return {connection,estimatedKm,targetId:Number(targetId)};
   }).filter(Boolean);
  // Nicht immer dieselben Ziele bevorzugen: zufällige Reihenfolge aus dem
  // typgerechten Register; jedes Ziel wird danach noch real über Wasser geprüft.
