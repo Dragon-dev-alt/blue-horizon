@@ -14,6 +14,12 @@ let RIVER_LINKS=[
  ['mem','dyb'],['dyb','pad'],['pad','cgr'],['cgr','stl'],['wuh','yue'],['yue','chq'],['chq','ful']
 ];
 let INLAND_CORRIDORS=[];
+let riverAdjacency=new Map();
+function buildRiverAdjacency(links){
+ const graph=new Map();
+ for(const edge of links){if(!Array.isArray(edge)||edge.length!==2)continue;const [a,b]=edge;if(!graph.has(a))graph.set(a,[]);if(!graph.has(b))graph.set(b,[]);graph.get(a).push(b);graph.get(b).push(a);}
+ riverAdjacency=graph;
+}
 window.inlandWaterwayDataReady=false;
 window.inlandWaterwayDataLoading=true;
 function nearestCorridorIndex(coords,point){
@@ -59,6 +65,7 @@ fetch('./data/inland-waterways.json?v=inland-corridors-v2-20261012',{cache:'forc
  .then(data=>{
   if(!data||!Array.isArray(data.links)||!Array.isArray(data.corridors))throw new Error('Binnenwasserstraßendaten ohne Korridorgeometrien.');
   RIVER_LINKS=data.links.filter(edge=>Array.isArray(edge)&&edge.length===2);
+  buildRiverAdjacency(RIVER_LINKS);
   INLAND_CORRIDORS=data.corridors.filter(x=>Array.isArray(x.coordinates)&&x.coordinates.length>=2&&Array.isArray(x.ports));
   window.inlandWaterwayDataReady=INLAND_CORRIDORS.length>0;
   window.dispatchEvent(new Event('inland-waterway-data-ready'));
@@ -68,13 +75,26 @@ fetch('./data/inland-waterways.json?v=inland-corridors-v2-20261012',{cache:'forc
  .finally(()=>{window.inlandWaterwayDataLoading=false;});
 function riverRoute(from,to){
  const a=port(from),b=port(to);
+ if(!a||!b)return null;
  const corridorPath=corridorPathForPorts(a,b);
  if(corridorPath&&corridorPath.length>1)return corridorPath;
- const adj={};RIVER_LINKS.forEach(([x,y])=>{(adj[x]||(adj[x]=[])).push(y);(adj[y]||(adj[y]=[])).push(x)});
- const q=[[from]],seen=new Set([from]);let found=null;
- while(q.length){const path=q.shift(),last=path[path.length-1];if(last===to){found=path;break}(adj[last]||[]).forEach(n=>{if(!seen.has(n)){seen.add(n);q.push(path.concat(n))}})}
+ // BFS nutzt vorberechnete Nachbarschaften und Vorgänger statt wiederholter
+ // Graph-Erzeugung, queue.shift() und Kopien kompletter Pfade.
+ const queue=[from],seen=new Set([from]),previous=new Map();
+ let found=false,head=0;
+ while(head<queue.length){
+  const last=queue[head++];
+  if(last===to){found=true;break;}
+  for(const next of riverAdjacency.get(last)||[]){
+   if(seen.has(next))continue;
+   seen.add(next);previous.set(next,last);queue.push(next);
+  }
+ }
  if(!found)return null;
- const coords=found.map(id=>{const p=port(id);return p?[p.lon,p.lat]:null});
+ const ids=[];for(let id=to;id!=null;id=previous.get(id)){ids.push(id);if(id===from)break;}
+ if(ids[ids.length-1]!==from)return null;
+ ids.reverse();
+ const coords=ids.map(id=>{const p=port(id);return p?[p.lon,p.lat]:null});
  if(coords.some(p=>!p))return null;
  return coords.length>=3&&typeof smoothWaterRoute==='function'?smoothWaterRoute(coords):coords;
 }
