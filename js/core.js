@@ -73,7 +73,7 @@ function updateShipMarker(s){
   shipMarkers[s.id]=m;
   m.on('click',()=>queueShipSelection(s.id));
   m.bindTooltip(s.name+' · '+shipType(s.type).name,{direction:'top'});
-  m._bhIconKey=[s.type,map.getZoom(),String(s.id)===String(selectedShipId)?1:0,angle].join('|');
+  m._bhIconKey=[s.type,map.getZoom(),String(s.id)===String(selectedShipId)?1:0].join('|');
  }else{
   const current=m.getLatLng();
   if(Math.abs(current.lat-pos.lat)>1e-7||Math.abs(current.lng-pos.lon)>1e-7)m.setLatLng([pos.lat,pos.lon]);
