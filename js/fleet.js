@@ -6,13 +6,22 @@ const SHIP_RANGE_BANDS={
 };
 let portDestinationIndex=null;
 let portDestinationIndexPromise=null;
+let portRowsByCode=new Map();
+let portRowsById=new Map();
+let destinationRowsByOriginCategory=new Map();
 const SHIP_CATEGORY_IDS={river:1,coastal:2,medium:3,long:4,ultra:5,tanker:6,bulk:7,'ro-ro':8};
+function indexPortDestinationTable(data){
+ const byCode=new Map(),byId=new Map(),byOriginCategory=new Map();
+ for(const row of data.portTable){if(!Array.isArray(row)||row.length<2)continue;byId.set(String(row[0]),row);byCode.set(String(row[1]),row);}
+ for(const row of data.table){if(!Array.isArray(row)||row.length<4)continue;const key=String(row[0])+'|'+String(row[2]);byOriginCategory.set(key,String(row[3]||'').split(',').filter(Boolean));}
+ portRowsByCode=byCode;portRowsById=byId;destinationRowsByOriginCategory=byOriginCategory;
+}
 function loadPortDestinationIndex(){
  if(portDestinationIndex)return Promise.resolve(portDestinationIndex);
  if(portDestinationIndexPromise)return portDestinationIndexPromise;
- portDestinationIndexPromise=fetch('./data/route-register.json?v=compact-table-v2-20261024',{cache:'force-cache'})
+ portDestinationIndexPromise=fetch('./data/route-register.json?v=compact-table-indexed-v3-20261024',{cache:'force-cache'})
   .then(response=>{if(!response.ok)throw new Error('HTTP '+response.status);return response.json()})
-  .then(data=>{if(!data||data.schemaVersion!==2||!Array.isArray(data.table)||!Array.isArray(data.portTable))throw new Error('Ungültiges Tabellen-Hafenregister');portDestinationIndex=data;return data})
+  .then(data=>{if(!data||data.schemaVersion!==2||!Array.isArray(data.table)||!Array.isArray(data.portTable))throw new Error('Ungültiges Tabellen-Hafenregister');indexPortDestinationTable(data);portDestinationIndex=data;return data})
   .catch(error=>{portDestinationIndexPromise=null;throw error});
  return portDestinationIndexPromise;
 }
@@ -307,12 +316,11 @@ async function computeEligibleContractsAsync(s,key){
  const registry=await loadPortDestinationIndex();
  if(!eligibilityStateIsCurrent(s,key))return null;
  const categoryId=SHIP_CATEGORY_IDS[s.type];
- const startRow=registry.portTable.find(row=>row[1]===String(s.port));
+ const startRow=portRowsByCode.get(String(s.port));
  const startPortId=startRow?.[0];
- const allowedRows=registry.table.filter(row=>row[0]===startPortId&&Number(row[2])===Number(categoryId));
- const targetPortIds=(allowedRows[0]?.[3]||'').split(',').filter(Boolean);
+ const targetPortIds=destinationRowsByOriginCategory.get(String(startPortId)+'|'+String(categoryId))||[];
  const candidates=targetPortIds.map(targetId=>{
-   const targetRow=registry.portTable.find(row=>row[0]===targetId);
+   const targetRow=portRowsById.get(String(targetId));
    const targetCode=targetRow?.[1];
    if(!targetCode||targetCode===String(s.port))return null;
    const connection=harborConnectionsByPair.get(String(s.port)+'>'+String(targetCode));
