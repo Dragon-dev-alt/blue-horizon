@@ -190,19 +190,36 @@ function preloadRouteWorkers(){
  workers.forEach(record=>{if(!record.ready&&!record.preloading){record.preloading=true;try{record.worker.postMessage({warmup:true})}catch(_){record.resolveWarmup(false)}}});
  return Promise.all(workers.map(record=>record.warmPromise||Promise.resolve(false)));
 }
+// Gemeinsamer Cache für alle Routenworker: identische Hafenpaare werden
+// zusammengeführt, auch wenn mehrere Schiffe sie zeitgleich anfordern.
+const seaRoutePromiseCache=new Map();
+const SEA_ROUTE_CACHE_LIMIT=320;
 function calculateSeaRouteInBackground(connection){
- const workers=getRouteCalculationWorkers();
- if(!workers.length)return Promise.resolve(null);
  const a=port(connection.from),b=port(connection.to);
  if(!a||!b)return Promise.resolve(null);
+ const key=String(a.id)+'>'+String(b.id);
+ if(seaRoutePromiseCache.has(key)){
+  const cached=seaRoutePromiseCache.get(key);
+  seaRoutePromiseCache.delete(key);seaRoutePromiseCache.set(key,cached);
+  return cached.then(coords=>Array.isArray(coords)?coords.map(p=>p.slice()):null);
+ }
+ const workers=getRouteCalculationWorkers();
+ if(!workers.length)return Promise.resolve(null);
  const record=workers.reduce((best,item)=>!best||item.busy<best.busy?item:best,null);
  const id=++routeCalculationWorkerId;
- return new Promise((resolve,reject)=>{
+ const request=new Promise((resolve,reject)=>{
   routeCalculationRequests.set(id,{resolve,reject,record,fromId:String(a.id),fromName:a.name});
   record.busy++;
   try{record.worker.postMessage({id,from:[a.lon,a.lat],to:[b.lon,b.lat]})}
   catch(error){routeCalculationRequests.delete(id);record.busy=Math.max(0,record.busy-1);reject(error)}
- });
+ }).then(coords=>{
+  if(Array.isArray(coords)&&coords.length>=2)return coords.map(p=>p.slice());
+  seaRoutePromiseCache.delete(key);
+  return null;
+ },error=>{seaRoutePromiseCache.delete(key);throw error});
+ seaRoutePromiseCache.set(key,request);
+ while(seaRoutePromiseCache.size>SEA_ROUTE_CACHE_LIMIT)seaRoutePromiseCache.delete(seaRoutePromiseCache.keys().next().value);
+ return request.then(coords=>Array.isArray(coords)?coords.map(p=>p.slice()):null);
 }
 let contractGenerationWorkersRunning=0;
 // Routen sind CPU-intensiv; ein Auftragslauf zur Zeit verhindert Lastspitzen.
