@@ -27,11 +27,19 @@ function loadPortDestinationIndex(){
 }
 function randomShipRange(typeId){const b=SHIP_RANGE_BANDS[typeId]||[500,shipType(typeId).range];return Math.round((b[0]+Math.random()*(b[1]-b[0]))/100)*100}
 function portAllowsShip(candidate,typeId){return !!candidate&&Array.isArray(candidate.allowedShipTypes)&&candidate.allowedShipTypes.includes(typeId);}
+const shipPortOptionCache=new Map();
 function randomShipPortHasOption(candidate,typeId,range){
+ if(!candidate)return false;
+ const rangeKey=Number.isFinite(Number(range))?String(Number(range)):'any';
+ const key=String(candidate.id)+'|'+String(typeId)+'|'+rangeKey;
+ if(shipPortOptionCache.has(key))return shipPortOptionCache.get(key);
  const options=harborConnectionsByOrigin.get(String(candidate.id))||[];
- return !harborConnectionCatalog||options.some(connection=>
+ const result=!harborConnectionCatalog||options.some(connection=>
   connection.shipTypes.includes(typeId)&&port(connection.to)&&connection.to!==candidate.id&&
   (!Number.isFinite(Number(range))||Number(connection.directKm)<=Number(range)));
+ shipPortOptionCache.set(key,result);
+ if(shipPortOptionCache.size>2000)shipPortOptionCache.clear();
+ return result;
 }
 function randomShipPort(typeId,range){
  const catalogReady=!!harborConnectionCatalog&&harborConnectionsByOrigin.size>0;
@@ -257,6 +265,7 @@ function loadHarborConnectionCatalog(){
   .then(data=>{
    if(!data||data.schemaVersion!==1||!Array.isArray(data.connections))throw new Error('Ungültiger Hafenverbindungskatalog.');
    harborConnectionCatalog=data;
+   shipPortOptionCache.clear();
    harborConnectionsByOrigin=new Map();
    harborConnectionsByPair=new Map();
    data.connections.forEach(connection=>{
