@@ -49,7 +49,7 @@ function withAccessEndpoints(coords,from,to,fromAccess,toAccess){
 }
 function smooth(coords){if(!Array.isArray(coords)||coords.length<3)return coords;const cut=input=>{const out=[input[0]];for(let i=1;i<input.length;i++){const a=input[i-1],b=input[i];out.push([a[0]*.75+b[0]*.25,a[1]*.75+b[1]*.25],[a[0]*.25+b[0]*.75,a[1]*.25+b[1]*.75])}out.push(input[input.length-1]);return out};const once=cut(coords),twice=cut(once);return safe(twice)?twice:safe(once)?once:coords}
 function usable(result){const coords=result&&result.geometry&&result.geometry.coordinates,props=result&&result.properties;if(!Array.isArray(coords)||coords.length<2)return null;if(props&&((Number.isFinite(props.originSnapKm)&&props.originSnapKm>100)||(Number.isFinite(props.destinationSnapKm)&&props.destinationSnapKm>100)))return null;return coords}
-async function route(from,to){
+async function calculateRoute(from,to){
  await init();
  let primary=null,firstError=null,routeFrom=from,routeTo=to,fromAccess=null,toAccess=null;
  try{primary=router.seaRoute(routeFrom,routeTo,{...OPTIONS,network})}
@@ -94,5 +94,23 @@ async function route(from,to){
  }
  if(firstError)throw firstError;
  return null;
+}
+// Begrenzter Cache für wiederholte Hafenpaare innerhalb dieses Workers.
+const ROUTE_CACHE_LIMIT=160;
+const routeCache=new Map();
+async function route(from,to){
+ await init();
+ const key=from.map(v=>Number(v).toFixed(4)).join(',')+'>'+to.map(v=>Number(v).toFixed(4)).join(',');
+ if(routeCache.has(key)){
+  const cached=routeCache.get(key);
+  routeCache.delete(key);routeCache.set(key,cached);
+  return cached?cached.map(p=>p.slice()):null;
+ }
+ const coords=await calculateRoute(from,to);
+ if(Array.isArray(coords)&&coords.length>=2){
+  routeCache.set(key,coords.map(p=>p.slice()));
+  if(routeCache.size>ROUTE_CACHE_LIMIT)routeCache.delete(routeCache.keys().next().value);
+ }
+ return coords;
 }
 self.onmessage=async event=>{const {id,from,to,warmup}=event.data||{};try{if(warmup){await init();self.postMessage({warmupReady:true});return}const coords=await route(from,to);self.postMessage({id,coords})}catch(error){self.postMessage(warmup?{warmupReady:false,error:String(error&&error.message||error)}:{id,error:String(error&&error.message||error)})}};
