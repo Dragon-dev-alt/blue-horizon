@@ -77,7 +77,7 @@ function updateShipMarker(s){
  }else{
   const current=m.getLatLng();
   if(Math.abs(current.lat-pos.lat)>1e-7||Math.abs(current.lng-pos.lon)>1e-7)m.setLatLng([pos.lat,pos.lon]);
-  const iconKey=[s.type,map.getZoom(),String(s.id)===String(selectedShipId)?1:0,angle].join('|');
+  const iconKey=[s.type,map.getZoom(),String(s.id)===String(selectedShipId)?1:0].join('|');
   if(m._bhIconKey!==iconKey){m.setIcon(iconForShip(s,angle));m._bhIconKey=iconKey;}
  }
  const el=m.getElement();
