@@ -307,7 +307,15 @@ async function computeEligibleContractsAsync(s,key){
  if(!eligibilityStateIsCurrent(s,key))return null;
  const registeredTargets=registry.origins[String(s.port)]?.[s.type]||[];
  const candidates=registeredTargets
-  .filter(entry=>Array.isArray(entry)&&entry.length>=4&&Number(entry[2])<=Number(s.range||0)+1)
+  .filter(entry=>{
+   if(!Array.isArray(entry)||entry.length<4||Number(entry[2])>Number(s.range||0)+1)return false;
+   // Seeschiffe dürfen keine Binnenziele aus dem Flussregister erhalten:
+   // MARNET enthält Seerouten, aber keine vollständigen Flusszugänge.
+   // Häfen wie Hamburg/Rotterdam bleiben als echte Seehäfen zulässig.
+   if(s.type!=='river'&&(entry[3]==='r'||port(entry[0])?.river===true))return false;
+   if(s.type==='river'&&entry[3]!=='r'&&port(entry[0])?.river!==true)return false;
+   return true;
+  })
   .map(entry=>{
    const connection=harborConnectionsByPair.get(String(s.port)+'>'+String(entry[0]));
    return connection&&connection.shipTypes.includes(s.type)?{connection,estimatedKm:Number(entry[2])}:null;
