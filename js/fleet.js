@@ -320,10 +320,19 @@ async function computeEligibleContractsAsync(s,key){
    route=routeForContract({from:connection.from,to:connection.to},s);
   }else{
    try{route=await calculateSeaRouteInBackground(connection)}
-   catch(error){console.warn('Hintergrund-Routenberechnung fehlgeschlagen:',error);routeFailures++;route=null}
-   // Kein synchroner Fallback auf den Hauptthread: Seerouten werden ausschließlich
-   // vom neuen Route-Worker berechnet. Ein fehlgeschlagener Workerpfad wird verworfen,
-   // statt beim Erzeugen von Aufträgen die alte Hauptthread-Routensuche aufzurufen.
+   catch(error){
+    routeFailures++;route=null;
+    const message=String(error&&error.message||error);
+    // Ein nicht ans Seeroutennetz angeschlossener Ursprung macht weitere Ziele
+    // vom selben Hafen meist ebenfalls unmöglich. Nicht dutzende Routenversuche
+    // mit derselben Ursache starten und den PC unnötig belasten.
+    if(/Failed to snap origin to the maritime network/i.test(message)){
+     console.warn('Aufträge für '+(port(s.port)?.name||s.port)+' vorerst übersprungen: Hafen liegt zu weit vom Seeroutennetz entfernt.',message);
+     break;
+    }
+    if(routeFailures===1)console.warn('Hintergrund-Routenberechnung fehlgeschlagen:',message);
+   }
+   // Seerouten laufen ausschließlich im Worker; kein synchroner Alt-Fallback.
    if(!route)route=null;
    if(route&&typeof window.cachePrecomputedContractRoute==='function'){
     window.cachePrecomputedContractRoute(connection.from,connection.to,s.type,route);
