@@ -106,12 +106,7 @@ function resolveWaterRoute(a,b){
  return null;
 }
 
-/* Korrekturen für V1-Aufträge und Hafenklassen */
-function portLevel(p){if(p.type==='international'||p.level===3)return 3;if(p.type==='regional'||p.level===2)return 2;if(p.river||p.type==='inland')return 1;return p.level||2}
-
-function portCanServeShip(p,s){const level=portLevel(p);if(s.type==='river')return !!p.river;if(s.type==='coastal')return level>=2;return level>=1}
-function currentPortId(s){return s.trip?s.trip.to:s.port}
-
+/* Hafenklassen werden zentral in data.js gepflegt. */
 /* Jedes bestehende Hafenobjekt erhält ein explizites Level für die Kette
    Binnenhafen → Regionalhafen → internationaler Hafen. */
 PORTS.forEach(p=>{
@@ -119,7 +114,6 @@ PORTS.forEach(p=>{
  else if(['ham','rot','lon','ant','nyc','hou','sin','sha','dub','mum','sao','van','tyo','syd'].includes(p.id)){p.type='international';p.level=3}
  else {p.type='regional';p.level=2}
 });
-function portTypeName(p){return p.level===3?'Internationaler Hafen':p.level===2?'Regionaler Seehafen':'Binnenhafen'}
 
 /* Begrenzter Routen-Cache: Auftragstabellen und Schiffsauswahl fragen dieselben
    Hafenpaare häufig erneut ab. Geometrie und Landprüfung werden nur einmal erzeugt. */
