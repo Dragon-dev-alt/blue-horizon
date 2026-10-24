@@ -131,6 +131,8 @@ const ROUTE_WORKER_POOL_SIZE=(()=>{
 })();
 const routeCalculationWorkers=[];
 let routeCalculationWorkerId=0;
+const maritimeOriginFailures=new Map();
+const maritimeOriginWarnings=new Set();
 const routeCalculationRequests=new Map();
 function getRouteCalculationWorkers(){
  if(typeof Worker!=='function')return [];
@@ -149,7 +151,16 @@ function getRouteCalculationWorkers(){
     if(!pending||pending.record!==record)return;
     routeCalculationRequests.delete(message.id);
     record.busy=Math.max(0,record.busy-1);
-    if(message.error)pending.reject(new Error(message.error));else pending.resolve(message.coords||null);
+    if(message.error){
+     if(/Failed to snap origin to the maritime network/i.test(message.error)){
+      maritimeOriginFailures.set(pending.fromId,{name:pending.fromName||pending.fromId,message:message.error});
+      if(!maritimeOriginWarnings.has(pending.fromId)){
+       maritimeOriginWarnings.add(pending.fromId);
+       console.warn('Hafen nicht ans Seeroutennetz angeschlossen:',pending.fromName||pending.fromId,message.error);
+      }
+     }
+     pending.reject(new Error(message.error));
+    }else pending.resolve(message.coords||null);
    };
    worker.onerror=event=>{
     const error=new Error(event.message||'Routen-Worker fehlgeschlagen.');
@@ -177,7 +188,7 @@ function calculateSeaRouteInBackground(connection){
  const record=workers.reduce((best,item)=>!best||item.busy<best.busy?item:best,null);
  const id=++routeCalculationWorkerId;
  return new Promise((resolve,reject)=>{
-  routeCalculationRequests.set(id,{resolve,reject,record});
+  routeCalculationRequests.set(id,{resolve,reject,record,fromId:String(a.id),fromName:a.name});
   record.busy++;
   try{record.worker.postMessage({id,from:[a.lon,a.lat],to:[b.lon,b.lat]})}
   catch(error){routeCalculationRequests.delete(id);record.busy=Math.max(0,record.busy-1);reject(error)}
