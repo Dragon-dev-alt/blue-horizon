@@ -619,14 +619,26 @@ function renderUI(options={}){
   setText('ordersHelp','Dein Schiff muss noch ausgeliefert werden.');
   const orders=$('ordersList');if(orders)orders.innerHTML='<div class="order"><h3>🚢 Schiff wird ausgeliefert</h3><p>Verbleibende Lieferzeit: '+Number(ship&&ship.deliveryRemaining||0)+' Spieltage.</p></div>';
   const list=$('fleetList');
-  if(list&&ship){
-   const row=document.createElement('button');row.type='button';row.className='ship-row selected';row.dataset.shipId=String(ship.id);
-   row.style.cssText='width:100%;text-align:left;display:flex;cursor:pointer;pointer-events:auto;position:relative;z-index:1';
-   row.innerHTML='<span class="ship-dot" style="background:'+shipType(ship.type).color+'"></span><span><b>'+escapeHtml(ship.name)+'</b><small>'+shipType(ship.type).name+' · Zustand '+(ship.condition??100)+' % · Hafen: '+escapeHtml(port(ship.port)?.name||'Unbekannt')+'</small></span>';
-   row.onclick=()=>selectShip(ship.id);list.appendChild(row);list.classList.remove('hidden');
+  // Die Kaufansicht läuft bei jedem Kauf erneut. Alte Zeilen entfernen, damit
+  // DOM-Knoten und Event-Handler nicht mit jedem Schiff weiter anwachsen.
+  if(list){
+   list.replaceChildren();
+   if(ship){
+    const row=document.createElement('button');row.type='button';row.className='ship-row selected';row.dataset.shipId=String(ship.id);
+    row.style.cssText='width:100%;text-align:left;display:flex;cursor:pointer;pointer-events:auto;position:relative;z-index:1';
+    row.innerHTML='<span class="ship-dot" style="background:'+shipType(ship.type).color+'"></span><span><b>'+escapeHtml(ship.name)+'</b><small>'+shipType(ship.type).name+' · Zustand '+(ship.condition??100)+' % · Hafen: '+escapeHtml(port(ship.port)?.name||'Unbekannt')+'</small></span>';
+    row.onclick=()=>selectShip(ship.id);list.appendChild(row);list.classList.remove('hidden');
+   }
   }
   const modal=$('fleetWindowList');
-  if(modal&&ship){const row=document.createElement('button');row.type='button';row.className='ship-row selected';row.style.cssText='width:100%;text-align:left;display:flex';row.innerHTML='<span class="ship-dot" style="background:'+shipType(ship.type).color+'"></span><span><b>'+escapeHtml(ship.name)+'</b><small>'+shipType(ship.type).name+' · Zustand '+(ship.condition??100)+' % · Hafen: '+escapeHtml(port(ship.port)?.name||'Unbekannt')+'</small></span>';row.onclick=()=>selectShip(ship.id);modal.appendChild(row)}
+  if(modal){
+   modal.replaceChildren();
+   if(ship){
+    const row=document.createElement('button');row.type='button';row.className='ship-row selected';row.dataset.shipId=String(ship.id);row.style.cssText='width:100%;text-align:left;display:flex';
+    row.innerHTML='<span class="ship-dot" style="background:'+shipType(ship.type).color+'"></span><span><b>'+escapeHtml(ship.name)+'</b><small>'+shipType(ship.type).name+' · Zustand '+(ship.condition??100)+' % · Hafen: '+escapeHtml(port(ship.port)?.name||'Unbekannt')+'</small></span>';
+    row.onclick=()=>selectShip(ship.id);modal.appendChild(row);
+   }
+  }
   return;
  }
 
