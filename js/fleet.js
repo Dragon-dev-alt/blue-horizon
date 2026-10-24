@@ -10,9 +10,9 @@ const SHIP_CATEGORY_IDS={river:1,coastal:2,medium:3,long:4,ultra:5,tanker:6,bulk
 function loadPortDestinationIndex(){
  if(portDestinationIndex)return Promise.resolve(portDestinationIndex);
  if(portDestinationIndexPromise)return portDestinationIndexPromise;
- portDestinationIndexPromise=fetch('./data/route-register.json?v=numeric-route-register-v1-20261024',{cache:'force-cache'})
+ portDestinationIndexPromise=fetch('./data/route-register.json?v=compact-table-v2-20261024',{cache:'force-cache'})
   .then(response=>{if(!response.ok)throw new Error('HTTP '+response.status);return response.json()})
-  .then(data=>{if(!data||data.schemaVersion!==1||!data.register||!data.ports||!data.categories)throw new Error('Ungültiges numerisches Hafenregister');portDestinationIndex=data;return data})
+  .then(data=>{if(!data||data.schemaVersion!==2||!Array.isArray(data.table)||!Array.isArray(data.portTable))throw new Error('Ungültiges Tabellen-Hafenregister');portDestinationIndex=data;return data})
   .catch(error=>{portDestinationIndexPromise=null;throw error});
  return portDestinationIndexPromise;
 }
@@ -306,21 +306,21 @@ async function computeEligibleContractsAsync(s,key){
  if(!eligibilityStateIsCurrent(s,key))return null;
  const registry=await loadPortDestinationIndex();
  if(!eligibilityStateIsCurrent(s,key))return null;
- const startPortId=Object.entries(registry.ports).find(([,p])=>p.code===String(s.port))?.[0];
  const categoryId=SHIP_CATEGORY_IDS[s.type];
- const targetPortIds=(startPortId&&categoryId)?(registry.register[startPortId]?.[categoryId]||[]):[];
- const candidates=targetPortIds
-  .map(targetId=>{
-   const target=registry.ports[String(targetId)];
-   if(!target||target.code===String(s.port))return null;
-   const connection=harborConnectionsByPair.get(String(s.port)+'>'+String(target.code));
+ const startRow=registry.portTable.find(row=>row[1]===String(s.port));
+ const startPortId=startRow?.[0];
+ const allowedRows=registry.table.filter(row=>row[0]===startPortId&&Number(row[2])===Number(categoryId));
+ const targetPortIds=(allowedRows[0]?.[3]||'').split(',').filter(Boolean);
+ const candidates=targetPortIds.map(targetId=>{
+   const targetRow=registry.portTable.find(row=>row[0]===targetId);
+   const targetCode=targetRow?.[1];
+   if(!targetCode||targetCode===String(s.port))return null;
+   const connection=harborConnectionsByPair.get(String(s.port)+'>'+String(targetCode));
    if(!connection||!connection.shipTypes.includes(s.type))return null;
-   // Der große Register entscheidet ausschließlich über erlaubte Zielhäfen.
-   // Die Distanz wird nur noch für die konkrete Reichweite des Schiffs geprüft.
    const factor=connection.kind==='river'?1.25:1.15;
    const estimatedKm=Math.round(Number(connection.directKm)*factor/10)*10;
    if(!Number.isFinite(estimatedKm)||estimatedKm>Number(s.range||0)+1)return null;
-   return {connection,estimatedKm,targetId:Number(targetId)};
+   return {connection,estimatedKm,targetId};
   }).filter(Boolean);
  // Nicht immer dieselben Ziele bevorzugen: zufällige Reihenfolge aus dem
  // typgerechten Register; jedes Ziel wird danach noch real über Wasser geprüft.
