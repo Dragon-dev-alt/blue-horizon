@@ -121,7 +121,6 @@ function openFleetWindow(){
  const w=$('fleetWindow');
  if(w)w.classList.remove('hidden');
 }
-function toggleFleetWindow(){const w=$('fleetWindow');if(!w){openFleetWindow();return}w.classList.toggle('hidden')}
 function renderFleetWindow(){
  let w=$('fleetWindow');
  if(!w){w=document.createElement('div');w.id='fleetWindow';w.className='overlay hidden';w.style.zIndex='2100';w.innerHTML='<div class="menu-card" style="max-height:85vh;overflow:auto"><div class="panel-head" style="padding:0 0 12px;margin-bottom:10px"><span>🚢 Deine Flotte</span><button onclick="closeFleetWindow()">Schließen ✕</button></div><div id="fleetWindowList"></div><p class="notice">Klicke ein Schiff an, um es auszuwählen und seine passenden Aufträge rechts zu sehen.</p></div>';document.body.appendChild(w)}
