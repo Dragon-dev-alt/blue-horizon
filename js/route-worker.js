@@ -1,5 +1,6 @@
 /* Background maritime routing worker. Heavy graph search and land-mask checks stay off the UI thread. */
 let router, network, landPolygons=[], landGrid=new Map(), readyPromise=null;
+const routeSafetyCache=new WeakMap();
 const CELL=5, GX=72, GY=36, MAX_SAMPLE_KM=1.5;
 const OPTIONS={units:'kilometers',antimeridian:'unwrap',maxSnapDistanceKm:100};
 function normLon(lon){while(lon>180)lon-=360;while(lon< -180)lon+=360;return lon}
@@ -7,7 +8,28 @@ function gridIndex(lon,lat){lon=normLon(lon);return Math.max(0,Math.min(GY-1,Mat
 function pointInRing(lon,lat,ring){let inside=false;for(let i=0,j=ring.length-1;i<ring.length;j=i++){let xi=ring[i][0],xj=ring[j][0];while(xi-lon>180)xi-=360;while(xi-lon< -180)xi+=360;while(xj-lon>180)xj-=360;while(xj-lon< -180)xj+=360;const yi=ring[i][1],yj=ring[j][1];if((yi>lat)!==(yj>lat)&&lon<(xj-xi)*(lat-yi)/((yj-yi)||1e-12)+xi)inside=!inside;}return inside}
 function isLand(lon,lat){lon=normLon(lon);if(!Number.isFinite(lon)||!Number.isFinite(lat)||lat< -90||lat>90)return true;for(const p of landGrid.get(gridIndex(lon,lat))||[]){if(lon<p.minLon||lon>p.maxLon||lat<p.minLat||lat>p.maxLat)continue;if(pointInRing(lon,lat,p.outer))return true}return false}
 function distanceKm(a,b){const rad=n=>n*Math.PI/180,dLat=rad(b[1]-a[1]),dLon=rad(b[0]-a[0]),q=Math.sin(dLat/2)**2+Math.cos(rad(a[1]))*Math.cos(rad(b[1]))*Math.sin(dLon/2)**2;return 6371*2*Math.asin(Math.min(1,Math.sqrt(q)))}
-function safe(coords){if(!Array.isArray(coords)||coords.length<2)return false;const lengths=[];let total=0;for(let i=1;i<coords.length;i++){const a=coords[i-1],b=coords[i];if(!Array.isArray(a)||!Array.isArray(b)||![a[0],a[1],b[0],b[1]].every(Number.isFinite))return false;const d=distanceKm(a,b);lengths.push(d);total+=d}const tolerance=Math.min(25,total*.15);let travelled=0;for(let i=1;i<coords.length;i++){const a=coords[i-1],b=coords[i],len=lengths[i-1],steps=Math.max(1,Math.ceil(len/MAX_SAMPLE_KM));for(let j=0;j<=steps;j++){if(i>1&&j===0)continue;const f=j/steps,lon=a[0]+(b[0]-a[0])*f,lat=a[1]+(b[1]-a[1])*f;if(isLand(lon,lat)){const from=travelled+len*f;if(from>tolerance&&total-from>tolerance)return false}}travelled+=len}return true}
+function safe(coords){
+ if(!Array.isArray(coords)||coords.length<2)return false;
+ if(routeSafetyCache.has(coords))return routeSafetyCache.get(coords);
+ const lengths=[];let total=0;
+ for(let i=1;i<coords.length;i++){
+  const a=coords[i-1],b=coords[i];
+  if(!Array.isArray(a)||!Array.isArray(b)||![a[0],a[1],b[0],b[1]].every(Number.isFinite)){routeSafetyCache.set(coords,false);return false}
+  const d=distanceKm(a,b);lengths.push(d);total+=d;
+ }
+ const tolerance=Math.min(25,total*.15);let travelled=0;
+ for(let i=1;i<coords.length;i++){
+  const a=coords[i-1],b=coords[i],len=lengths[i-1],steps=Math.max(1,Math.ceil(len/MAX_SAMPLE_KM));
+  for(let j=0;j<=steps;j++){
+   if(i>1&&j===0)continue;
+   const f=j/steps,lon=a[0]+(b[0]-a[0])*f,lat=a[1]+(b[1]-a[1])*f;
+   if(isLand(lon,lat)){const from=travelled+len*f;if(from>tolerance&&total-from>tolerance){routeSafetyCache.set(coords,false);return false}}
+  }
+  travelled+=len;
+ }
+ routeSafetyCache.set(coords,true);
+ return true;
+}
 function collectPolygons(value,out){if(!value)return;if(value.type==='FeatureCollection'){for(const f of value.features||[])collectPolygons(f,out);return}if(value.type==='Feature'){collectPolygons(value.geometry,out);return}if(value.type==='GeometryCollection'){for(const g of value.geometries||[])collectPolygons(g,out);return}if(value.type==='Polygon'&&Array.isArray(value.coordinates))out.push(value.coordinates);else if(value.type==='MultiPolygon'&&Array.isArray(value.coordinates))out.push(...value.coordinates)}
 async function init(){if(readyPromise)return readyPromise;readyPromise=(async()=>{const [r,n,t]=await Promise.all([import('https://esm.sh/searoute-ts@2.3.0'),import('https://esm.sh/searoute-ts@2.3.0/marnet-20km'),import('https://esm.sh/topojson-client@3.1.0')]);router=r;network=n.DEFAULT_MARNET;const response=await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/land-10m.json',{cache:'force-cache'});if(!response.ok)throw new Error('Landgeometrie HTTP '+response.status);const topology=await response.json(),land=t.feature(topology,topology.objects.land),polys=[];collectPolygons(land,polys);for(const rings of polys){const outer=rings&&rings[0];if(!outer||outer.length<4)continue;let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;for(const p of outer){minLon=Math.min(minLon,p[0]);maxLon=Math.max(maxLon,p[0]);minLat=Math.min(minLat,p[1]);maxLat=Math.max(maxLat,p[1])}if(maxLon-minLon>180){minLon=-180;maxLon=180}const poly={outer,minLon,maxLon,minLat,maxLat};landPolygons.push(poly);const x0=Math.max(0,Math.min(GX-1,Math.floor((minLon+180)/CELL))),x1=Math.max(0,Math.min(GX-1,Math.floor((maxLon+180)/CELL))),y0=Math.max(0,Math.min(GY-1,Math.floor((minLat+90)/CELL))),y1=Math.max(0,Math.min(GY-1,Math.floor((maxLat+90)/CELL)));for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const k=y*GX+x;if(!landGrid.has(k))landGrid.set(k,[]);landGrid.get(k).push(poly)}}if(!landPolygons.length)throw new Error('Keine Landpolygone geladen');return true})();return readyPromise}
 
@@ -69,12 +91,13 @@ async function calculateRoute(from,to){
  }
  const raw=usable(primary);
  if(raw&&safe(raw)){
-  const smoothed=smooth(raw).map(p=>[p[0],p[1]]);
+  const smoothed=smooth(raw);
   if(fromAccess||toAccess){
    const connected=withAccessEndpoints(smoothed,from,to,fromAccess,toAccess);
    if(safe(connected))return connected;
   }else{
    smoothed[0]=from.slice();smoothed[smoothed.length-1]=to.slice();
+   routeSafetyCache.delete(smoothed);
    if(safe(smoothed))return smoothed;
   }
  }
@@ -83,12 +106,13 @@ async function calculateRoute(from,to){
  for(const item of candidates){
   if(item===primary)continue;
   const coords=usable(item);if(!coords||!safe(coords))continue;
-  const smoothed=smooth(coords).map(p=>[p[0],p[1]]);
+  const smoothed=smooth(coords);
   if(fromAccess||toAccess){
    const connected=withAccessEndpoints(smoothed,from,to,fromAccess,toAccess);
    if(safe(connected))return connected;
   }else{
    smoothed[0]=from.slice();smoothed[smoothed.length-1]=to.slice();
+   routeSafetyCache.delete(smoothed);
    if(safe(smoothed))return smoothed;
   }
  }
@@ -107,10 +131,11 @@ async function route(from,to){
   return cached?cached.map(p=>p.slice()):null;
  }
  const coords=await calculateRoute(from,to);
- if(Array.isArray(coords)&&coords.length>=2){
-  routeCache.set(key,coords.map(p=>p.slice()));
-  if(routeCache.size>ROUTE_CACHE_LIMIT)routeCache.delete(routeCache.keys().next().value);
- }
- return coords;
+ // Auch ein geprüftes negatives Ergebnis cachen: dieselbe unbrauchbare
+ // Verbindung soll bei weiteren Schiffen nicht erneut teuer geroutet werden.
+ const cached=Array.isArray(coords)&&coords.length>=2?coords.map(p=>p.slice()):null;
+ routeCache.set(key,cached);
+ if(routeCache.size>ROUTE_CACHE_LIMIT)routeCache.delete(routeCache.keys().next().value);
+ return cached?cached.map(p=>p.slice()):null;
 }
 self.onmessage=async event=>{const {id,from,to,warmup}=event.data||{};try{if(warmup){await init();self.postMessage({warmupReady:true});return}const coords=await route(from,to);self.postMessage({id,coords})}catch(error){self.postMessage(warmup?{warmupReady:false,error:String(error&&error.message||error)}:{id,error:String(error&&error.message||error)})}};
