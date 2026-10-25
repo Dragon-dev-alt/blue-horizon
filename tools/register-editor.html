@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Blue Horizon – Register-Werkzeug</title>
+<style>
+:root{color-scheme:dark;--bg:#071827;--panel:#102b3e;--line:#31556a;--text:#e8f4fb;--muted:#a8c2d2;--accent:#45d8cf}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#071827,#0d2639);color:var(--text);font:15px system-ui,sans-serif}main{max-width:1100px;margin:auto;padding:22px}h1{margin:0 0 8px}p{color:var(--muted);line-height:1.5}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}button,.file-label,select{background:#183b50;color:var(--text);border:1px solid #426a80;border-radius:8px;padding:10px 12px;cursor:pointer}button.primary{background:#12645f;border-color:var(--accent)}button:disabled{opacity:.45;cursor:not-allowed}input[type=file]{max-width:100%}textarea{width:100%;min-height:48vh;background:#06131f;color:#dff6ff;border:1px solid var(--line);border-radius:10px;padding:14px;font:13px/1.5 ui-monospace,monospace;resize:vertical}label{display:block;margin-bottom:8px;color:var(--muted)}.status{white-space:pre-wrap;color:var(--accent);font-size:13px}.hint{font-size:13px}.tabs{display:flex;gap:6px;flex-wrap:wrap}.tabs button.active{border-color:var(--accent);box-shadow:inset 0 -2px var(--accent)}code{color:#a9f1e8}
+</style>
+</head>
+<body><main>
+<h1>⚓ Blue Horizon – Register-Werkzeug</h1>
+<p>Lokaler Editor für JSON-Dateien in <code>data/</code>. Die Dateien werden nicht automatisch nach GitHub hochgeladen: du lädst sie herunter und ersetzt die jeweilige Datei im Repository. Vor dem Bearbeiten immer eine Sicherung aufbewahren.</p>
+<div class="panel">
+ <h2>1. Register laden</h2>
+ <p>Wähle eine oder mehrere Dateien aus dem Ordner <code>data/</code>. Die Namen werden als Register-Tabs angezeigt.</p>
+ <input id="files" type="file" accept=".json,application/json" multiple>
+ <div class="toolbar" style="margin-top:12px"><button id="loadRepo" type="button">Register aus dem Live-Spiel laden</button><button id="download" class="primary" disabled>Aktuelles Register herunterladen</button><button id="validate" disabled>JSON & Struktur prüfen</button></div>
+ <div id="tabs" class="tabs" style="margin-top:14px"></div>
+ <div id="status" class="status" style="margin-top:12px">Noch keine Register geladen.</div>
+</div>
+<div class="panel">
+ <h2>2. Register bearbeiten</h2>
+ <label for="editor">JSON-Inhalt des ausgewählten Registers</label>
+ <textarea id="editor" spellcheck="false" placeholder="Lade eine JSON-Datei oder ein Register aus dem Live-Spiel …" disabled></textarea>
+ <div class="toolbar" style="margin-top:12px"><button id="apply" class="primary" disabled>Änderungen übernehmen</button><button id="pretty" disabled>JSON formatieren</button></div>
+</div>
+<div class="panel">
+ <h2>Was gehört wohin?</h2>
+ <ul>
+  <li><code>harbor-connections.json</code>: mögliche gerichtete Hafenverbindungen, Schiffsklassen und geschätzte direkte Entfernung.</li>
+  <li><code>route-register.json</code>: kompakter Zielhafenindex je Start-Hafen und Schiffskategorie. Diese Datei ist abgeleitet und muss nach Änderungen an Häfen/Verbindungen neu erzeugt werden.</li>
+  <li><code>inland-waterways.json</code>: Knoten und Links des Binnenwasserstraßennetzes.</li>
+  <li>Die eigentlichen Hafen-Stammdaten und Schiffsklassen liegen aktuell in <code>js/data.js</code>. Änderungen dort müssen mit den JSON-Registern synchronisiert werden. Diese Seite ändert bewusst keine Live-Dateien auf GitHub.</li>
+ </ul>
+ <p class="hint">Sicherheitsregel: Das Register beschreibt mögliche Verbindungen. Es ersetzt nicht die Prüfung, ob eine tatsächlich berechnete Route sicher über Wasser verläuft.</p>
+</div>
+</main>
+<script>
+'use strict';
+const state={files:new Map(),active:null};
+const $=id=>document.getElementById(id);
+function setStatus(message){$('status').textContent=message}
+function activeFile(){return state.files.get(state.active)}
+function renderTabs(){const root=$('tabs');root.innerHTML='';for(const name of state.files.keys()){const b=document.createElement('button');b.textContent=name;b.className=name===state.active?'active':'';b.onclick=()=>selectFile(name);root.appendChild(b)}}
+function selectFile(name){state.active=name;renderTabs();$('editor').value=state.files.get(name);$('editor').disabled=false;['download','validate','apply','pretty'].forEach(id=>$(id).disabled=false);setStatus('Ausgewählt: '+name)}
+function guessRegisterName(file){return file.name}
+function parseAndValidate(name,text){let data;try{data=JSON.parse(text)}catch(e){throw new Error('JSON-Syntaxfehler: '+e.message)}
+ if(name==='harbor-connections.json'){if(data.schemaVersion!==1||!Array.isArray(data.ports)||!Array.isArray(data.connections))throw new Error('Erwartet schemaVersion 1 sowie ports[] und connections[].');const seen=new Set();for(const c of data.connections){if(!c.from||!c.to||c.from===c.to||!Array.isArray(c.shipTypes)||!Number.isFinite(Number(c.directKm)))throw new Error('Ungültige Verbindung: '+JSON.stringify(c));const k=c.from+'>'+c.to;if(seen.has(k))throw new Error('Doppelte Verbindung: '+k);seen.add(k)}}
+ else if(name==='route-register.json'){if(data.schemaVersion!==2||!Array.isArray(data.table)||!Array.isArray(data.portTable))throw new Error('Erwartet schemaVersion 2 sowie table[] und portTable[].')}
+ else if(name==='inland-waterways.json'){if(!Array.isArray(data.nodes)||!Array.isArray(data.links))throw new Error('Erwartet nodes[] und links[].')}
+ return {data,summary:'✓ '+name+': JSON gültig'+(Array.isArray(data.connections)?' · '+data.connections.length+' Verbindungen':'')+(Array.isArray(data.table)?' · '+data.table.length+' Indexzeilen':'')+(Array.isArray(data.links)?' · '+data.nodes.length+' Knoten · '+data.links.length+' Links':'')};
+}
+$('files').addEventListener('change',async e=>{for(const file of e.target.files){try{const text=await file.text();parseAndValidate(file.name,text);state.files.set(file.name,text)}catch(error){setStatus(file.name+': '+error.message);continue}}if(state.files.size){state.active=state.active&&state.files.has(state.active)?state.active:state.files.keys().next().value;selectFile(state.active);setStatus('Geladen: '+[...state.files.keys()].join(', '))}});
+$('loadRepo').onclick=async()=>{const names=['harbor-connections.json','route-register.json','inland-waterways.json'];setStatus('Lade Register …');for(const name of names){try{const response=await fetch('../data/'+name+'?editor='+Date.now(),{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const text=await response.text();parseAndValidate(name,text);state.files.set(name,text)}catch(error){setStatus('Fehler bei '+name+': '+error.message);return}}state.active=names[0];selectFile(state.active);setStatus('Alle drei Datenregister geladen. Bearbeite sie und lade jedes geänderte Register herunter.')};
+$('apply').onclick=()=>{try{const {summary}=parseAndValidate(state.active,$('editor').value);state.files.set(state.active,$('editor').value);renderTabs();setStatus(summary+' · Änderungen im Editor übernommen.')}catch(e){setStatus('Prüfung fehlgeschlagen: '+e.message)}};
+$('validate').onclick=()=>{try{setStatus(parseAndValidate(state.active,$('editor').value).summary)}catch(e){setStatus('Prüfung fehlgeschlagen: '+e.message)}};
+$('pretty').onclick=()=>{try{$('editor').value=JSON.stringify(JSON.parse($('editor').value),null,2);setStatus('JSON formatiert. Klicke danach auf „Änderungen übernehmen“.')}catch(e){setStatus('JSON-Syntaxfehler: '+e.message)}};
+$('download').onclick=()=>{try{const parsed=parseAndValidate(state.active,$('editor').value);state.files.set(state.active,$('editor').value);const blob=new Blob([JSON.stringify(parsed.data,null,2)+'\n'],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=state.active;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setStatus('Download erstellt: '+state.active)}catch(e){setStatus('Download abgebrochen: '+e.message)}};
+</script></body></html>
