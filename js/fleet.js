@@ -353,11 +353,16 @@ function scheduleIdleRoutePrewarm(){
 }
 async function runOneIdleRoutePrewarm(){
  if(!game||!window.waterRouteDataReady)return;
- // Wenn während der Wartezeit neue Aufträge anstanden, diese haben Vorrang.
- if(contractGenerationWorkersRunning||contractGenerationQueue.length||routeCalculationRequests.size){
+ // Vorhandene Spielstände können schon Aufträge enthalten; Daten daher bei Bedarf
+ // im Hintergrund laden, ohne die Anzeige oder den Spielstart darauf warten zu lassen.
+ if(!harborConnectionCatalog||!portDestinationIndex){
+  try{await Promise.all([loadHarborConnectionCatalog(),loadPortDestinationIndex()])}
+  catch(error){console.info('Routen-Vorbereitung wartet auf Hafendaten:',error);return}
+ }
+ // Während des Ladens können neue Aufträge entstanden sein; diese haben Vorrang.
+ if(!game||contractGenerationWorkersRunning||contractGenerationQueue.length||routeCalculationRequests.size){
   scheduleIdleRoutePrewarm();return;
  }
- if(!harborConnectionCatalog||!portDestinationIndex)return;
  const budget=Math.min(ROUTE_PREWARM_MAX_TOTAL,game.ships.length*ROUTE_PREWARM_PER_SHIP);
  if(routePrewarmTotal>=budget)return;
  let selected=null;
@@ -647,6 +652,7 @@ function prepareContractsForAllShips(){
   if(contractEligibilityCache.has(key)||contractEligibilityPending.has(key))return;
   scheduleContractEligibility(s,key);
  });
+ scheduleIdleRoutePrewarm();
 }
 function acceptOrder(contractId){
  const s=selectedShip(),c=allContracts().find(x=>x.id===contractId);
