@@ -262,8 +262,29 @@ async function saveRouteForNextSession(key,coords){
  await new Promise(resolve=>{
   try{
    const tx=db.transaction('routes','readwrite'),store=tx.objectStore('routes');
-   const count=store.count();
-   count.onsuccess=()=>{if(count.result<400)store.put({key,coords:Array.isArray(coords)&&coords.length>1?coords.map(p=>[p[0],p[1]]):null,savedAt:Date.now()})};
+   const record={key,coords:Array.isArray(coords)&&coords.length>1?coords.map(p=>[p[0],p[1]]):null,savedAt:Date.now()};
+   const existing=store.getKey(key);
+   existing.onsuccess=()=>{
+    if(existing.result!==undefined){store.put(record);return}
+    const count=store.count();
+    count.onsuccess=()=>{
+     if(count.result<400){store.put(record);return}
+     // Cache bleibt begrenzt, nimmt aber neue Routen auf, indem der älteste
+     // Eintrag entfernt wird, statt nach 400 Treffern dauerhaft einzufrieren.
+     let oldestKey=null,oldestSavedAt=Infinity;
+     const cursorRequest=store.openCursor();
+     cursorRequest.onsuccess=()=>{
+      const cursor=cursorRequest.result;
+      if(cursor){
+       const savedAt=Number(cursor.value&&cursor.value.savedAt)||0;
+       if(savedAt<oldestSavedAt){oldestSavedAt=savedAt;oldestKey=cursor.primaryKey}
+       cursor.continue();return;
+      }
+      if(oldestKey!==null)store.delete(oldestKey);
+      store.put(record);
+     };
+    };
+   };
    tx.oncomplete=resolve;tx.onerror=resolve;tx.onabort=resolve;
   }catch(_){resolve()}
  });
@@ -305,7 +326,7 @@ function calculateSeaRouteInBackground(connection){
 let contractGenerationWorkersRunning=0;
 // Routen-Vorbereitung ist strikt nachrangig: niemals parallel zu aktiven
 // Auftragsläufen starten. Pro Schiff höchstens zwei zusätzliche Ziele, insgesamt
-// maximal acht pro Leerlaufphase, damit Tablets nicht mit Vorberechnung überlastet werden.
+// maximal acht je geladener Spielsession, damit Tablets nicht mit Vorberechnung überlastet werden.
 const ROUTE_PREWARM_DELAY_MS=2200;
 const ROUTE_PREWARM_PER_SHIP=2;
 const ROUTE_PREWARM_MAX_TOTAL=8;
@@ -367,7 +388,8 @@ async function runOneIdleRoutePrewarm(){
  if(routePrewarmTotal>=budget)return;
  let selected=null;
  for(const s of game.ships){
-  if(!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)))continue;
+  // Binnenrouten kommen aus dem lokalen Flussnetz und brauchen keinen Seerouten-Worker.
+  if(!s||s.type==='river'||s.trip||s.inYard||(game.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)))continue;
   const count=routePrewarmByShip.get(String(s.id))||0;
   if(count>=ROUTE_PREWARM_PER_SHIP)continue;
   const startRow=portRowsByCode.get(String(s.port));
@@ -381,6 +403,7 @@ async function runOneIdleRoutePrewarm(){
    .filter(c=>c.estimatedKm<=Number(s.range||0)+1)
    .filter(c=>!currentDestinations.has(String(c.connection.to)))
    .filter(c=>!routePrewarmAttempted.has(String(c.connection.from)+'>'+String(c.connection.to)))
+   .filter(c=>!maritimeOriginFailures.has(String(c.connection.from)))
    .sort((a,b)=>a.estimatedKm-b.estimatedKm);
   if(candidates.length){selected={ship:s,candidate:candidates[0]};break}
  }
