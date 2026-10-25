@@ -161,7 +161,14 @@ async function startNewGameInChosenSlot(slot){
   if(routingReady){
    startupStage='Hafenverbindungen laden';
    window.setLoadingScreen('Lädt … Hafenverbindungen werden geladen',72);
-   try{await loadHarborConnectionCatalog()}catch(_){}
+   try{
+    await Promise.all([
+     loadHarborConnectionCatalog(),
+     loadPortDestinationIndex(),
+     typeof window.preloadSavedRouteCache==='function'?window.preloadSavedRouteCache():Promise.resolve({loaded:0})
+    ]);
+    console.info('Routenregister und gespeicherte Routengeometrien für den Spielstart vorbereitet.');
+   }catch(error){console.warn('Ein Teil des Routen-Caches konnte beim Start nicht vorab geladen werden:',error)}
   }
 
   // Keep the loader visible long enough for the UI to settle. The base
