@@ -179,11 +179,11 @@ const ROUTE_WORKER_POOL_SIZE=(()=>{
  const cores=Number(navigator.hardwareConcurrency)||4;
  const memory=Number(navigator.deviceMemory)||0;
  const handheld=/Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent||'')||Number(navigator.maxTouchPoints)>1;
- // Drei echte Routing-Worker auf leistungsfähigen Desktop-Geräten: drei
- // Schiffe können ihre CPU-lastigen Routen gleichzeitig berechnen. Handhelds
- // bleiben bei maximal zwei Worker-Instanzen, um den zusätzlichen RAM-Bedarf
- // der Seekarte und Landmaske zu begrenzen.
+ // Jeder Worker hält ein eigenes Routingnetz und eine Landmaske im Speicher.
+ // Vier Instanzen daher nur auf leistungsfähigen Desktop-PCs; Mobilgeräte bleiben
+ // RAM-schonend begrenzt. Auftragssuchen dürfen darüber hinaus in der Queue warten.
  if(handheld)return cores>=6&&(memory===0||memory>=4)?2:1;
+ if(cores>=12&&(memory===0||memory>=6))return 4;
  if(cores>=8&&(memory===0||memory>=4))return 3;
  return cores>=4&&(memory===0||memory>=4)?2:1;
 })();
@@ -217,7 +217,7 @@ function getRouteCalculationWorkers(){
  while(routeCalculationWorkers.length<ROUTE_WORKER_POOL_SIZE){
   const slot=routeCalculationWorkers.length;
   try{
-   const worker=new Worker('./js/route-worker.js?v=contract-guarantee-v10-20261025',{type:'module'});
+   const worker=new Worker('./js/route-worker.js?v=route-precompute-v11-20261025',{type:'module'});
    let warmResolve;
    const record={worker,busy:0,slot,ready:false,preloading:false,warmPromise:new Promise(resolve=>{warmResolve=resolve})};
    record.resolveWarmup=ok=>{record.ready=!!ok;record.preloading=false;warmResolve(!!ok)};
@@ -367,9 +367,9 @@ let contractGenerationWorkersRunning=0;
 // Routen-Vorbereitung ist strikt nachrangig: niemals parallel zu aktiven
 // Auftragsläufen starten. Pro Schiff höchstens zwei zusätzliche Ziele, insgesamt
 // maximal acht je geladener Spielsession, damit Tablets nicht mit Vorberechnung überlastet werden.
-const ROUTE_PREWARM_DELAY_MS=2200;
-const ROUTE_PREWARM_PER_SHIP=2;
-const ROUTE_PREWARM_MAX_TOTAL=8;
+const ROUTE_PREWARM_DELAY_MS=1200;
+const ROUTE_PREWARM_PER_SHIP=4;
+const ROUTE_PREWARM_MAX_TOTAL=24;
 let routePrewarmTimer=null;
 let routePrewarmRunning=false;
 let routePrewarmTotal=0;
@@ -384,8 +384,17 @@ function resetRoutePrewarmForNewGame(){
  routePrewarmByShip.clear();
  if(routePrewarmTimer){clearTimeout(routePrewarmTimer);routePrewarmTimer=null}
 }
-// Routen sind CPU-intensiv; die drei parallelen Auftragsläufe bleiben unverändert.
-const MAX_PARALLEL_CONTRACT_JOBS=3;
+// Mehr Schiffe dürfen gleichzeitig Kandidaten bearbeiten. Die teure eigentliche
+// Seeroutensuche wird unabhängig durch ROUTE_WORKER_POOL_SIZE begrenzt.
+const MAX_PARALLEL_CONTRACT_JOBS=(()=>{
+ const cores=Number(navigator.hardwareConcurrency)||4;
+ const memory=Number(navigator.deviceMemory)||0;
+ const handheld=/Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent||'')||Number(navigator.maxTouchPoints)>1;
+ if(handheld)return cores>=6&&(memory===0||memory>=4)?3:2;
+ if(cores>=8&&(memory===0||memory>=4))return 6;
+ if(cores>=4&&(memory===0||memory>=4))return 4;
+ return 2;
+})();
 function yieldToBrowser(){
  return new Promise(resolve=>{
   // Kurze UI-Pausen zwischen Routen, ohne die gesamte Warteschlange auszubremsen.
