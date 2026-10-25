@@ -42,12 +42,6 @@ function addLog(msg){game.log.unshift('Tag '+game.day+' · '+msg);game.log=game.
 function haversine(a,b){const r=6371,rad=x=>x*Math.PI/180,d1=rad(b.lat-a.lat),d2=rad(b.lon-a.lon),q=Math.sin(d1/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(d2/2)**2;return 2*r*Math.asin(Math.sqrt(q))*0.539957}
 /* Karte und Häfen */
 function bindShipDocumentFallback(){if(window.__blueHorizonShipFallbackBound)return;window.__blueHorizonShipFallbackBound=true;document.addEventListener('click',ev=>{const target=ev.target&&typeof ev.target.closest==='function'?ev.target.closest('.ship-icon[data-ship-id]'):null;if(target&&target.dataset.shipId)queueShipSelection(target.dataset.shipId)},true)}
-/* Die Karte bleibt reine Spieloberfläche. Die Gewässer- und Landdaten werden
-   ausschließlich vom Routensystem verwendet und nicht grafisch überlagert. */
-function toggleNavigableWater(){
- // Kompatibilitäts-Stub für ältere gespeicherte UI-Aufrufe.
- return false;
-}
 function initMap(){
  map=L.map('map',{zoomControl:true,worldCopyJump:true}).setView([22,8],2);
  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,attribution:'Tiles © Esri'}).addTo(map);
@@ -64,12 +58,6 @@ function showPortInfo(portId,marker){
  const type=p.categoryLabel|| (p.river?'Binnenhafen':'Regionaler Seehafen');const shipAccess='Zugelassen: '+((p.allowedShipTypeLabels||[]).join(', ')||(p.river?'Binnenschiff':'Seeschiffklassen'))+(p.shipAccessException?' · Ausnahme: '+(p.shipAccessNote||'gemischter Hafen'):'');
  const rows=stationed.length?stationed.map(s=>'<button type="button" onclick="selectShip(\''+escapeHtml(s.id)+'\')" style="width:100%;margin-top:6px;text-align:left">🚢 '+escapeHtml(s.name)+' auswählen</button>').join(''):'<p style="margin:6px 0 0;color:#8faaba">Derzeit liegt hier kein einsatzbereites Schiff.</p>';
  marker.bindPopup('<div><strong>'+escapeHtml(p.symbol||'⚓')+' '+escapeHtml(p.name)+'</strong><br><span>'+escapeHtml(p.country)+' · '+escapeHtml(type)+'</span><br><span>'+escapeHtml(shipAccess)+'</span>'+rows+'</div>',{maxWidth:260}).openPopup();
-}
-function selectShipAtPort(portId){
- if(!game)return;
- const ship=game.ships.find(s=>String(s.port)===String(portId)&&!s.trip&&!s.inYard);
- if(!ship){toast('In diesem Hafen liegt derzeit kein einsatzbereites Schiff.');return;}
- selectShip(ship.id);
 }
 function iconForShip(s,angle=0){const t=shipType(s.type),z=map.getZoom(),size=Math.max(16,Math.min(25,22-(z-2)*.35)),hitSize=Math.max(40,size+18),shipHeight=Math.max(8,size*.48),selected=String(s.id)===String(selectedShipId);return L.divIcon({className:'ship-icon',html:'<div class="ship-hit-area'+(selected?' selected-ship-marker':'')+'" style="width:'+hitSize+'px;height:'+hitSize+'px;display:flex;align-items:center;justify-content:center;pointer-events:auto;cursor:pointer;box-sizing:border-box"><div class="ship-shape" style="width:'+size+'px;height:'+shipHeight+'px;flex:none;background:'+t.color+';transform:rotate('+(angle-90)+'deg)"></div></div>',iconSize:[hitSize,hitSize],iconAnchor:[hitSize/2,hitSize/2]})}
 function updateShipMarker(s){
@@ -255,7 +243,6 @@ function showMenuHome(){hideSetups();$('menuActions').classList.remove('hidden')
 
 function chooseDifficulty(id){selectedDifficulty=id;document.querySelectorAll('[data-difficulty]').forEach(b=>b.classList.toggle('active',b.dataset.difficulty===id));$('difficultyInfo').textContent=DIFFICULTIES[id].desc}
 
-function firstFreeSlot(){for(let i=0;i<5;i++)if(!slotExists(i))return i;return -1}
 function showSaves(){hideSetups();$('menuActions').classList.add('hidden');$('savesSetup').classList.add('visible');$('menuHeading').textContent='Spielstände laden';$('menuDescription').textContent='Wähle eine gespeicherte Runde aus diesem Browser.';renderSaveList()}
 function renderSaveList(){
  $('saveList').innerHTML=Array.from({length:5},(_,i)=>{
