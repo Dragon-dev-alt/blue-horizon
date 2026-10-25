@@ -5,7 +5,7 @@
 1. Öffne das [Register-Werkzeug](../tools/register-editor.html) über GitHub Pages oder lokal über einen kleinen Webserver.
 2. Lade die drei Dateien aus `data/` über **Register aus dem Live-Spiel laden** oder wähle lokale JSON-Dateien aus.
 3. Bearbeite das JSON und klicke auf **JSON & Struktur prüfen**.
-4. Lade jede geänderte Datei herunter und ersetze sie unter demselben Pfad im GitHub-Repository.
+4. Nach Änderungen an Hafenverbindungen: Klicke im Werkzeug auf **Zielhafenregister aus Verbindungen neu aufbauen**. Lade danach jede geänderte Datei herunter und ersetze sie unter demselben Pfad im GitHub-Repository.
 5. Lade die Spielseite mit `Strg+F5` neu.
 
 Das Werkzeug ändert GitHub-Dateien nicht direkt und schreibt niemals ungefragt ins Repository.
@@ -27,7 +27,7 @@ Ein Hafen muss in den Stammdaten und im Verbindungsnetz konsistent angelegt werd
 2. Ergänze für die ID die Hafenkategorie und zulässigen Schiffsklassen in den dortigen Hafen-Metadaten. Binnenhäfen bleiben für Binnenschiffe reserviert, sofern die Spielregeln nicht ausdrücklich geändert werden.
 3. Ergänze den Hafen in `data/harbor-connections.json` unter `ports`.
 4. Füge nur echte, gewünschte gerichtete Verbindungen in `connections` ein. Eine Verbindung braucht mindestens `from`, `to`, `shipTypes`, `kind` und `directKm`. Für eine Rückverbindung muss auch der Gegenweg eingetragen werden.
-5. Synchronisiere danach `data/route-register.json` mit den neuen Ports und passenden Zielen.
+5. Synchronisiere danach `data/route-register.json` mit den neuen Ports und passenden Zielen. Das Register-Werkzeug kann die 8 Kategorie-Listen aus `harbor-connections.json` neu aufbauen; kontrolliere die erzeugten Ziele und teste sie im Spiel.
 6. Prüfe, dass jede Hafen-ID existiert, die Schiffsklassen am Hafen zugelassen sind und keine Verbindung auf sich selbst zeigt.
 
 Beispiel für einen Verbindungseintrag (IDs müssen bereits existieren):
