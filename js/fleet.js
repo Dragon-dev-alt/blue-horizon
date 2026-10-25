@@ -303,7 +303,18 @@ function calculateSeaRouteInBackground(connection){
  return request.then(coords=>Array.isArray(coords)?coords.map(p=>p.slice()):null);
 }
 let contractGenerationWorkersRunning=0;
-// Routen sind CPU-intensiv; ein Auftragslauf zur Zeit verhindert Lastspitzen.
+// Routen-Vorbereitung ist strikt nachrangig: niemals parallel zu aktiven
+// Auftragsläufen starten. Pro Schiff höchstens zwei zusätzliche Ziele, insgesamt
+// maximal acht pro Leerlaufphase, damit Tablets nicht mit Vorberechnung überlastet werden.
+const ROUTE_PREWARM_DELAY_MS=2200;
+const ROUTE_PREWARM_PER_SHIP=2;
+const ROUTE_PREWARM_MAX_TOTAL=8;
+let routePrewarmTimer=null;
+let routePrewarmRunning=false;
+let routePrewarmTotal=0;
+const routePrewarmAttempted=new Set();
+const routePrewarmByShip=new Map();
+// Routen sind CPU-intensiv; die drei parallelen Auftragsläufe bleiben unverändert.
 const MAX_PARALLEL_CONTRACT_JOBS=3;
 function yieldToBrowser(){
  return new Promise(resolve=>{
@@ -328,6 +339,67 @@ async function processContractGenerationQueue(){
    contractGenerationWorkersRunning=Math.max(0,contractGenerationWorkersRunning-1);
    processContractGenerationQueue();
   });
+ }
+ if(!contractGenerationWorkersRunning&&!contractGenerationQueue.length)scheduleIdleRoutePrewarm();
+}
+function scheduleIdleRoutePrewarm(){
+ if(routePrewarmTimer||routePrewarmRunning||!game||!window.waterRouteDataReady)return;
+ const budget=Math.min(ROUTE_PREWARM_MAX_TOTAL,game.ships.length*ROUTE_PREWARM_PER_SHIP);
+ if(routePrewarmTotal>=budget)return;
+ routePrewarmTimer=setTimeout(()=>{
+  routePrewarmTimer=null;
+  runOneIdleRoutePrewarm().catch(error=>console.warn('Hintergrund-Vorbereitung der Routen übersprungen:',error));
+ },ROUTE_PREWARM_DELAY_MS);
+}
+async function runOneIdleRoutePrewarm(){
+ if(!game||!window.waterRouteDataReady)return;
+ // Wenn während der Wartezeit neue Aufträge anstanden, diese haben Vorrang.
+ if(contractGenerationWorkersRunning||contractGenerationQueue.length||routeCalculationRequests.size){
+  scheduleIdleRoutePrewarm();return;
+ }
+ if(!harborConnectionCatalog||!portDestinationIndex)return;
+ const budget=Math.min(ROUTE_PREWARM_MAX_TOTAL,game.ships.length*ROUTE_PREWARM_PER_SHIP);
+ if(routePrewarmTotal>=budget)return;
+ let selected=null;
+ for(const s of game.ships){
+  if(!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)))continue;
+  const count=routePrewarmByShip.get(String(s.id))||0;
+  if(count>=ROUTE_PREWARM_PER_SHIP)continue;
+  const startRow=portRowsByCode.get(String(s.port));
+  const categoryId=SHIP_CATEGORY_IDS[s.type];
+  if(!startRow||!categoryId)continue;
+  const indexed=contractCandidatesByOriginCategory.get(String(startRow[0])+'|'+String(categoryId))||[];
+  const currentDestinations=new Set((game.generatedContracts||[])
+   .filter(c=>String(c.assignedShipId)===String(s.id)&&String(c.from)===String(s.port))
+   .map(c=>String(c.to)));
+  const candidates=indexed
+   .filter(c=>c.estimatedKm<=Number(s.range||0)+1)
+   .filter(c=>!currentDestinations.has(String(c.connection.to)))
+   .filter(c=>!routePrewarmAttempted.has(String(c.connection.from)+'>'+String(c.connection.to)))
+   .sort((a,b)=>a.estimatedKm-b.estimatedKm);
+  if(candidates.length){selected={ship:s,candidate:candidates[0]};break}
+ }
+ if(!selected)return;
+ const {ship,candidate}=selected,connection=candidate.connection;
+ const pair=String(connection.from)+'>'+String(connection.to);
+ routePrewarmAttempted.add(pair);
+ routePrewarmByShip.set(String(ship.id),(routePrewarmByShip.get(String(ship.id))||0)+1);
+ routePrewarmTotal++;
+ routePrewarmRunning=true;
+ try{
+  // Die normale Worker-, Sicherheits- und Persistenzpipeline wird wiederverwendet.
+  // Es gibt keine parallele Sonderroute und keinen unsicheren Direktlinien-Fallback.
+  const coords=await calculateSeaRouteInBackground(connection);
+  if(Array.isArray(coords)&&coords.length>1&&typeof window.cachePrecomputedContractRoute==='function'){
+   window.cachePrecomputedContractRoute(connection.from,connection.to,ship.type,coords);
+   if(typeof window.markWaterRouteVerified==='function')window.markWaterRouteVerified(coords);
+  }
+ }catch(error){
+  // Fehlversuche werden nicht in einer engen Schleife wiederholt.
+  console.info('Eine zusätzliche Route wurde nicht vorab gespeichert:',pair,error&&error.message||error);
+ }finally{
+  routePrewarmRunning=false;
+  scheduleIdleRoutePrewarm();
  }
 }
 function loadHarborConnectionCatalog(){
