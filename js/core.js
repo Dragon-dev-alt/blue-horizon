@@ -169,23 +169,6 @@ function smoothWaterRoute(coords){
 function selectedShip(){if(!game)return null;if(selectedShipId==null)return null;return game.ships.find(s=>String(s.id)===String(selectedShipId))||null}
 let selectedShipId='s1';
 
-function buyShip(typeId){
- const t=shipType(typeId);if(!game||!t)return;
- const d=DIFFICULTIES[game.difficulty],price=Math.round(t.price*d.cost);
- if(game.cash<price){toast('Nicht genug Geld für dieses Schiff.');return}
- const profile=beginPurchaseProfile('Neues Schiff');
- const prep=profile.measure('Schiffsdaten vorbereiten',()=>{
-  game.cash-=price;const id='s'+game.nextShipId++;const range=randomShipRange(typeId);const home=port(randomShipPort(typeId,range));
-  const ship={id,name:t.name+' '+(game.nextShipId-1),type:typeId,port:home.id,trip:null,condition:100,range,deliveryRemaining:6};
-  game.ships.push(ship);selectedShipId=id;addLog('Neues Schiff gekauft: '+t.name+'. Lieferung in 6 Spieltagen.');
-  return {id,ship};
- });
- profile.measure('saveGame / localStorage',()=>saveGame());
- profile.measure('renderShips / Marker',()=>renderShips(prep.id));
- profile.measure('renderUI / Kaufansicht',()=>renderUI({purchaseOnly:true,ship:prep.ship}));
- profile.finish({shipId:prep.id,fleetSize:game.ships.length});
- toast('Schiff gekauft – Lieferung in 6 Spieltagen.');
-}
 function openShipyard(){if(!game)return;$('shipyard').classList.remove('hidden');renderShipyard()}
 function runShipPurchaseWithLoading(purchase){
  try{purchase()}catch(error){console.error('Schiffskauf fehlgeschlagen:',error);toast('Der Schiffskauf konnte nicht vollständig abgeschlossen werden.')}
