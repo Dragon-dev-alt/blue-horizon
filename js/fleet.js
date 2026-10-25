@@ -205,6 +205,9 @@ const SEA_ROUTE_CACHE_LIMIT=320;
 function calculateSeaRouteInBackground(connection){
  const a=port(connection.from),b=port(connection.to);
  if(!a||!b)return Promise.resolve(null);
+ // Ein bestätigter Ursprung-Snap-Fehler gilt für alle Ziele dieses Hafens.
+ // Weitere Zielversuche würden dieselbe teure Netzsuche erneut auslösen.
+ if(maritimeOriginFailures.has(String(a.id)))return Promise.resolve(null);
  const key=String(a.id)+'>'+String(b.id);
  if(seaRoutePromiseCache.has(key)){
   const cached=seaRoutePromiseCache.get(key);
