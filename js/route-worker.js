@@ -138,4 +138,4 @@ async function route(from,to){
  if(routeCache.size>ROUTE_CACHE_LIMIT)routeCache.delete(routeCache.keys().next().value);
  return cached?cached.map(p=>p.slice()):null;
 }
-self.onmessage=async event=>{const {id,from,to,warmup}=event.data||{};try{if(warmup){await init();self.postMessage({warmupReady:true});return}const coords=await route(from,to);self.postMessage({id,coords})}catch(error){self.postMessage(warmup?{warmupReady:false,error:String(error&&error.message||error)}:{id,error:String(error&&error.message||error)})}};
+self.onmessage=async event=>{const {id,from,to,warmup}=event.data||{};const started=performance.now();try{if(warmup){await init();self.postMessage({warmupReady:true});return}const coords=await route(from,to);self.postMessage({id,coords,elapsedMs:Math.round(performance.now()-started)})}catch(error){self.postMessage(warmup?{warmupReady:false,error:String(error&&error.message||error)}:{id,error:String(error&&error.message||error),elapsedMs:Math.round(performance.now()-started)})}};
