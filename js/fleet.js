@@ -235,32 +235,69 @@ function preloadRouteWorkers(){
 // zusammengeführt, auch wenn mehrere Schiffe sie zeitgleich anfordern.
 const seaRoutePromiseCache=new Map();
 const SEA_ROUTE_CACHE_LIMIT=320;
+let routeCacheDbPromise=null;
+function openRouteCacheDb(){
+ if(!('indexedDB' in window))return Promise.resolve(null);
+ if(routeCacheDbPromise)return routeCacheDbPromise;
+ routeCacheDbPromise=new Promise(resolve=>{
+  try{
+   const req=indexedDB.open('blue-horizon-route-cache-v1',1);
+   req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('routes'))req.result.createObjectStore('routes',{keyPath:'key'})};
+   req.onsuccess=()=>resolve(req.result);
+   req.onerror=()=>{routeCacheDbPromise=null;resolve(null)};
+   req.onblocked=()=>{routeCacheDbPromise=null;resolve(null)};
+  }catch(_){routeCacheDbPromise=null;resolve(null)}
+ });
+ return routeCacheDbPromise;
+}
+async function readSavedRoute(key){
+ const db=await openRouteCacheDb();if(!db)return undefined;
+ return new Promise(resolve=>{
+  try{const req=db.transaction('routes','readonly').objectStore('routes').get(key);req.onsuccess=()=>resolve(req.result?req.result.coords:undefined);req.onerror=()=>resolve(undefined)}
+  catch(_){resolve(undefined)}
+ });
+}
+async function saveRouteForNextSession(key,coords){
+ const db=await openRouteCacheDb();if(!db)return;
+ await new Promise(resolve=>{
+  try{
+   const tx=db.transaction('routes','readwrite'),store=tx.objectStore('routes');
+   const count=store.count();
+   count.onsuccess=()=>{if(count.result<400||store.getKey(key))store.put({key,coords:Array.isArray(coords)&&coords.length>1?coords.map(p=>[p[0],p[1]]):null,savedAt:Date.now()})};
+   tx.oncomplete=resolve;tx.onerror=resolve;tx.onabort=resolve;
+  }catch(_){resolve()}
+ });
+}
 function calculateSeaRouteInBackground(connection){
  const a=port(connection.from),b=port(connection.to);
  if(!a||!b)return Promise.resolve(null);
- // Ein bestätigter Ursprung-Snap-Fehler gilt für alle Ziele dieses Hafens.
- // Weitere Zielversuche würden dieselbe teure Netzsuche erneut auslösen.
  if(maritimeOriginFailures.has(String(a.id)))return Promise.resolve(null);
- const key=String(a.id)+'>'+String(b.id);
+ const key='sea-route-v1-20261025|'+String(a.id)+':'+Number(a.lon).toFixed(5)+','+Number(a.lat).toFixed(5)+'>'+String(b.id)+':'+Number(b.lon).toFixed(5)+','+Number(b.lat).toFixed(5);
  if(seaRoutePromiseCache.has(key)){
   const cached=seaRoutePromiseCache.get(key);
   seaRoutePromiseCache.delete(key);seaRoutePromiseCache.set(key,cached);
   return cached.then(coords=>Array.isArray(coords)?coords.map(p=>p.slice()):null);
  }
- const workers=getRouteCalculationWorkers();
- if(!workers.length)return Promise.resolve(null);
- const record=workers.reduce((best,item)=>!best||item.busy<best.busy?item:best,null);
- const id=++routeCalculationWorkerId;
- const request=new Promise((resolve,reject)=>{
-  routeCalculationRequests.set(id,{resolve,reject,record,fromId:String(a.id),fromName:a.name});
-  record.busy++;
-  try{record.worker.postMessage({id,from:[a.lon,a.lat],to:[b.lon,b.lat]})}
-  catch(error){routeCalculationRequests.delete(id);record.busy=Math.max(0,record.busy-1);reject(error)}
- }).then(coords=>{
-  // Null ist ein gültiges, deterministisches Ergebnis: im gemeinsamen Cache behalten.
-  if(Array.isArray(coords)&&coords.length>=2)return coords.map(p=>p.slice());
-  return null;
- },error=>{seaRoutePromiseCache.delete(key);throw error});
+ const request=readSavedRoute(key).then(saved=>{
+  if(saved!==undefined){
+   if(saved===null)return null;
+   if(Array.isArray(saved)&&saved.length>1&&saved.every(p=>Array.isArray(p)&&Number.isFinite(p[0])&&Number.isFinite(p[1])))return saved.map(p=>[p[0],p[1]]);
+  }
+  const workers=getRouteCalculationWorkers();
+  if(!workers.length)return null;
+  const record=workers.reduce((best,item)=>!best||item.busy<best.busy?item:best,null);
+  const id=++routeCalculationWorkerId;
+  return new Promise((resolve,reject)=>{
+   routeCalculationRequests.set(id,{resolve,reject,record,fromId:String(a.id),fromName:a.name});
+   record.busy++;
+   try{record.worker.postMessage({id,from:[a.lon,a.lat],to:[b.lon,b.lat]})}
+   catch(error){routeCalculationRequests.delete(id);record.busy=Math.max(0,record.busy-1);reject(error)}
+  }).then(coords=>{
+   const normalized=Array.isArray(coords)&&coords.length>1?coords.map(p=>[p[0],p[1]]):null;
+   saveRouteForNextSession(key,normalized).catch(()=>{});
+   return normalized;
+  });
+ }).then(coords=>Array.isArray(coords)?coords.map(p=>p.slice()):null,error=>{seaRoutePromiseCache.delete(key);throw error});
  seaRoutePromiseCache.set(key,request);
  while(seaRoutePromiseCache.size>SEA_ROUTE_CACHE_LIMIT)seaRoutePromiseCache.delete(seaRoutePromiseCache.keys().next().value);
  return request.then(coords=>Array.isArray(coords)?coords.map(p=>p.slice()):null);
