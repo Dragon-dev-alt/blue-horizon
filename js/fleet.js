@@ -216,7 +216,7 @@ function getRouteCalculationWorkers(){
  while(routeCalculationWorkers.length<ROUTE_WORKER_POOL_SIZE){
   const slot=routeCalculationWorkers.length;
   try{
-   const worker=new Worker('./js/route-worker.js?v=route-cache-warm-v13-20261025',{type:'module'});
+   const worker=new Worker('./js/route-worker.js?v=spatial-access-index-v1-20261025',{type:'module'});
    let warmResolve;
    const record={worker,busy:0,slot,ready:false,preloading:false,warmPromise:new Promise(resolve=>{warmResolve=resolve})};
    record.resolveWarmup=ok=>{record.ready=!!ok;record.preloading=false;warmResolve(!!ok)};
