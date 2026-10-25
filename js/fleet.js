@@ -157,7 +157,7 @@ function getRouteCalculationWorkers(){
  while(routeCalculationWorkers.length<ROUTE_WORKER_POOL_SIZE){
   const slot=routeCalculationWorkers.length;
   try{
-   const worker=new Worker('./js/route-worker.js?v=full-audit-perf-20261025-1',{type:'module'});
+   const worker=new Worker('./js/route-worker.js?v=route-safety-negative-cache-20261025-1',{type:'module'});
    let warmResolve;
    const record={worker,busy:0,slot,ready:false,preloading:false,warmPromise:new Promise(resolve=>{warmResolve=resolve})};
    record.resolveWarmup=ok=>{record.ready=!!ok;record.preloading=false;warmResolve(!!ok)};
@@ -221,8 +221,8 @@ function calculateSeaRouteInBackground(connection){
   try{record.worker.postMessage({id,from:[a.lon,a.lat],to:[b.lon,b.lat]})}
   catch(error){routeCalculationRequests.delete(id);record.busy=Math.max(0,record.busy-1);reject(error)}
  }).then(coords=>{
+  // Null ist ein gültiges, deterministisches Ergebnis: im gemeinsamen Cache behalten.
   if(Array.isArray(coords)&&coords.length>=2)return coords.map(p=>p.slice());
-  seaRoutePromiseCache.delete(key);
   return null;
  },error=>{seaRoutePromiseCache.delete(key);throw error});
  seaRoutePromiseCache.set(key,request);
