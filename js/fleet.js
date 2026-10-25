@@ -178,20 +178,35 @@ const contractGenerationRetryCounts=new Map();
 const ROUTE_WORKER_POOL_SIZE=(()=>{
  const cores=Number(navigator.hardwareConcurrency)||4;
  const memory=Number(navigator.deviceMemory)||0;
- return cores>=8&&(memory===0||memory>=4)?2:1;
+ const handheld=/Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent||'');
+ // Drei echte Routing-Worker auf leistungsfähigen Desktop-Geräten: drei
+ // Schiffe können ihre CPU-lastigen Routen gleichzeitig berechnen. Handhelds
+ // bleiben bei maximal zwei Worker-Instanzen, um den zusätzlichen RAM-Bedarf
+ // der Seekarte und Landmaske zu begrenzen.
+ if(handheld)return cores>=6&&(memory===0||memory>=4)?2:1;
+ if(cores>=8&&(memory===0||memory>=4))return 3;
+ return cores>=4&&(memory===0||memory>=4)?2:1;
 })();
 const routeCalculationWorkers=[];
 let routeCalculationWorkerId=0;
 // Messwerte zur echten Laufzeitdiagnose; keine Konsolenausgabe pro Route.
 const routePerformanceStats={workerRequests:0,workerTotalMs:0,workerMaxMs:0,memoryCacheHits:0,persistentCacheHits:0,prewarmAttempts:0,prewarmSuccesses:0,slowRoutes:[]};
 window.getRoutePerformanceStats=()=>({
+ workerPoolSize:ROUTE_WORKER_POOL_SIZE,
+ workersCreated:routeCalculationWorkers.length,
+ busyWorkers:routeCalculationWorkers.filter(worker=>worker.busy>0).length,
+ workerRequestsPending:routeCalculationRequests.size,
+ contractJobsRunning:contractGenerationWorkersRunning,
+ contractJobsQueued:contractGenerationQueue.length,
+ memoryRouteCacheEntries:seaRoutePromiseCache.size,
+ persistentCacheHits:routePerformanceStats.persistentCacheHits,
+ memoryCacheHits:routePerformanceStats.memoryCacheHits,
  workerRequests:routePerformanceStats.workerRequests,
  averageWorkerMs:routePerformanceStats.workerRequests?Math.round(routePerformanceStats.workerTotalMs/routePerformanceStats.workerRequests):0,
  maxWorkerMs:routePerformanceStats.workerMaxMs,
- memoryCacheHits:routePerformanceStats.memoryCacheHits,
- persistentCacheHits:routePerformanceStats.persistentCacheHits,
  prewarmAttempts:routePerformanceStats.prewarmAttempts,
  prewarmSuccesses:routePerformanceStats.prewarmSuccesses,
+ prewarmRunning:routePrewarmRunning,
  slowRoutes:routePerformanceStats.slowRoutes.map(item=>({...item}))
 });
 const maritimeOriginFailures=new Map();
@@ -202,7 +217,7 @@ function getRouteCalculationWorkers(){
  while(routeCalculationWorkers.length<ROUTE_WORKER_POOL_SIZE){
   const slot=routeCalculationWorkers.length;
   try{
-   const worker=new Worker('./js/route-worker.js?v=route-metrics-20261025-1',{type:'module'});
+   const worker=new Worker('./js/route-worker.js?v=route-pool-v7-20261025',{type:'module'});
    let warmResolve;
    const record={worker,busy:0,slot,ready:false,preloading:false,warmPromise:new Promise(resolve=>{warmResolve=resolve})};
    record.resolveWarmup=ok=>{record.ready=!!ok;record.preloading=false;warmResolve(!!ok)};
