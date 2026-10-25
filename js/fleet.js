@@ -52,7 +52,7 @@ function buildContractCandidateIndex(){
 function loadPortDestinationIndex(){
  if(portDestinationIndex)return Promise.resolve(portDestinationIndex);
  if(portDestinationIndexPromise)return portDestinationIndexPromise;
- portDestinationIndexPromise=fetch('./data/route-register.json?v=route-cache-warm-v12-20261025',{cache:'force-cache'})
+ portDestinationIndexPromise=fetch('./data/route-register.json?v=route-cache-warm-v13-20261025',{cache:'force-cache'})
   .then(response=>{if(!response.ok)throw new Error('HTTP '+response.status);return response.json()})
   .then(data=>{if(!data||data.schemaVersion!==2||!Array.isArray(data.table)||!Array.isArray(data.portTable))throw new Error('Ungültiges Tabellen-Hafenregister');indexPortDestinationTable(data);portDestinationIndex=data;buildContractCandidateIndex();return data})
   .catch(error=>{portDestinationIndexPromise=null;throw error});
@@ -304,6 +304,7 @@ async function preloadSavedRouteCache(){
   try{const request=db.transaction('routes','readonly').objectStore('routes').getAll();request.onsuccess=()=>resolve(Array.isArray(request.result)?request.result:[]);request.onerror=()=>resolve([])}
   catch(_){resolve([])}
  });
+ records.sort((a,b)=>(Number(a&&a.savedAt)||0)-(Number(b&&b.savedAt)||0));
  let loaded=0;
  for(const record of records){
   if(!record||typeof record.key!=='string'||!(record.coords===null||(Array.isArray(record.coords)&&record.coords.length>1&&record.coords.every(p=>Array.isArray(p)&&Number.isFinite(p[0])&&Number.isFinite(p[1])))))continue;
