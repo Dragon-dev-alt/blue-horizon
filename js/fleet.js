@@ -182,6 +182,18 @@ const ROUTE_WORKER_POOL_SIZE=(()=>{
 })();
 const routeCalculationWorkers=[];
 let routeCalculationWorkerId=0;
+// Messwerte zur echten Laufzeitdiagnose; keine Konsolenausgabe pro Route.
+const routePerformanceStats={workerRequests:0,workerTotalMs:0,workerMaxMs:0,memoryCacheHits:0,persistentCacheHits:0,prewarmAttempts:0,prewarmSuccesses:0,slowRoutes:[]};
+window.getRoutePerformanceStats=()=>({
+ workerRequests:routePerformanceStats.workerRequests,
+ averageWorkerMs:routePerformanceStats.workerRequests?Math.round(routePerformanceStats.workerTotalMs/routePerformanceStats.workerRequests):0,
+ maxWorkerMs:routePerformanceStats.workerMaxMs,
+ memoryCacheHits:routePerformanceStats.memoryCacheHits,
+ persistentCacheHits:routePerformanceStats.persistentCacheHits,
+ prewarmAttempts:routePerformanceStats.prewarmAttempts,
+ prewarmSuccesses:routePerformanceStats.prewarmSuccesses,
+ slowRoutes:routePerformanceStats.slowRoutes.map(item=>({...item}))
+});
 const maritimeOriginFailures=new Map();
 const maritimeOriginWarnings=new Set();
 const routeCalculationRequests=new Map();
@@ -202,6 +214,17 @@ function getRouteCalculationWorkers(){
     if(!pending||pending.record!==record)return;
     routeCalculationRequests.delete(message.id);
     record.busy=Math.max(0,record.busy-1);
+    const elapsed=Number(message.elapsedMs);
+    if(Number.isFinite(elapsed)){
+     routePerformanceStats.workerRequests++;
+     routePerformanceStats.workerTotalMs+=elapsed;
+     routePerformanceStats.workerMaxMs=Math.max(routePerformanceStats.workerMaxMs,elapsed);
+     if(elapsed>=750){
+      routePerformanceStats.slowRoutes.push({from:pending.fromName||pending.fromId,to:pending.toName||pending.toId,ms:Math.round(elapsed),failed:!!message.error});
+      routePerformanceStats.slowRoutes.sort((a,b)=>b.ms-a.ms);
+      if(routePerformanceStats.slowRoutes.length>10)routePerformanceStats.slowRoutes.length=10;
+     }
+    }
     if(message.error){
      if(/Failed to snap origin to the maritime network/i.test(message.error)){
       maritimeOriginFailures.set(pending.fromId,{name:pending.fromName||pending.fromId,message:message.error});
@@ -295,12 +318,14 @@ function calculateSeaRouteInBackground(connection){
  if(maritimeOriginFailures.has(String(a.id)))return Promise.resolve(null);
  const key='sea-route-v1-20261025|'+String(a.id)+':'+Number(a.lon).toFixed(5)+','+Number(a.lat).toFixed(5)+'>'+String(b.id)+':'+Number(b.lon).toFixed(5)+','+Number(b.lat).toFixed(5);
  if(seaRoutePromiseCache.has(key)){
+  routePerformanceStats.memoryCacheHits++;
   const cached=seaRoutePromiseCache.get(key);
   seaRoutePromiseCache.delete(key);seaRoutePromiseCache.set(key,cached);
   return cached.then(coords=>Array.isArray(coords)?coords.map(p=>p.slice()):null);
  }
  const request=readSavedRoute(key).then(saved=>{
   if(saved!==undefined){
+   routePerformanceStats.persistentCacheHits++;
    if(saved===null)return null;
    if(Array.isArray(saved)&&saved.length>1&&saved.every(p=>Array.isArray(p)&&Number.isFinite(p[0])&&Number.isFinite(p[1])))return saved.map(p=>[p[0],p[1]]);
   }
@@ -309,7 +334,7 @@ function calculateSeaRouteInBackground(connection){
   const record=workers.reduce((best,item)=>!best||item.busy<best.busy?item:best,null);
   const id=++routeCalculationWorkerId;
   return new Promise((resolve,reject)=>{
-   routeCalculationRequests.set(id,{resolve,reject,record,fromId:String(a.id),fromName:a.name});
+   routeCalculationRequests.set(id,{resolve,reject,record,fromId:String(a.id),fromName:a.name,toId:String(b.id),toName:b.name});
    record.busy++;
    try{record.worker.postMessage({id,from:[a.lon,a.lat],to:[b.lon,b.lat]})}
    catch(error){routeCalculationRequests.delete(id);record.busy=Math.max(0,record.busy-1);reject(error)}
@@ -413,12 +438,14 @@ async function runOneIdleRoutePrewarm(){
  routePrewarmAttempted.add(pair);
  routePrewarmByShip.set(String(ship.id),(routePrewarmByShip.get(String(ship.id))||0)+1);
  routePrewarmTotal++;
+ routePerformanceStats.prewarmAttempts++;
  routePrewarmRunning=true;
  try{
   // Die normale Worker-, Sicherheits- und Persistenzpipeline wird wiederverwendet.
   // Es gibt keine parallele Sonderroute und keinen unsicheren Direktlinien-Fallback.
   const coords=await calculateSeaRouteInBackground(connection);
   if(Array.isArray(coords)&&coords.length>1&&typeof window.cachePrecomputedContractRoute==='function'){
+   routePerformanceStats.prewarmSuccesses++;
    window.cachePrecomputedContractRoute(connection.from,connection.to,ship.type,coords);
    if(typeof window.markWaterRouteVerified==='function')window.markWaterRouteVerified(coords);
   }
