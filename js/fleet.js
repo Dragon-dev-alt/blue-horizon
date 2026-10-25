@@ -358,8 +358,17 @@ const ROUTE_PREWARM_MAX_TOTAL=8;
 let routePrewarmTimer=null;
 let routePrewarmRunning=false;
 let routePrewarmTotal=0;
+let routePrewarmGameRef=null;
 const routePrewarmAttempted=new Set();
 const routePrewarmByShip=new Map();
+function resetRoutePrewarmForNewGame(){
+ if(routePrewarmGameRef===game)return;
+ routePrewarmGameRef=game;
+ routePrewarmTotal=0;
+ routePrewarmAttempted.clear();
+ routePrewarmByShip.clear();
+ if(routePrewarmTimer){clearTimeout(routePrewarmTimer);routePrewarmTimer=null}
+}
 // Routen sind CPU-intensiv; die drei parallelen Auftragsläufe bleiben unverändert.
 const MAX_PARALLEL_CONTRACT_JOBS=3;
 function yieldToBrowser(){
@@ -389,7 +398,9 @@ async function processContractGenerationQueue(){
  if(!contractGenerationWorkersRunning&&!contractGenerationQueue.length)scheduleIdleRoutePrewarm();
 }
 function scheduleIdleRoutePrewarm(){
- if(routePrewarmTimer||routePrewarmRunning||!game||!window.waterRouteDataReady)return;
+ if(!game||!window.waterRouteDataReady)return;
+ resetRoutePrewarmForNewGame();
+ if(routePrewarmTimer||routePrewarmRunning)return;
  const budget=Math.min(ROUTE_PREWARM_MAX_TOTAL,game.ships.length*ROUTE_PREWARM_PER_SHIP);
  if(routePrewarmTotal>=budget)return;
  routePrewarmTimer=setTimeout(()=>{
@@ -623,6 +634,8 @@ async function computeEligibleContractsAsync(s,key){
  return valid;
 }
 function scheduleContractEligibility(s,key){
+ // Neue echte Auftragsarbeit hat Vorrang vor noch nicht gestarteter Vorberechnung.
+ if(routePrewarmTimer){clearTimeout(routePrewarmTimer);routePrewarmTimer=null}
  if(contractEligibilityPending.has(key))return;
  contractEligibilityPending.add(key);
  contractGenerationQueue.push({
