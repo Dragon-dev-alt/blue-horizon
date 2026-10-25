@@ -60,7 +60,7 @@ window.isInlandWaterRoute=function(route){
   });
  });
 };
-fetch('./data/inland-waterways.json?v=inland-corridors-v2-20261012',{cache:'force-cache'})
+fetch('./data/inland-waterways.json?v=full-audit-perf-20261025-1',{cache:'force-cache'})
  .then(response=>{if(!response.ok)throw new Error('HTTP '+response.status);return response.json()})
  .then(data=>{
   if(!data||!Array.isArray(data.links)||!Array.isArray(data.corridors))throw new Error('Binnenwasserstraßendaten ohne Korridorgeometrien.');
