@@ -53,3 +53,10 @@ Die Oberfläche bleibt eine einzelne Seite (`index.html`). Design und Spielcode 
 - Flottenverwaltung, Tagesfortschritt, Ruf, Finanzen, lokale Speicherung
 
 Dies ist ein früher Prototyp. Weitere Ausbaustufen können unter anderem echte Routenführung über Seewege, Aufträge, Verträge, Treibstoffpreise, Reparaturen und ein verbessertes Wirtschaftssystem ergänzen.
+
+
+## Datenregister und Erweiterungen
+
+- **[Register-Werkzeug](tools/register-editor.html)** — JSON-Register laden, bearbeiten, prüfen und herunterladen. Es bietet Schnellformulare für Hafenmetadaten im Verbindungskatalog, gerichtete Hafenverbindungen und Binnenwasserstraßen-Links.
+- **[Datenregister pflegen](docs/DATENREGISTER-PFLEGEN.md)** — erklärt, wie Häfen, Verbindungen, Binnenwasserstraßen und Schiffsklassen konsistent ergänzt werden.
+- Die Hafen-Stammdaten und Schiffstypen liegen aktuell in `js/data.js`; Änderungen müssen daher mit den JSON-Registern synchronisiert werden.
