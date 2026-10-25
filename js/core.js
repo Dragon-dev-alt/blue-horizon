@@ -14,6 +14,19 @@ const $=id=>document.getElementById(id),
  cargo=id=>CARGO_BY_ID.get(String(id))||null;
 function baseMakeGame(name,difficulty){const d=DIFFICULTIES[difficulty];return{company:name.trim()||'Blue Horizon Shipping',difficulty,cash:d.cash,day:1,rep:50,ships:[{id:'s1',name:'Nordstern',type:'coastal',port:'ham',trip:null,condition:100,range:randomShipRange('coastal')}],nextShipId:2,log:['Willkommen bei '+(name.trim()||'Blue Horizon Shipping')+'. Deine erste Runde beginnt. Du startest mit einem Küstenfrachter und realistischem Firmenkapital.'],completed:0,loans:0,created:Date.now()}}
 function saveGame(){if(!game)return;try{localStorage.setItem(CONFIG.savePrefix+activeSlot,JSON.stringify(game));localStorage.setItem(CONFIG.activeKey,String(activeSlot))}catch(e){toast('Speichern nicht möglich: Browser-Speicher voll.')}}
+function updateCompanyHud(){
+ if(!game)return;
+ const values={
+  companyLabel:game.company.toUpperCase(),
+  cashStat:money(game.cash),
+  fleetStat:game.ships.length+' Schiffe',
+  fleetCount:game.ships.length+' Schiffe',
+  dayStat:'Tag '+game.day,
+  repStat:'★ '+game.rep,
+  dateLabel:'Jahr '+(Math.floor((game.day-1)/360)+1)+' · Tag '+game.day
+ };
+ for(const [id,value] of Object.entries(values)){const el=$(id);if(el)el.textContent=value;}
+}
 /* Temporäre Diagnose für Ruckler beim Schiffskauf. Ausgabe in der Browser-Konsole. */
 function beginPurchaseProfile(kind){
  const started=performance.now(),steps=[];
@@ -186,12 +199,6 @@ function buyShip(typeId){
  toast('Schiff gekauft – Lieferung in 6 Spieltagen.');
 }
 function openShipyard(){if(!game)return;$('shipyard').classList.remove('hidden');renderShipyard()}
-let shipyardExitLoading=false;
-function waitForPurchasedShipReady(){
- // Während der Lieferzeit wird absichtlich keinerlei Routensuche gestartet.
- // eligibleContracts beginnt die Suche automatisch nach der Auslieferung,
- // sobald die normale Spielansicht erneut gerendert wird.
-}
 function runShipPurchaseWithLoading(purchase){
  try{purchase()}catch(error){console.error('Schiffskauf fehlgeschlagen:',error);toast('Der Schiffskauf konnte nicht vollständig abgeschlossen werden.')}
 }
@@ -204,13 +211,7 @@ function advanceGameDay(){if(!game)return;game.day++;const d=DIFFICULTIES[game.d
 function nextDay(){if(!game)return;advanceGameDay();}
 function baseRenderUI(){
  if(!game)return;
- $('companyLabel').textContent=game.company.toUpperCase();
- $('cashStat').textContent=money(game.cash);
- $('fleetStat').textContent=game.ships.length+' Schiffe';
- $('fleetCount').textContent=game.ships.length+' Schiffe';
- $('dayStat').textContent='Tag '+game.day;
- $('repStat').textContent='★ '+game.rep;
- $('dateLabel').textContent='Jahr '+(Math.floor((game.day-1)/360)+1)+' · Tag '+game.day;
+ updateCompanyHud();
  $('logLines').innerHTML=game.log.slice(0,6).map(x=>'<div>'+escapeHtml(x)+'</div>').join('');
  const s=selectedShip();
  const contractsPanel=$('contractsPanel');if(contractsPanel)contractsPanel.style.display='';const sidePanel=document.querySelector('.side');if(sidePanel)sidePanel.classList.toggle('orders-open',!!s);
@@ -362,13 +363,7 @@ function openMainMenu(){setSpeed(0);$('mainMenu').classList.remove('hidden');sho
 function setSpeed(speed){simulationSpeed=speed;lastFrame=performance.now();[['pauseBtn',0,'Simulation pausieren'],['playBtn',1,'Simulation mit normaler Geschwindigkeit'],['fastBtn',1.5,'Simulation 1,5-fach beschleunigen']].forEach(([id,value,title])=>{const button=$(id);if(!button)return;const active=speed===value;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));button.title=active?(value===0?'Simulation ist pausiert':value===1?'Simulation läuft mit normaler Geschwindigkeit':'Simulation läuft mit 1,5-facher Geschwindigkeit'):title});if(speed===0)toast('Simulation pausiert');else toast(speed===1.5?'Simulationszeit: 1,5×':'Simulation läuft')}
 function updateHudStats(){
  if(!game)return;
- $('companyLabel').textContent=game.company.toUpperCase();
- $('cashStat').textContent=money(game.cash);
- $('fleetStat').textContent=game.ships.length+' Schiffe';
- $('fleetCount').textContent=game.ships.length+' Schiffe';
- $('dayStat').textContent='Tag '+game.day;
- $('repStat').textContent='★ '+game.rep;
- $('dateLabel').textContent='Jahr '+(Math.floor((game.day-1)/360)+1)+' · Tag '+game.day;
+ updateCompanyHud();
  const progress=$('tripProgressText'),s=selectedShip();
  if(progress&&s&&s.trip)progress.textContent=Math.round(s.trip.progress*100)+' %';
 }
