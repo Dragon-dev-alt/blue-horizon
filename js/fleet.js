@@ -9,19 +9,52 @@ let portDestinationIndexPromise=null;
 let portRowsByCode=new Map();
 let portRowsById=new Map();
 let destinationRowsByOriginCategory=new Map();
+let contractCandidatesByOriginCategory=new Map();
 const SHIP_CATEGORY_IDS={river:1,coastal:2,medium:3,long:4,ultra:5,tanker:6,bulk:7,'ro-ro':8};
+const SHIP_TYPES_BY_CATEGORY_ID=Object.fromEntries(Object.entries(SHIP_CATEGORY_IDS).map(([type,id])=>[String(id),type]));
 function indexPortDestinationTable(data){
  const byCode=new Map(),byId=new Map(),byOriginCategory=new Map();
  for(const row of data.portTable){if(!Array.isArray(row)||row.length<2)continue;byId.set(String(row[0]),row);byCode.set(String(row[1]),row);}
  for(const row of data.table){if(!Array.isArray(row)||row.length<4)continue;const key=String(row[0])+'|'+String(row[2]);byOriginCategory.set(key,String(row[3]||'').split(',').filter(Boolean));}
  portRowsByCode=byCode;portRowsById=byId;destinationRowsByOriginCategory=byOriginCategory;
 }
+// Wandelt die kompakte Tabelle einmalig in direkte Verbindungsreferenzen um.
+// Die teuren wiederholten ID-Auflösungen und Pair-Map-Lookups entfallen danach
+// aus jeder einzelnen Auftragsgenerierung.
+function buildContractCandidateIndex(){
+ if(!portDestinationIndex||!harborConnectionCatalog)return;
+ const indexed=new Map();
+ for(const row of portDestinationIndex.table){
+  if(!Array.isArray(row)||row.length<4)continue;
+  const originRow=portRowsById.get(String(row[0]));
+  const originCode=originRow&&String(originRow[1]);
+  const categoryId=String(row[2]);
+  const typeId=SHIP_TYPES_BY_CATEGORY_ID[categoryId];
+  if(!originCode||!typeId)continue;
+  const key=String(row[0])+'|'+categoryId;
+  const targetIds=String(row[3]||'').split(',').filter(Boolean);
+  const candidates=[];
+  for(const targetId of targetIds){
+   const targetRow=portRowsById.get(String(targetId));
+   const targetCode=targetRow&&String(targetRow[1]);
+   if(!targetCode||targetCode===originCode)continue;
+   const connection=harborConnectionsByPair.get(originCode+'>'+targetCode);
+   if(!connection||!Array.isArray(connection.shipTypes)||!connection.shipTypes.includes(typeId))continue;
+   const factor=connection.kind==='river'?1.25:1.15;
+   const estimatedKm=Math.round(Number(connection.directKm)*factor/10)*10;
+   if(!Number.isFinite(estimatedKm))continue;
+   candidates.push({connection,estimatedKm,targetId:String(targetId)});
+  }
+  indexed.set(key,candidates);
+ }
+ contractCandidatesByOriginCategory=indexed;
+}
 function loadPortDestinationIndex(){
  if(portDestinationIndex)return Promise.resolve(portDestinationIndex);
  if(portDestinationIndexPromise)return portDestinationIndexPromise;
  portDestinationIndexPromise=fetch('./data/route-register.json?v=full-audit-perf-20261025-1',{cache:'force-cache'})
   .then(response=>{if(!response.ok)throw new Error('HTTP '+response.status);return response.json()})
-  .then(data=>{if(!data||data.schemaVersion!==2||!Array.isArray(data.table)||!Array.isArray(data.portTable))throw new Error('Ungültiges Tabellen-Hafenregister');indexPortDestinationTable(data);portDestinationIndex=data;return data})
+  .then(data=>{if(!data||data.schemaVersion!==2||!Array.isArray(data.table)||!Array.isArray(data.portTable))throw new Error('Ungültiges Tabellen-Hafenregister');indexPortDestinationTable(data);portDestinationIndex=data;buildContractCandidateIndex();return data})
   .catch(error=>{portDestinationIndexPromise=null;throw error});
  return portDestinationIndexPromise;
 }
@@ -277,6 +310,7 @@ function loadHarborConnectionCatalog(){
     harborConnectionsByOrigin.get(connection.from).push(connection);
     harborConnectionsByPair.set(String(connection.from)+'>'+String(connection.to),connection);
    });
+   buildContractCandidateIndex();
    window.dispatchEvent(new Event('harbor-connection-catalog-ready'));
    console.info('Hafenverbindungskatalog geladen:',data.ports?.length||0,'Häfen,',data.connections.length,'gerichtete Verbindungen.');
    if(game){contractEligibilityCache.clear();renderUI()}
@@ -347,18 +381,21 @@ async function computeEligibleContractsAsync(s,key){
  const categoryId=SHIP_CATEGORY_IDS[s.type];
  const startRow=portRowsByCode.get(String(s.port));
  const startPortId=startRow?.[0];
- const targetPortIds=destinationRowsByOriginCategory.get(String(startPortId)+'|'+String(categoryId))||[];
- const candidates=targetPortIds.map(targetId=>{
-   const targetRow=portRowsById.get(String(targetId));
-   const targetCode=targetRow?.[1];
-   if(!targetCode||targetCode===String(s.port))return null;
-   const connection=harborConnectionsByPair.get(String(s.port)+'>'+String(targetCode));
-   if(!connection||!connection.shipTypes.includes(s.type))return null;
-   const factor=connection.kind==='river'?1.25:1.15;
-   const estimatedKm=Math.round(Number(connection.directKm)*factor/10)*10;
-   if(!Number.isFinite(estimatedKm)||estimatedKm>Number(s.range||0)+1)return null;
-   return {connection,estimatedKm,targetId};
-  }).filter(Boolean);
+ const candidateKey=String(startPortId)+'|'+String(categoryId);
+ const indexedCandidates=contractCandidatesByOriginCategory.get(candidateKey);
+ const candidates=indexedCandidates
+  ?indexedCandidates.filter(candidate=>candidate.estimatedKm<=Number(s.range||0)+1)
+  :(destinationRowsByOriginCategory.get(candidateKey)||[]).map(targetId=>{
+    const targetRow=portRowsById.get(String(targetId));
+    const targetCode=targetRow?.[1];
+    if(!targetCode||targetCode===String(s.port))return null;
+    const connection=harborConnectionsByPair.get(String(s.port)+'>'+String(targetCode));
+    if(!connection||!connection.shipTypes.includes(s.type))return null;
+    const factor=connection.kind==='river'?1.25:1.15;
+    const estimatedKm=Math.round(Number(connection.directKm)*factor/10)*10;
+    if(!Number.isFinite(estimatedKm)||estimatedKm>Number(s.range||0)+1)return null;
+    return {connection,estimatedKm,targetId};
+   }).filter(Boolean);
  // Nicht immer dieselben Ziele bevorzugen: zufällige Reihenfolge aus dem
  // typgerechten Register; jedes Ziel wird danach noch real über Wasser geprüft.
  for(let i=candidates.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[candidates[i],candidates[j]]=[candidates[j],candidates[i]];}
