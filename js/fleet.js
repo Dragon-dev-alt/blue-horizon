@@ -178,7 +178,7 @@ const contractGenerationRetryCounts=new Map();
 const ROUTE_WORKER_POOL_SIZE=(()=>{
  const cores=Number(navigator.hardwareConcurrency)||4;
  const memory=Number(navigator.deviceMemory)||0;
- const handheld=/Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent||'');
+ const handheld=/Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent||'')||Number(navigator.maxTouchPoints)>1;
  // Drei echte Routing-Worker auf leistungsfähigen Desktop-Geräten: drei
  // Schiffe können ihre CPU-lastigen Routen gleichzeitig berechnen. Handhelds
  // bleiben bei maximal zwei Worker-Instanzen, um den zusätzlichen RAM-Bedarf
@@ -217,7 +217,7 @@ function getRouteCalculationWorkers(){
  while(routeCalculationWorkers.length<ROUTE_WORKER_POOL_SIZE){
   const slot=routeCalculationWorkers.length;
   try{
-   const worker=new Worker('./js/route-worker.js?v=route-pool-v7-20261025',{type:'module'});
+   const worker=new Worker('./js/route-worker.js?v=route-pool-v8-20261025',{type:'module'});
    let warmResolve;
    const record={worker,busy:0,slot,ready:false,preloading:false,warmPromise:new Promise(resolve=>{warmResolve=resolve})};
    record.resolveWarmup=ok=>{record.ready=!!ok;record.preloading=false;warmResolve(!!ok)};
