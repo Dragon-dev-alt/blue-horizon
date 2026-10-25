@@ -112,7 +112,7 @@ function nearestNetworkPoint(point){
   // becomes less discriminating, so the search naturally expands farther.
   if(best&&radius>0){
    const edgeLat=radius*ACCESS_GRID_CELL*latScale;
-   const edgeLon=radius*ACCESS_GRID_CELL*latScale*Math.max(.01,Math.cos(Math.min(89.9,Math.abs(point[1])+radius*ACCESS_GRID_CELL)*Math.PI/180));
+   const edgeLon=radius*ACCESS_GRID_CELL*latScale*Math.max(0,Math.cos(Math.min(90,Math.abs(point[1])+radius*ACCESS_GRID_CELL)*Math.PI/180));
    if(bestKm<=Math.min(edgeLat,edgeLon))break;
   }
  }
