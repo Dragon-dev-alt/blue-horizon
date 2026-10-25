@@ -263,7 +263,7 @@ async function saveRouteForNextSession(key,coords){
   try{
    const tx=db.transaction('routes','readwrite'),store=tx.objectStore('routes');
    const count=store.count();
-   count.onsuccess=()=>{if(count.result<400||store.getKey(key))store.put({key,coords:Array.isArray(coords)&&coords.length>1?coords.map(p=>[p[0],p[1]]):null,savedAt:Date.now()})};
+   count.onsuccess=()=>{if(count.result<400)store.put({key,coords:Array.isArray(coords)&&coords.length>1?coords.map(p=>[p[0],p[1]]):null,savedAt:Date.now()})};
    tx.oncomplete=resolve;tx.onerror=resolve;tx.onabort=resolve;
   }catch(_){resolve()}
  });
