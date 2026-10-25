@@ -35,26 +35,85 @@ async function init(){if(readyPromise)return readyPromise;readyPromise=(async()=
 
 // Build a real access point on the loaded MARNET network. The point is used only
 // for routing; the game's visible harbour coordinates remain unchanged.
+// Spatial index of MARNET segments. Each segment is stored in every cell its
+// bounding box touches, so a local lookup never misses a segment crossing a cell.
+const ACCESS_GRID_CELL=1;
+const ACCESS_GRID_X=360/ACCESS_GRID_CELL, ACCESS_GRID_Y=180/ACCESS_GRID_CELL;
 const accessPointCache=new Map();
-function nearestNetworkPoint(point){
- const key=point.map(v=>Number(v).toFixed(5)).join(',');
- if(accessPointCache.has(key))return accessPointCache.get(key);
- let best=null,bestKm=Infinity;
- const latScale=111.32,lonScale=111.32*Math.max(.05,Math.cos(point[1]*Math.PI/180));
- for(const feature of network&&network.features||[]){
+let accessSegmentGrid=null;
+function accessGridIndex(x,y){return y*ACCESS_GRID_X+((x%ACCESS_GRID_X)+ACCESS_GRID_X)%ACCESS_GRID_X}
+function buildAccessSegmentGrid(){
+ if(accessSegmentGrid)return accessSegmentGrid;
+ const grid=new Map(),features=network&&network.features||[];
+ for(const feature of features){
   const line=feature&&feature.geometry&&feature.geometry.type==='LineString'?feature.geometry.coordinates:null;
   if(!Array.isArray(line)||line.length<2)continue;
   for(let i=1;i<line.length;i++){
    const a=line[i-1],b=line[i];
-   if(!a||!b||!Number.isFinite(a[0])||!Number.isFinite(a[1])||!Number.isFinite(b[0])||!Number.isFinite(b[1]))continue;
-   let ax=(a[0]-point[0])*lonScale, ay=(a[1]-point[1])*latScale;
-   let bx=(b[0]-point[0])*lonScale, by=(b[1]-point[1])*latScale;
-   if(Math.abs(b[0]-a[0])>180){if(ax>0)ax-=360*lonScale;else bx-=360*lonScale}
-   const dx=bx-ax,dy=by-ay,den=dx*dx+dy*dy;
-   const t=den?Math.max(0,Math.min(1,-(ax*dx+ay*dy)/den)):0;
-   const candidate=[normLon(a[0]+(b[0]-a[0])*t),a[1]+(b[1]-a[1])*t];
-   const km=distanceKm(point,candidate);
-   if(km<bestKm){bestKm=km;best={point:candidate,distanceKm:km}}
+   if(!a||!b||![a[0],a[1],b[0],b[1]].every(Number.isFinite))continue;
+   const minLat=Math.max(-90,Math.min(a[1],b[1])),maxLat=Math.min(90,Math.max(a[1],b[1]));
+   const y0=Math.max(0,Math.min(ACCESS_GRID_Y-1,Math.floor((minLat+90)/ACCESS_GRID_CELL)));
+   const y1=Math.max(0,Math.min(ACCESS_GRID_Y-1,Math.floor((maxLat+90)/ACCESS_GRID_CELL)));
+   let xRanges;
+   if(Math.abs(b[0]-a[0])>180){
+    // Rare dateline-crossing segments: index globally in longitude for correctness.
+    xRanges=[[0,ACCESS_GRID_X-1]];
+   }else{
+    const minLon=Math.max(-180,Math.min(a[0],b[0])),maxLon=Math.min(180,Math.max(a[0],b[0]));
+    xRanges=[[Math.max(0,Math.min(ACCESS_GRID_X-1,Math.floor((minLon+180)/ACCESS_GRID_CELL))),
+      Math.max(0,Math.min(ACCESS_GRID_X-1,Math.floor((maxLon+180)/ACCESS_GRID_CELL)))]];
+   }
+   const segment={a,b};
+   for(let y=y0;y<=y1;y++)for(const [x0,x1] of xRanges)for(let x=x0;x<=x1;x++){
+    const key=accessGridIndex(x,y);let bucket=grid.get(key);
+    if(!bucket)grid.set(key,bucket=[]);
+    bucket.push(segment);
+   }
+  }
+ }
+ accessSegmentGrid=grid;
+ return grid;
+}
+function nearestNetworkPoint(point){
+ const key=point.map(v=>Number(v).toFixed(5)).join(',');
+ if(accessPointCache.has(key))return accessPointCache.get(key);
+ const grid=buildAccessSegmentGrid();
+ const x0=Math.max(0,Math.min(ACCESS_GRID_X-1,Math.floor((normLon(point[0])+180)/ACCESS_GRID_CELL)));
+ const y0=Math.max(0,Math.min(ACCESS_GRID_Y-1,Math.floor((point[1]+90)/ACCESS_GRID_CELL)));
+ const latScale=111.32,lonScale=111.32*Math.max(.05,Math.cos(point[1]*Math.PI/180));
+ let best=null,bestKm=Infinity;
+ const seenCells=new Set(),seenSegments=new Set();
+ const maxRadius=Math.max(ACCESS_GRID_X,ACCESS_GRID_Y);
+ for(let radius=0;radius<=maxRadius;radius++){
+  for(let dy=-radius;dy<=radius;dy++){
+   const y=y0+dy;if(y<0||y>=ACCESS_GRID_Y)continue;
+   for(let dx=-radius;dx<=radius;dx++){
+    if(radius&&Math.abs(dx)!==radius&&Math.abs(dy)!==radius)continue;
+    const key=accessGridIndex(x0+dx,y);
+    if(seenCells.has(key))continue;
+    seenCells.add(key);
+    for(const segment of grid.get(key)||[]){
+     if(seenSegments.has(segment))continue;
+     seenSegments.add(segment);
+     const {a,b}=segment;
+     let ax=(a[0]-point[0])*lonScale,ay=(a[1]-point[1])*latScale;
+     let bx=(b[0]-point[0])*lonScale,by=(b[1]-point[1])*latScale;
+     if(Math.abs(b[0]-a[0])>180){if(ax>0)ax-=360*lonScale;else bx-=360*lonScale}
+     const dx2=bx-ax,dy2=by-ay,den=dx2*dx2+dy2*dy2;
+     const t=den?Math.max(0,Math.min(1,-(ax*dx2+ay*dy2)/den)):0;
+     const candidate=[normLon(a[0]+(b[0]-a[0])*t),a[1]+(b[1]-a[1])*t];
+     const km=distanceKm(point,candidate);
+     if(km<bestKm){bestKm=km;best={point:candidate,distanceKm:km}}
+    }
+   }
+  }
+  // Stop only when the best candidate is closer than the conservative distance
+  // to the unsearched latitude/longitude boundary. At high latitudes longitude
+  // becomes less discriminating, so the search naturally expands farther.
+  if(best&&radius>0){
+   const edgeLat=radius*ACCESS_GRID_CELL*latScale;
+   const edgeLon=radius*ACCESS_GRID_CELL*latScale*Math.max(.01,Math.cos(Math.min(89.9,Math.abs(point[1])+radius*ACCESS_GRID_CELL)*Math.PI/180));
+   if(bestKm<=Math.min(edgeLat,edgeLon))break;
   }
  }
  if(best)accessPointCache.set(key,best);
