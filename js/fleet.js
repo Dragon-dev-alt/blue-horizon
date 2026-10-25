@@ -479,13 +479,18 @@ async function runOneIdleRoutePrewarm(){
   const currentDestinations=new Set((game.generatedContracts||[])
    .filter(c=>String(c.assignedShipId)===String(s.id)&&String(c.from)===String(s.port))
    .map(c=>String(c.to)));
-  const candidates=indexed
-   .filter(c=>c.estimatedKm<=Number(s.range||0)+1)
-   .filter(c=>!currentDestinations.has(String(c.connection.to)))
-   .filter(c=>!routePrewarmAttempted.has(String(c.connection.from)+'>'+String(c.connection.to)))
-   .filter(c=>!maritimeOriginFailures.has(String(c.connection.from)))
-   .sort((a,b)=>a.estimatedKm-b.estimatedKm);
-  if(candidates.length){selected={ship:s,candidate:candidates[0]};break}
+  // Ein Durchlauf statt vier Filter-Arrays plus Sortierung: Für die
+  // Vorwärmung reicht der nächste passende Kandidat.
+  let nearestCandidate=null;
+  const range=Number(s.range||0);
+  for(const candidate of indexed){
+   const connection=candidate.connection;
+   const pairKey=String(connection.from)+'>'+String(connection.to);
+   if(candidate.estimatedKm>range+1||currentDestinations.has(String(connection.to))||
+      routePrewarmAttempted.has(pairKey)||maritimeOriginFailures.has(String(connection.from)))continue;
+   if(!nearestCandidate||candidate.estimatedKm<nearestCandidate.estimatedKm)nearestCandidate=candidate;
+  }
+  if(nearestCandidate){selected={ship:s,candidate:nearestCandidate};break}
  }
  if(!selected)return;
  const {ship,candidate}=selected,connection=candidate.connection;
@@ -630,7 +635,7 @@ async function computeEligibleContractsAsync(s,key){
  if(!window.waterRouteDataReady||typeof routeForContract!=='function')return null;
  await loadHarborConnectionCatalog();
  if(!eligibilityStateIsCurrent(s,key))return null;
- const registry=await loadPortDestinationIndex();
+ await loadPortDestinationIndex();
  if(!eligibilityStateIsCurrent(s,key))return null;
  const categoryId=SHIP_CATEGORY_IDS[s.type];
  const startRow=portRowsByCode.get(String(s.port));
@@ -656,7 +661,7 @@ async function computeEligibleContractsAsync(s,key){
  const seen=new Set();
  let routeFailures=0;
  // Für jedes untätige Schiff werden 1 bis 3 Angebote angestrebt.
- // Kandidaten werden vorher gemischt; unpassende Routen werden übersprungen,
+ // Kandidaten werden ohne Wiederholung zufällig geprüft; unpassende Routen werden übersprungen,
  // bis genug sichere Ziele gefunden sind oder die Kandidaten erschöpft sind.
  const targetCount=1+Math.floor(Math.random()*3);
  for(let i=0;i<candidates.length&&valid.length<targetCount;i++){
@@ -683,7 +688,6 @@ async function computeEligibleContractsAsync(s,key){
     if(routeFailures===1)console.warn('Hintergrund-Routenberechnung fehlgeschlagen:',message);
    }
    // Seerouten laufen ausschließlich im Worker; kein synchroner Alt-Fallback.
-   if(!route)route=null;
    if(route&&typeof window.cachePrecomputedContractRoute==='function'){
     window.cachePrecomputedContractRoute(connection.from,connection.to,s.type,route);
     if(typeof window.markWaterRouteVerified==='function')window.markWaterRouteVerified(route);
