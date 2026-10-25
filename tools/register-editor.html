@@ -10,7 +10,7 @@
 </head>
 <body><main>
 <h1>⚓ Blue Horizon – Register-Werkzeug</h1>
-<p>Lokaler Editor für JSON-Dateien in <code>data/</code>. Die Dateien werden nicht automatisch nach GitHub hochgeladen: du lädst sie herunter und ersetzt die jeweilige Datei im Repository. Vor dem Bearbeiten immer eine Sicherung aufbewahren.</p>
+<p>Lokaler Editor für JSON-Dateien in <code>data/</code>. Du kannst geänderte Register unten direkt nach GitHub speichern oder sie alternativ herunterladen. Für das direkte Speichern brauchst du einen fein begrenzten GitHub-Token; er bleibt nur im Arbeitsspeicher dieser Seite und wird nicht gespeichert. Vor dem Bearbeiten immer eine Sicherung aufbewahren.</p>
 <div class="panel">
  <h2>1. Register laden</h2>
  <p>Wähle eine oder mehrere Dateien aus dem Ordner <code>data/</code>. Die Namen werden als Register-Tabs angezeigt.</p>
@@ -40,6 +40,15 @@
  <label for="editor">JSON-Inhalt des ausgewählten Registers</label>
  <textarea id="editor" spellcheck="false" placeholder="Lade eine JSON-Datei oder ein Register aus dem Live-Spiel …" disabled></textarea>
  <div class="toolbar" style="margin-top:12px"><button id="apply" class="primary" disabled>Änderungen übernehmen</button><button id="pretty" disabled>JSON formatieren</button></div>
+</div>
+<div class="panel">
+ <h2>4. Speichern nach GitHub</h2>
+ <p>Speichert das aktuell ausgewählte Register direkt im Repository <code>Dragon-dev-alt/blue-horizon</code> und erstellt einen Commit. Es wird nur eine der drei Dateien unter <code>data/</code> geändert.</p>
+ <label for="githubToken">GitHub Fine-grained Personal Access Token</label>
+ <input id="githubToken" type="password" autocomplete="off" placeholder="github_pat_…" style="width:100%;padding:12px;background:#06131f;color:var(--text);border:1px solid var(--line);border-radius:8px">
+ <p class="hint">Erstelle einen Token nur für dieses Repository mit „Contents: Read and write“. Setze möglichst ein Ablaufdatum. Gib ihn nicht weiter. Der Token wird weder in localStorage noch in einer Datei gespeichert und nach dem Speichern aus dem Feld gelöscht. Wer diesen öffentlichen Editor verändert, könnte jedoch versuchen, Eingaben abzugreifen – nutze den Token deshalb nur, wenn du dem geladenen Repository-Code vertraust.</p>
+ <div class="toolbar"><button id="saveGithub" class="primary" disabled>Speichern & Datei ersetzen</button><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer" style="color:var(--accent);align-self:center">Token erstellen ↗</a></div>
+ <div id="saveStatus" class="status" style="margin-top:10px">Noch nichts nach GitHub gespeichert.</div>
 </div>
 <div class="panel">
  <h2>Was gehört wohin?</h2>
@@ -116,5 +125,30 @@ $('loadRepo').onclick=async()=>{const names=['harbor-connections.json','route-re
 $('apply').onclick=()=>{try{const {summary}=parseAndValidate(state.active,$('editor').value);state.files.set(state.active,$('editor').value);renderTabs();setStatus(summary+' · Änderungen im Editor übernommen.')}catch(e){setStatus('Prüfung fehlgeschlagen: '+e.message)}};
 $('validate').onclick=()=>{try{setStatus(parseAndValidate(state.active,$('editor').value).summary)}catch(e){setStatus('Prüfung fehlgeschlagen: '+e.message)}};
 $('pretty').onclick=()=>{try{$('editor').value=JSON.stringify(JSON.parse($('editor').value),null,2);setStatus('JSON formatiert. Klicke danach auf „Änderungen übernehmen“.')}catch(e){setStatus('JSON-Syntaxfehler: '+e.message)}};
+const tokenField=$('githubToken'),saveButton=$('saveGithub');
+function updateSaveButton(){saveButton.disabled=!(state.active&&state.files.has(state.active)&&tokenField.value.trim())}
+tokenField.addEventListener('input',updateSaveButton);
+const allowedRegisterPaths=new Set(['harbor-connections.json','route-register.json','inland-waterways.json']);
+function toBase64Utf8(text){const bytes=new TextEncoder().encode(text);let binary='';for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));return btoa(binary)}
+saveButton.onclick=async()=>{
+ const token=tokenField.value.trim(),name=state.active;
+ try{
+  if(!token)throw new Error('Bitte einen GitHub-Token eintragen.');
+  if(!allowedRegisterPaths.has(name))throw new Error('Direktes Speichern ist nur für die drei unterstützten JSON-Register in data/ freigegeben.');
+  const parsed=parseAndValidate(name,$('editor').value),content=JSON.stringify(parsed.data,null,2)+'\\n';
+  state.files.set(name,content);$('editor').value=content;
+  saveButton.disabled=true;$('saveStatus').textContent='Prüfe GitHub-Version und speichere …';
+  const path='data/'+name,api='https://api.github.com/repos/Dragon-dev-alt/blue-horizon/contents/'+path;
+  const headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'};
+  const current=await fetch(api+'?ref=main',{headers,cache:'no-store'});
+  if(!current.ok)throw new Error(current.status===404?'Datei nicht gefunden oder Token hat keinen Zugriff. Prüfe Repository und Contents-Rechte.':'GitHub-Lesezugriff fehlgeschlagen (HTTP '+current.status+').');
+  const file=await current.json();
+  const response=await fetch(api,{method:'PUT',headers,body:JSON.stringify({message:'Update '+path+' via register editor',content:toBase64Utf8(content),sha:file.sha,branch:'main'})});
+  const result=await response.json();
+  if(!response.ok)throw new Error((result.message||'GitHub hat das Speichern abgelehnt.')+' (HTTP '+response.status+').');
+  $('saveStatus').textContent='✓ Gespeichert und ersetzt: '+path+'\\nCommit: '+(result.commit&&result.commit.sha?result.commit.sha.slice(0,12):'erstellt')+'\\nDie GitHub-Pages-Version kann kurz brauchen, bis sie aktualisiert ist.';
+ }catch(error){$('saveStatus').textContent='Speichern fehlgeschlagen: '+error.message}
+ finally{tokenField.value='';updateSaveButton()}
+};
 $('download').onclick=()=>{try{const parsed=parseAndValidate(state.active,$('editor').value);state.files.set(state.active,$('editor').value);const blob=new Blob([JSON.stringify(parsed.data,null,2)+'\n'],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=state.active;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setStatus('Download erstellt: '+state.active)}catch(e){setStatus('Download abgebrochen: '+e.message)}};
 </script></body></html>
