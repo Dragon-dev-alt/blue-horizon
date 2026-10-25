@@ -410,7 +410,7 @@ const MAX_PARALLEL_CONTRACT_JOBS=(()=>{
  const cores=Number(navigator.hardwareConcurrency)||4;
  const memory=Number(navigator.deviceMemory)||0;
  const handheld=/Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent||'')||Number(navigator.maxTouchPoints)>1;
- if(handheld)return cores>=6&&(memory===0||memory>=4)?3:2;
+ if(handheld)return 3;
  if(cores>=8&&(memory===0||memory>=4))return 6;
  if(cores>=4&&(memory===0||memory>=4))return 4;
  return 2;
@@ -650,9 +650,8 @@ async function computeEligibleContractsAsync(s,key){
     if(!Number.isFinite(estimatedKm)||estimatedKm>Number(s.range||0)+1)return null;
     return {connection,estimatedKm,targetId};
    }).filter(Boolean);
- // Nicht immer dieselben Ziele bevorzugen: zufällige Reihenfolge aus dem
- // typgerechten Register; jedes Ziel wird danach noch real über Wasser geprüft.
- for(let i=candidates.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[candidates[i],candidates[j]]=[candidates[j],candidates[i]];}
+ // Zufällig ohne Wiederholung prüfen, aber nur so viele Einträge mischen,
+ // wie für sichere Angebote nötig sind. Große Häfen sparen so unnötige Arbeit.
  const valid=[];
  const seen=new Set();
  let routeFailures=0;
@@ -661,6 +660,8 @@ async function computeEligibleContractsAsync(s,key){
  // bis genug sichere Ziele gefunden sind oder die Kandidaten erschöpft sind.
  const targetCount=1+Math.floor(Math.random()*3);
  for(let i=0;i<candidates.length&&valid.length<targetCount;i++){
+  const randomIndex=i+Math.floor(Math.random()*(candidates.length-i));
+  [candidates[i],candidates[randomIndex]]=[candidates[randomIndex],candidates[i]];
   if(i>0&&i%3===0)await yieldToBrowser();
   if(!eligibilityStateIsCurrent(s,key))return null;
   const connection=candidates[i].connection;
