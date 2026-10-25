@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#07131f"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%23071f30%22/%3E%3Cpath d=%22M8 38 Q20 28 32 38 T56 38%22 fill=%22none%22 stroke=%22%2347d8d0%22 stroke-width=%226%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M8 48 Q20 38 32 48 T56 48%22 fill=%22none%22 stroke=%22%2347d8d0%22 stroke-width=%224%22 stroke-linecap=%22round%22/%3E%3C/svg%3E"><title>Blue Horizon — Reederei-Manager</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="preload" as="image" href="./assets/Blauer%20Horizont%20%C3%BCber%20dem%20Containerhafen.png?v=loader-png-20261012"><link rel="stylesheet" href="./styles.css?v=ship-panel-navigation-v9-20261013">
+<link rel="preload" as="image" href="./assets/Blauer%20Horizont%20%C3%BCber%20dem%20Containerhafen.png?v=loader-png-20261012"><link rel="stylesheet" href="./styles.css?v=full-audit-perf-20261025-1ship-panel-navigation-v9-20261013">
 </head>
 <body>
 <div class="app" id="gameApp">
@@ -52,16 +52,16 @@
  </div>
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="./js/data.js?v=international-port-symbol-v1-20261013"></script>
-<script src="./js/core.js?v=performance-pass-2-20261024"></script>
-<script src="./js/waterways.js?v=performance-pass-3-20261024"></script>
-<script src="./js/loading-screen.js?v=loader-20261012"></script>
-<script src="./js/dev-budget.js?v=device-budget-v1-20261012"></script>
-<script src="./js/menus.js?v=cleanup-performance-v1-20261012"></script>
-<script src="./js/fleet.js?v=full-code-review-1-20261024"></script>
-<script src="./js/roadmap.js?v=roadmap-cleanup-v1-20261013"></script>
-<script src="./js/shipyard.js?v=worker-only-contract-routing-v1-20261013"></script>
-<script type="module" src="./js/sea-routing.js?v=worker-only-routing-v2-20261013"></script>
+<script src="./js/data.js?v=full-audit-perf-20261025-1"></script>
+<script src="./js/core.js?v=full-audit-perf-20261025-1"></script>
+<script src="./js/waterways.js?v=full-audit-perf-20261025-1"></script>
+<script src="./js/loading-screen.js?v=full-audit-perf-20261025-1"></script>
+<script src="./js/dev-budget.js?v=full-audit-perf-20261025-1"></script>
+<script src="./js/menus.js?v=full-audit-perf-20261025-1"></script>
+<script src="./js/fleet.js?v=full-audit-perf-20261025-1"></script>
+<script src="./js/roadmap.js?v=full-audit-perf-20261025-1"></script>
+<script src="./js/shipyard.js?v=full-audit-perf-20261025-1"></script>
+<script type="module" src="./js/sea-routing.js?v=full-audit-perf-20261025-1"></script>
 
 <script>
 window.openContractsWindow=function(){document.getElementById("contractsOverlay")?.classList.remove("hidden");if(typeof game!=="undefined"&&game&&game.ships.length&&!selectedShipId)selectedShipId=game.ships[0].id;if(typeof window.renderUI==="function")window.renderUI();const n=document.getElementById("contractShipCount");if(n&&typeof game!=="undefined"&&game)n.textContent=game.ships.length;};
