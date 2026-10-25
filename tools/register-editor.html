@@ -20,7 +20,21 @@
  <div id="status" class="status" style="margin-top:12px">Noch keine Register geladen.</div>
 </div>
 <div class="panel">
- <h2>2. Register bearbeiten</h2>
+ <h2>2. Schnell hinzufügen</h2>
+ <p class="hint">Die Helfer ergänzen Einträge im gerade ausgewählten Register. Für einen spielbaren neuen Hafen müssen die Stammdaten in <code>js/data.js</code> zusätzlich synchronisiert werden.</p>
+ <details style="margin:10px 0"><summary>Hafen im Verbindungskatalog ergänzen</summary>
+  <div class="toolbar" style="margin-top:10px"><input id="newPortId" placeholder="ID, z. B. xyz"><input id="newPortName" placeholder="Hafenname"><label style="display:flex;gap:6px;align-items:center;margin:0"><input id="newPortRiver" type="checkbox"> Binnenhafen</label><input id="newPortLevel" type="number" min="1" max="3" value="2" style="width:90px"><button id="addPort">Hafen ergänzen</button></div>
+ </details>
+ <details style="margin:10px 0"><summary>Gerichtete Hafenverbindung ergänzen</summary>
+  <div class="toolbar" style="margin-top:10px"><input id="connFrom" placeholder="Start-ID"><input id="connTo" placeholder="Ziel-ID"><input id="connKm" type="number" min="1" placeholder="Direkt-km" style="width:130px"><select id="connKind"><option value="sea">See</option><option value="river">Binnen</option></select><input id="connTypes" placeholder="Schiffstypen, kommasepariert" value="coastal,medium,long,ultra,tanker,bulk,ro-ro" style="min-width:260px"><button id="addConnection">Verbindung ergänzen</button></div>
+  <p class="hint">Die Verbindung ist gerichtet. Wenn beide Fahrtrichtungen gelten sollen, füge auch die Gegenrichtung hinzu.</p>
+ </details>
+ <details style="margin:10px 0"><summary>Binnenwasserstraßen-Link ergänzen</summary>
+  <div class="toolbar" style="margin-top:10px"><input id="waterFrom" placeholder="Start-Hafen-ID"><input id="waterTo" placeholder="Ziel-Hafen-ID"><button id="addWaterLink">Binnen-Link ergänzen</button></div>
+ </details>
+</div>
+<div class="panel">
+ <h2>3. Register bearbeiten</h2>
  <label for="editor">JSON-Inhalt des ausgewählten Registers</label>
  <textarea id="editor" spellcheck="false" placeholder="Lade eine JSON-Datei oder ein Register aus dem Live-Spiel …" disabled></textarea>
  <div class="toolbar" style="margin-top:12px"><button id="apply" class="primary" disabled>Änderungen übernehmen</button><button id="pretty" disabled>JSON formatieren</button></div>
@@ -51,6 +65,12 @@ function parseAndValidate(name,text){let data;try{data=JSON.parse(text)}catch(e)
  else if(name==='inland-waterways.json'){if(data.schemaVersion!==2||!Array.isArray(data.links)||!Array.isArray(data.corridors))throw new Error('Erwartet schemaVersion 2 sowie links[] und corridors[].');for(const link of data.links){if(!Array.isArray(link)||link.length!==2||!link[0]||!link[1])throw new Error('Ungültiger Binnenwasserstraßen-Link: '+JSON.stringify(link))}}
  return {data,summary:'✓ '+name+': JSON gültig'+(Array.isArray(data.connections)?' · '+data.connections.length+' Verbindungen':'')+(Array.isArray(data.table)?' · '+data.table.length+' Indexzeilen':'')+(Array.isArray(data.links)?' · '+data.links.length+' Links · '+data.corridors.length+' Korridore':'')};
 }
+function updateCurrentRegister(mutator){
+ try{if(!state.active)throw new Error('Wähle zuerst das passende Register aus.');const parsed=JSON.parse($('editor').value);mutator(parsed);const text=JSON.stringify(parsed,null,2);parseAndValidate(state.active,text);$('editor').value=text;state.files.set(state.active,text);renderTabs();setStatus('Eintrag ergänzt. Prüfe das Register und lade es anschließend herunter.')}catch(error){setStatus('Nicht ergänzt: '+error.message)}
+}
+$('addPort').onclick=()=>updateCurrentRegister(data=>{if(state.active!=='harbor-connections.json')throw new Error('Wähle harbor-connections.json.');const id=$('newPortId').value.trim().toLowerCase(),name=$('newPortName').value.trim();if(!/^[a-z0-9-]{2,8}$/.test(id)||!name)throw new Error('ID (2–8 Zeichen) und Name sind erforderlich.');if(data.ports.some(p=>String(p.id)===id))throw new Error('Diese Hafen-ID existiert bereits.');data.ports.push({id,name,river:$('newPortRiver').checked,level:Math.max(1,Math.min(3,Number($('newPortLevel').value)||2))});$('newPortId').value='';$('newPortName').value=''});
+$('addConnection').onclick=()=>updateCurrentRegister(data=>{if(state.active!=='harbor-connections.json')throw new Error('Wähle harbor-connections.json.');const from=$('connFrom').value.trim().toLowerCase(),to=$('connTo').value.trim().toLowerCase(),directKm=Number($('connKm').value),shipTypes=$('connTypes').value.split(',').map(v=>v.trim()).filter(Boolean),kind=$('connKind').value;if(!from||!to||from===to||!Number.isFinite(directKm)||directKm<=0||!shipTypes.length)throw new Error('Start, Ziel, positive Entfernung und Schiffstypen angeben.');if(!data.ports.some(p=>p.id===from)||!data.ports.some(p=>p.id===to))throw new Error('Start- und Zielhafen müssen bereits im ports-Register existieren.');if(data.connections.some(c=>c.from===from&&c.to===to))throw new Error('Diese gerichtete Verbindung existiert bereits.');data.connections.push({from,to,shipTypes,kind,directKm:Math.round(directKm)});$('connFrom').value='';$('connTo').value='';$('connKm').value=''});
+$('addWaterLink').onclick=()=>updateCurrentRegister(data=>{if(state.active!=='inland-waterways.json')throw new Error('Wähle inland-waterways.json.');const from=$('waterFrom').value.trim().toLowerCase(),to=$('waterTo').value.trim().toLowerCase();if(!from||!to||from===to)throw new Error('Zwei unterschiedliche Hafen-IDs angeben.');if(!Array.isArray(data.links))throw new Error('links[] fehlt.');if(data.links.some(link=>link[0]===from&&link[1]===to))throw new Error('Dieser Link existiert bereits.');data.links.push([from,to]);$('waterFrom').value='';$('waterTo').value=''});
 $('files').addEventListener('change',async e=>{for(const file of e.target.files){try{const text=await file.text();parseAndValidate(file.name,text);state.files.set(file.name,text)}catch(error){setStatus(file.name+': '+error.message);continue}}if(state.files.size){state.active=state.active&&state.files.has(state.active)?state.active:state.files.keys().next().value;selectFile(state.active);setStatus('Geladen: '+[...state.files.keys()].join(', '))}});
 $('loadRepo').onclick=async()=>{const names=['harbor-connections.json','route-register.json','inland-waterways.json'];setStatus('Lade Register …');for(const name of names){try{const response=await fetch('../data/'+name+'?editor='+Date.now(),{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const text=await response.text();parseAndValidate(name,text);state.files.set(name,text)}catch(error){setStatus('Fehler bei '+name+': '+error.message);return}}state.active=names[0];selectFile(state.active);setStatus('Alle drei Datenregister geladen. Bearbeite sie und lade jedes geänderte Register herunter.')};
 $('apply').onclick=()=>{try{const {summary}=parseAndValidate(state.active,$('editor').value);state.files.set(state.active,$('editor').value);renderTabs();setStatus(summary+' · Änderungen im Editor übernommen.')}catch(e){setStatus('Prüfung fehlgeschlagen: '+e.message)}};
