@@ -217,7 +217,7 @@ function getRouteCalculationWorkers(){
  while(routeCalculationWorkers.length<ROUTE_WORKER_POOL_SIZE){
   const slot=routeCalculationWorkers.length;
   try{
-   const worker=new Worker('./js/route-worker.js?v=route-pool-v8-20261025',{type:'module'});
+   const worker=new Worker('./js/route-worker.js?v=contract-guarantee-v9-20261025',{type:'module'});
    let warmResolve;
    const record={worker,busy:0,slot,ready:false,preloading:false,warmPromise:new Promise(resolve=>{warmResolve=resolve})};
    record.resolveWarmup=ok=>{record.ready=!!ok;record.preloading=false;warmResolve(!!ok)};
@@ -561,6 +561,41 @@ function createContractFromRoute(s,connection,coords,index){
   routeDistanceKm:Math.round(km),createdDay:Number(game.day)||0
  };
 }
+// Wenn ein Hafen keine einzige sichere Route liefert, bleibt das Schiff nicht
+// dauerhaft ohne Aufträge: markiere den fehlgeschlagenen Startpunkt und suche
+// einen nahegelegenen, für Schiffstyp und Reichweite geeigneten Kataloghafen.
+const contractFailedOriginsByShip=new Map();
+function relocateIdleShipForContracts(s){
+ if(!game||!s||s.trip||s.inYard)return false;
+ const typeId=SHIP_CATEGORY_IDS[s.type],current=port(s.port);
+ if(!typeId||!current||!harborConnectionCatalog||!portDestinationIndex)return false;
+ const failed=contractFailedOriginsByShip.get(String(s.id))||new Set();
+ failed.add(String(s.port));
+ contractFailedOriginsByShip.set(String(s.id),failed);
+ const candidates=[];
+ for(const p of PORTS){
+  if(!p||String(p.id)===String(s.port)||failed.has(String(p.id))||!portAllowsShip(p,s.type))continue;
+  const row=portRowsByCode.get(String(p.id));
+  if(!row)continue;
+  const options=contractCandidatesByOriginCategory.get(String(row[0])+'|'+String(typeId))||[];
+  if(!options.some(item=>item.estimatedKm<=Number(s.range||0)+1))continue;
+  candidates.push(p);
+ }
+ candidates.sort((a,b)=>haversine({lat:current.lat,lon:current.lon},{lat:a.lat,lon:a.lon})-haversine({lat:current.lat,lon:current.lon},{lat:b.lat,lon:b.lon}));
+ const next=candidates[0];
+ if(!next)return false;
+ const previous=current.name||current.id;
+ s.port=next.id;
+ s.status='idle';
+ // Angebote des alten Hafens dürfen nicht als veraltete Einträge liegen bleiben.
+ if(Array.isArray(game.generatedContracts)){
+  game.generatedContracts=game.generatedContracts.filter(c=>String(c.assignedShipId)!==String(s.id));
+ }
+ contractEligibilityCache.clear();
+ addLog('Auftragsnetz: Für '+s.name+' gab es in '+previous+' keine sichere passende Route. Das Schiff wurde zum nächstgelegenen geeigneten Hafen '+(next.name||next.id)+' verlegt, damit neue Aufträge erstellt werden können.');
+ saveGame();
+ return true;
+}
 async function computeEligibleContractsAsync(s,key){
  if(!game||!s||s.trip||s.inYard||(game.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)))return[];
  if(!window.waterRouteDataReady||typeof routeForContract!=='function')return null;
@@ -632,20 +667,26 @@ async function computeEligibleContractsAsync(s,key){
   if(contract)valid.push(contract);
  }
  if(!eligibilityStateIsCurrent(s,key))return null;
- // Nur echte Workerfehler erneut versuchen. Ein Hafen ohne sichere Route
- // wird leer gecacht, statt endlos CPU-Zeit zu verbrauchen.
- if(!valid.length&&routeFailures>0)return null;
- if(valid.length){
-  if(!Array.isArray(game.generatedContracts))game.generatedContracts=[];
-  const activeContractId=game.ships.find(item=>String(item.id)===String(s.id))?.trip?.contractId;
-  game.generatedContracts=game.generatedContracts.filter(c=>
-   String(c.id)===String(activeContractId)||
-   String(c.assignedShipId)!==String(s.id)||String(c.from)!==String(s.port)
-  );
-  valid.forEach(c=>game.generatedContracts.push(c));
-  game.nextContractId=(game.nextContractId||1)+valid.length;
-  saveGame();
+ // Workerfehler sind temporär und werden mit Backoff erneut versucht. Wenn
+ // alle Kandidaten sauber geprüft, aber keine passende sichere Route gefunden
+ // wurde, wird der leere Hafen nicht als endgültiger Zustand akzeptiert.
+ if(!valid.length){
+  if(routeFailures>0)return null;
+  if(relocateIdleShipForContracts(s))return null;
+  // Kein geeigneter Kataloghafen verfügbar: nicht dauerhaft eine leere Liste
+  // cachen; der normale Retry versucht es später erneut, ohne unsichere Routen.
+  return null;
  }
+ contractFailedOriginsByShip.delete(String(s.id));
+ if(!Array.isArray(game.generatedContracts))game.generatedContracts=[];
+ const activeContractId=game.ships.find(item=>String(item.id)===String(s.id))?.trip?.contractId;
+ game.generatedContracts=game.generatedContracts.filter(c=>
+  String(c.id)===String(activeContractId)||
+  String(c.assignedShipId)!==String(s.id)||String(c.from)!==String(s.port)
+ );
+ valid.forEach(c=>game.generatedContracts.push(c));
+ game.nextContractId=(game.nextContractId||1)+valid.length;
+ saveGame();
  return valid;
 }
 function scheduleContractEligibility(s,key){
