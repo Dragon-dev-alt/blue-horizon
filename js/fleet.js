@@ -94,7 +94,6 @@ function ensureShipStats(s){
  }
  // Alte Speicherstände können Schiffe am falschen Hafentyp enthalten.
  // Nur ruhende Schiffe verlegen; aktive Fahrten werden nie verschoben.
- const needsRiver=s.type==='river';
  if(!s.trip&&!s.inYard&&current&&(!portAllowsShip(current,s.type)||!randomShipPortHasOption(current,s.type,s.range))){
   const candidates=PORTS.filter(p=>portAllowsShip(p,s.type)&&randomShipPortHasOption(p,s.type,s.range));
   candidates.sort((a,b)=>haversine({lat:current.lat,lon:current.lon},{lat:a.lat,lon:a.lon})-haversine({lat:current.lat,lon:current.lon},{lat:b.lat,lon:b.lon}));
@@ -915,10 +914,7 @@ function renderUI(options={}){
   if(!game)return;
   const ship=options.ship||selectedShip();
   const setText=(id,value)=>{const el=$(id);if(el)el.textContent=value};
-  setText('companyLabel',game.company.toUpperCase());setText('cashStat',money(game.cash));
-  setText('fleetStat',game.ships.length+' Schiffe');setText('fleetCount',game.ships.length+' Schiffe');
-  setText('dayStat','Tag '+game.day);setText('repStat','★ '+game.rep);
-  setText('dateLabel','Jahr '+(Math.floor((game.day-1)/360)+1)+' · Tag '+game.day);
+  updateCompanyHud();
   const log=$('logLines');if(log)log.innerHTML=game.log.slice(0,6).map(x=>'<div>'+escapeHtml(x)+'</div>').join('');
   setText('selectedShipLabel',ship?ship.name:'');
   setText('ordersHelp','Dein Schiff muss noch ausgeliefert werden.');
