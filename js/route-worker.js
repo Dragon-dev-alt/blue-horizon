@@ -89,32 +89,30 @@ async function calculateRoute(from,to){
   routeFrom=a.point;routeTo=b.point;fromAccess=a.point;toAccess=b.point;
   primary=router.seaRoute(routeFrom,routeTo,{...OPTIONS,network});
  }
- const raw=usable(primary);
- if(raw&&safe(raw)){
-  const smoothed=smooth(raw);
+ // Prüfe nur die endgültige Geometrie. Die alte Pipeline prüfte erst die
+ // Rohroute und danach nochmals die geglättete Route; das verdoppelte häufig
+ // die teure Landmasken-Abtastung, obwohl nur die finale Route verwendet wird.
+ const finalizeAndCheck=coords=>{
+  if(!coords)return null;
+  const smoothed=smooth(coords);
   if(fromAccess||toAccess){
    const connected=withAccessEndpoints(smoothed,from,to,fromAccess,toAccess);
-   if(safe(connected))return connected;
-  }else{
-   smoothed[0]=from.slice();smoothed[smoothed.length-1]=to.slice();
-   routeSafetyCache.delete(smoothed);
-   if(safe(smoothed))return smoothed;
+   return safe(connected)?connected:null;
   }
- }
+  smoothed[0]=from.slice();smoothed[smoothed.length-1]=to.slice();
+  routeSafetyCache.delete(smoothed);
+  return safe(smoothed)?smoothed:null;
+ };
+ const raw=usable(primary);
+ const accepted=finalizeAndCheck(raw);
+ if(accepted)return accepted;
  const generated=router.seaRouteAlternatives(routeFrom,routeTo,{...OPTIONS,network,k:3});
  const candidates=Array.isArray(generated)?generated:generated&&Array.isArray(generated.features)?generated.features:generated?[generated]:[];
  for(const item of candidates){
   if(item===primary)continue;
-  const coords=usable(item);if(!coords||!safe(coords))continue;
-  const smoothed=smooth(coords);
-  if(fromAccess||toAccess){
-   const connected=withAccessEndpoints(smoothed,from,to,fromAccess,toAccess);
-   if(safe(connected))return connected;
-  }else{
-   smoothed[0]=from.slice();smoothed[smoothed.length-1]=to.slice();
-   routeSafetyCache.delete(smoothed);
-   if(safe(smoothed))return smoothed;
-  }
+  const coords=usable(item);
+  const acceptedAlternative=finalizeAndCheck(coords);
+  if(acceptedAlternative)return acceptedAlternative;
  }
  if(firstError)throw firstError;
  return null;
