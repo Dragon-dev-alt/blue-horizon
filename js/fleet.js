@@ -19,7 +19,7 @@ function indexPortDestinationTable(data){
 function loadPortDestinationIndex(){
  if(portDestinationIndex)return Promise.resolve(portDestinationIndex);
  if(portDestinationIndexPromise)return portDestinationIndexPromise;
- portDestinationIndexPromise=fetch('./data/route-register.json?v=compact-table-indexed-v3-20261024',{cache:'force-cache'})
+ portDestinationIndexPromise=fetch('./data/route-register.json?v=full-audit-perf-20261025-1',{cache:'force-cache'})
   .then(response=>{if(!response.ok)throw new Error('HTTP '+response.status);return response.json()})
   .then(data=>{if(!data||data.schemaVersion!==2||!Array.isArray(data.table)||!Array.isArray(data.portTable))throw new Error('Ungültiges Tabellen-Hafenregister');indexPortDestinationTable(data);portDestinationIndex=data;return data})
   .catch(error=>{portDestinationIndexPromise=null;throw error});
@@ -157,7 +157,7 @@ function getRouteCalculationWorkers(){
  while(routeCalculationWorkers.length<ROUTE_WORKER_POOL_SIZE){
   const slot=routeCalculationWorkers.length;
   try{
-   const worker=new Worker('./js/route-worker.js?v=route-cache-perf-v2-20261024',{type:'module'});
+   const worker=new Worker('./js/route-worker.js?v=full-audit-perf-20261025-1',{type:'module'});
    let warmResolve;
    const record={worker,busy:0,slot,ready:false,preloading:false,warmPromise:new Promise(resolve=>{warmResolve=resolve})};
    record.resolveWarmup=ok=>{record.ready=!!ok;record.preloading=false;warmResolve(!!ok)};
@@ -260,7 +260,7 @@ async function processContractGenerationQueue(){
 function loadHarborConnectionCatalog(){
  if(harborConnectionCatalog)return Promise.resolve(harborConnectionCatalog);
  if(harborCatalogLoadPromise)return harborCatalogLoadPromise;
- harborCatalogLoadPromise=fetch('./data/harbor-connections.json?v=connection-catalog-v3-20261012',{cache:'force-cache'})
+ harborCatalogLoadPromise=fetch('./data/harbor-connections.json?v=full-audit-perf-20261025-1',{cache:'force-cache'})
   .then(response=>{if(!response.ok)throw new Error('HTTP '+response.status);return response.json()})
   .then(data=>{
    if(!data||data.schemaVersion!==1||!Array.isArray(data.connections))throw new Error('Ungültiger Hafenverbindungskatalog.');
