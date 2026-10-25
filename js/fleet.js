@@ -217,7 +217,7 @@ function getRouteCalculationWorkers(){
  while(routeCalculationWorkers.length<ROUTE_WORKER_POOL_SIZE){
   const slot=routeCalculationWorkers.length;
   try{
-   const worker=new Worker('./js/route-worker.js?v=route-cache-warm-v12-20261025',{type:'module'});
+   const worker=new Worker('./js/route-worker.js?v=route-cache-warm-v13-20261025',{type:'module'});
    let warmResolve;
    const record={worker,busy:0,slot,ready:false,preloading:false,warmPromise:new Promise(resolve=>{warmResolve=resolve})};
    record.resolveWarmup=ok=>{record.ready=!!ok;record.preloading=false;warmResolve(!!ok)};
@@ -516,7 +516,7 @@ async function runOneIdleRoutePrewarm(){
 function loadHarborConnectionCatalog(){
  if(harborConnectionCatalog)return Promise.resolve(harborConnectionCatalog);
  if(harborCatalogLoadPromise)return harborCatalogLoadPromise;
- harborCatalogLoadPromise=fetch('./data/harbor-connections.json?v=full-audit-perf-20261025-1',{cache:'force-cache'})
+ harborCatalogLoadPromise=fetch('./data/harbor-connections.json?v=route-cache-warm-v13-20261025',{cache:'force-cache'})
   .then(response=>{if(!response.ok)throw new Error('HTTP '+response.status);return response.json()})
   .then(data=>{
    if(!data||data.schemaVersion!==1||!Array.isArray(data.connections))throw new Error('Ungültiger Hafenverbindungskatalog.');
