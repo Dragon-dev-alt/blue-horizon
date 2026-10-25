@@ -752,7 +752,8 @@ function eligibleContracts(s){
  if(!s||s.trip||s.inYard||(game?.repairOrders||[]).some(o=>String(o.shipId)===String(s.id)))return[];
  ensureShipStats(s);
  const existing=(game?.generatedContracts||[]).filter(c=>contractBelongsToShip(c,s));
- if(existing.length)return existing;
+ // Auch ältere Spielstände dürfen nie mehr als drei verfügbare Angebote pro Schiff zeigen.
+ if(existing.length)return existing.slice(0,3);
  const key=contractEligibilityKey(s);
  if(contractEligibilityCache.has(key))return contractEligibilityCache.get(key);
  scheduleContractEligibility(s,key);
